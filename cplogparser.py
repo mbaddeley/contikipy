@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt  # general plotting
 import seaborn as sns  # fancy plotting
 import pandas as pd  # table manipulation
 import platform
+import yaml
 
 global node_df
 
@@ -23,9 +24,12 @@ plt.rc('xtick', labelsize=10)
 plt.rc('ytick', labelsize=10)
 plt.rc('axes', labelsize=10)
 # Pandas options
-pd.set_option('display.max_rows', 100)
+pd.set_option('display.max_rows', 1000)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
+
+# import yaml config
+cfg = yaml.load(open("config.yaml", 'r'))
 
 # Results config
 STD_CONFIG = {'RDC_HOPS': 1,
@@ -57,13 +61,10 @@ def main():
     """ Main function is for standalone operation """
     # Fetch arguments
     ap = argparse.ArgumentParser(description='Simulation log parser')
-    ap.add_argument('--log', required=False,
-                    default='/home/mike/Results/COOJA_results.log',
-                    # default='/home/mike/Repos/usdn/'
-                            # 'tools/cooja/build/COOJA.testlog',
-                    help='Log file to parse')
+    ap.add_argument('--log', required=True,
+                    help='Absolute path to log file')
     ap.add_argument('--out', required=False,
-                    default="/home/mike/Results/",
+                    default="./",
                     help='Where to save logs and plots')
     ap.add_argument('--fmt', required=False, default="cooja",
                     help='Format of file to parse')
@@ -80,30 +81,17 @@ def main():
 def generate_results(log, out, fmt, desc):
     global node_df
 
-    config = SCEN_RR_CONFIG
-
-    # Set some defaults
-    if log is None:
-        log = '/home/mike/Repos/usdn/tools/cooja/build/COOJA.testlog'
-    if out is None:
-        out = '/home/mike/Results/'
-    if fmt is None:
-        fmt = 'cooja'
-
-    print ' log is ... ' + log
+    # Print some information about what's being parsed
+    info = 'Parsing directory: {0} | Log Format: {1}'.format(out, fmt)
+    print '-' * len(info)
+    print info
+    print '-' * len(info)
 
     # Summary log needs to be in the parent directory. If we are creating the
     # log then we need to set the column names
     summary_log = open(out + "log_summary.log", 'a')
     if (os.stat(summary_log.name).st_size == 0):
         summary_log.write("Scenario\ttotal\tdropped\tprr\tduty_cycle\n")
-
-    # Print some information about what's being parsed
-    info = 'Parsing scenario: {0} Dir:{1} Fmt: {2}'.format(
-                 desc, out, fmt)
-    print '*' * len(info)
-    print info
-    print '*' * len(info)
 
     print '**** Compiling regex....'
     # log pattern
@@ -167,51 +155,58 @@ def generate_results(log, out, fmt, desc):
 
     prefix = out + desc + '_'
 
-    # general plots
-    # hops vs rdc
-    if config['RDC_HOPS']:
-        df = node_df[['rdc', 'hops']].set_index('hops')  # set idx + drop cols
-        df = df[np.isfinite(df['rdc'])]  # drop NaN rows
-        plot_bar(df, 'rdc_hops', out, df.index, 'Hops',
-                 df.rdc, 'Radio duty cycle (\%)')
-    # hops vs prr
-    if config['PRR_HOPS']:
-        df = node_df[['prr', 'hops']].set_index('hops')  # set idx + drop cols
-        df = df[np.isfinite(df['prr'])]  # drop NaN rows
-        plot_bar(df, 'prr_hops', out,  df.index, 'Hops',  df.prr, 'PRR (\%)')
-    # mean latency
-    if config['MEAN_LAT_HOPS']:
-        df = app_df[['hops', 'lat']].reset_index(drop=True)
-        plot_line_mean(df, 'mean_lat', out,
-                       df.hops, 'Hops',  df.lat, 'Mean delay (ms)')
-    # end to end latency
-    if config['E2E_LAT_HOPS']:
-        df = app_df[['lat', 'hops']].set_index('hops')
-        df = df[np.isfinite(df['lat'])].reset_index()  # drop NaN rows
-        df = df.pivot(index=df.index, columns='hops')['lat']
-        plot_box(df, 'e2e_lat', out,  df.columns, 'Hops',
-                 df.index, 'End-to-end delay (ms)')
+    # general statistics
+    if cfg['stats']['run']:
+        # hops vs rdc
+        if cfg['stats']['st_rdc_hops']:
+            df = node_df.groupby('hops')['rdc'] \
+                        .apply(lambda x: x.mean()) \
+                        .reset_index() \
+                        .set_index('hops')
+            plot_bar(df, 'rdc_hops', out, df.index, 'Hops',
+                     df.rdc, 'Radio duty cycle (\%)')
+        # hops vs prr
+        if cfg['stats']['st_prr_hops']:
+            df = node_df.groupby('hops')['prr'] \
+                        .apply(lambda x: x.mean()) \
+                        .reset_index() \
+                        .set_index('hops')
+            plot_bar(df, 'prr_hops', out,
+                     df.index, 'Hops',  df.prr, 'PRR (\%)')
+        # mean latency
+        if cfg['stats']['st_lat_hops_lat_mean']:
+            df = app_df[['hops', 'lat']].reset_index(drop=True)
+            plot_line_mean(df, 'mean_lat', out,
+                           df.hops, 'Hops',  df.lat, 'Mean delay (ms)')
+        # end to end latency
+        if cfg['stats']['st_lat_hops_lat_e2e']:
+            df = app_df[['lat', 'hops']].set_index('hops')
+            df = df[np.isfinite(df['lat'])].reset_index()  # drop NaN rows
+            df = df.pivot(index=df.index, columns='hops')['lat']
+            plot_box(df, 'e2e_lat', out,  df.columns, 'Hops',
+                     df.index, 'End-to-end delay (ms)')
 
-    # sdn plots
-    if 'SDN_1' in desc:
+    # sdn statistics
+    if cfg['sdn_stats']['run'] and 'SDN_1' in desc:
         # histogram of join time
-        if config['SDN_JOIN']:
+        if cfg['sdn_stats']['st_sdn_join']:
             df = join_df.copy()
             # FIXME: time in seconds (use timedelta)
             df['time'] = join_df['time']/1000/1000
             plot_hist(df, 'join', out, 'join', 'Time (s)',
                       'time', 'Nodes joined (\#)')
         # traffic ratio
-        if config['SDN_TR']:
+        if cfg['sdn_stats']['st_sdn_traffic_ratio']:
             plot_tr(app_df, sdn_df, out)
 
-    # scenario plots
-    # application scenario
-    if config['SCEN_RR']:
-        df = app_df[['app', 'lat']].set_index('app')
-        df = df[np.isfinite(df['lat'])].reset_index()  # drop NaN rows
-        df = df.pivot(index=df.index, columns='app')['lat']
-        plot_reroute_scenario(df, out)
+    # sdn scenarios
+    if cfg['sdn_scenarios']['run'] and 'SDN_1' in desc:
+        # sdn re-route scenario
+        if cfg['sdn_scenarios']['sc_sdn_rr']:
+            df = app_df[['app', 'lat']].set_index('app')
+            df = df[np.isfinite(df['lat'])].reset_index()  # drop NaN rows
+            df = df.pivot(index=df.index, columns='app')['lat']
+            plot_reroute_scenario(df, out)
 
     # save dfs for later
     print '**** Pickling DataFrames ...'
@@ -219,6 +214,9 @@ def generate_results(log, out, fmt, desc):
     app_df.to_pickle(out + 'app_df.pkl')
     if 'SDN_1' in desc:
         sdn_df.to_pickle(out + 'sdn_df.pkl')
+
+    # close all open figs
+    plt.close('all')
 
 
 # ----------------------------------------------------------------------------#
@@ -267,15 +265,24 @@ def read_app(df):
     # sort the table by src/dest/seq so txrx pairs will be next to each other
     # this fixes NaN hop counts being filled incorrectly
     df = df.sort_values(['src', 'dest', 'app', 'seq']).reset_index(drop=True)
+    # Rearrange columns
+    df = df[['node', 'status', 'src', 'dest', 'app', 'seq', 'time',
+             'hops', 'typ', 'module', 'level']]
+    # fill in hops where there is a TX/RX
+    df['hops'] = df.groupby(['src', 'dest', 'app', 'seq'])['hops'].apply(
+                            lambda x: x.fillna(x.mean()))
     # pivot the table so we combine tx and rx rows for the same (src/dest/seq)
     df = df.bfill().pivot_table(index=['src', 'dest', 'app', 'seq', 'hops'],
                                 columns=['status'],
-                                values='time'
-                                ).reset_index().rename(
-                                columns={'TX': 'txtime',
-                                         'RX': 'rxtime'})
+                                values='time') \
+                   .reset_index() \
+                   .rename(columns={'TX': 'txtime',
+                                    'RX': 'rxtime'})
+
     # remove the columns' name
     df.columns.name = None
+    # format column types
+    df['hops'] = df['hops'].astype(int)
     # add a 'dropped' column
     df['drpd'] = df['rxtime'].apply(lambda x: True if np.isnan(x) else False)
     # calculate the latency/delay and add as a column
@@ -340,7 +347,7 @@ def read_pow(df):
 # ----------------------------------------------------------------------------#
 def read_node(df):
     print '> Read node log'
-    df = df.groupby('node')['rank', 'degree'].agg(lambda x: x.mode())
+    df = df.groupby('node')['rank', 'degree'].agg(lambda x: min(x.mode()))
     return df
 
 
@@ -377,6 +384,8 @@ def add_to_node_df(node_df, app_df, pow_df):
     node_df['mean_lat'] = app_df.groupby('src')['lat'].apply(
                           lambda x: x.mean())
     # prr for node
+    # print app_df.loc[app_df['src'] == 3]
+    # print app_df.groupby('src')['drpd'].apply(lambda x: prr(len(x), x.sum()))
     node_df['prr'] = app_df.groupby('src')['drpd'].apply(
                      lambda x: prr(len(x), x.sum()))
     # rdc for node
@@ -539,6 +548,7 @@ def plot_violin(df, desc, out, x, xlabel, y, ylabel):
 # ----------------------------------------------------------------------------#
 def plot_line_mean(df, desc, out, x, xlabel, y, ylabel):
     print '> Plotting ' + desc + ' (line)'
+    print df
     gp = df.groupby(x)
     means = gp.mean()
     means.index = means.index.astype(int)

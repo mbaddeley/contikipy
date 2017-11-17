@@ -49,7 +49,7 @@ def DICTLIST_TO_ARGLIST(D):
 class Config:
     RPL_MODE = ['NS']  # 'STORING' 'NS'
     SDN = [0, 1]
-    REROUTE = [1]
+    REROUTE = [0]
 
     def args(self):
         my_args = P_LIST(['RPL_MODE', 'SDN', 'REROUTE'],
@@ -73,9 +73,9 @@ class SdnConfig(Config):
 class SingleAppConfig(Config):
     TXNODE = [0]
     NUM_APPS = [1]
-    CBR = [1, 5, 20]
-    VBR_MIN = [[1], [30]]
-    VBR_MAX = [[5], [60]]
+    CBR = [20]
+    VBR_MIN = [[10]]
+    VBR_MAX = [[20]]
 
     def args(self):
         super_dictlist = Config.args(self)
