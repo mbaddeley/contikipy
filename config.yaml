@@ -1,9 +1,12 @@
-contiki: /home/mike/Repos/contiki-usdn
+# contikipy config
+path:    /home/mike/Repos/contiki-usdn
 wd:      /examples/ipv6/sdn
 log:     /tools/cooja/build/COOJA.testlog
 out:     /home/mike/Results
-csc:     usdn-30-node.csc
+csc:     usdn-20-node.csc
+target:  exp5438
 
+# log parser config
 stats:
   run:                  True
   st_rdc_hops:          1  # Radio duty cycle vs hops
@@ -16,10 +19,43 @@ sdn_stats:
   st_sdn_join:          1  # SDN controller join timer
   st_sdn_traffic_ratio: 1  # Traffic ratio of all traffic (incl sdn)
 
+multi_sim_analysis:
+  run:                  False
+  cmp_tr_br:            1  # Compare traffic ratio over bit rates
+
 sdn_scenarios:
   run:                  True
   sc_sdn_rr:            1  # SDN re-routing scenario
 
-multi_sim_analysis:
-  run:                  False
-  cmp_tr_br:            1  # Compare traffic ratio over bit rates
+# simulation config
+simulations:
+  # - desc:           RPL_APP
+  #   makeargs:
+  #     SDN:          0
+  #     NUM_APPS:     1
+  #     APPID:        [1]
+  #     TXNODE:       0
+  #     RXNODE:       1
+  #     BRMIN:        [60]
+  #     BRMAX:        [75]
+  #
+  # - desc:           SDN_APP
+  #   makeargs:
+  #     SDN:          1
+  #     NUM_APPS:     1
+  #     APPID:        [1]
+  #     TXNODE:       0
+  #     RXNODE:       1
+  #     BRMIN:        [60]
+  #     BRMAX:        [75]
+
+  - desc:           SDN_REROUTE
+    csc:            usdn-reroute.csc
+    makeargs:
+      SDN:          1
+      NUM_APPS:     4
+      APPID:        [1,2,3,4]
+      TXNODE:       3
+      RXNODE:       1
+      BRMIN:        [10,20,30,60]
+      BRMAX:        [20,30,40,60]

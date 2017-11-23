@@ -10,6 +10,7 @@ import matplotlib as plt
 import pandas as pd
 import collections
 import yaml
+import sys
 
 import cplogparser as lp
 import cpcsc as csc
@@ -22,91 +23,75 @@ cfg = yaml.load(open("config.yaml", 'r'))
 # ----------------------------------------------------------------------------#
 def main():
     # fetch arguments
-    ap = argparse.ArgumentParser(description='Simulation log parser')
-    ap.add_argument('--contiki', required=False, default=cfg['contiki'],
+    ap = argparse.ArgumentParser(prog='ContikiPy',
+                                 description='Cooja simulation runner and '
+                                             'Contiki log parser')
+    ap.add_argument('--path', required=False, default=cfg['path'],
                     help='Absolute path to contiki')
+    ap.add_argument('--target', required=False, default=cfg['target'],
+                    help='Contiki platform TARGET')
     ap.add_argument('--log', required=False, default=cfg['log'],
                     help='Relative path to contiki log')
     ap.add_argument('--out', required=False, default=cfg['out'],
                     help='Absolute path to output folder')
+    ap.add_argument('--wd', required=False, default=cfg['wd'],
+                    help='(Relative) working directory for code + csc')
+    ap.add_argument('--csc', required=False, default=cfg['csc'],
+                    help='Cooja simulation file')
+    ap.add_argument('--makeargs', required=False,
+                    help='Makefile arguments')
     ap.add_argument('--runcooja', required=False, default=0,
                     help='Run the simulation')
     ap.add_argument('--parse', required=False, default=0,
                     help='Run the log parser')
     ap.add_argument('--analyze', required=False, default=0,
                     help='Run the analyzer')
-    ap.add_argument('--wd', required=False, default=cfg['wd'],
-                    help='(Relative) working directory for example code + csc')
-    ap.add_argument('--csc', required=False, default=cfg['csc'],
-                    help='Cooja simulation file')
-    ap.add_argument('--makeargs', required=False,
-                    help='Optional makefile arguments')
     args = ap.parse_args()
-
-    contiki = args.contiki
 
     # get makefile arguments
     if not args.makeargs:
-        # Single application scenarios
-        conf = config.SingleAppConfig()
-        argstrings = conf.args()
-        # Multi application scenarios
-        # conf = config.MultiAppConfig()
-        # argstrings = conf.args()
+        conf = config.Config()
+        simulations = conf.simconfig()
     else:
-        argstrings = [str(args.makeargs)]
+        simulations = [{'desc': '', 'makeargs': str(args.makeargs)}]
 
-    print '**** Compiling argstrings'
-    print argstrings
+    print '**** Simulations to run...'
+    for sim in simulations:
+        print sim
 
-    # regex for simulation description
-    sim_pattern = '(?:\w*RPL_MODE=(?P<RPL>\w+)' \
-                  '|\s+SDN=(?P<SDN>[\d,]+)' \
-                  '|\s+CBR=(?P<CBR>[\d,]+)' \
-                  '|\s+VBR_MAX=\[(?P<MAX>[\d,]+)\]' \
-                  '|\s+VBR_MIN=\[(?P<MIN>[\d,]+)\]' \
-                  '|\s+NUM_APPS=(?P<APPS>[\d,]+)' \
-                  '|\s+REROUTE=(?P<SCEN>[\d,]+)' \
-                  '|\s+\w+=\S+)+.*?$'
-    desc_re = re.compile(sim_pattern)
-
-    print '**** Compiling simpattern'
-    print sim_pattern
-
-    sim_log = None
-    for makeargs in argstrings:
+    simlog = None
+    print '**** Running through ' + str(len(simulations)) + ' simulations'
+    for sim in simulations:
         # generate a simulation description
-        desc = ''
-        m = desc_re.match(makeargs)
-        if m:
-            g = m.groupdict().iteritems()
-            for k, v in g:
-                if v is not None:
-                    v = v.replace(',', '-')
-                    desc += (k + '_' + v + '_')
-            desc = desc[:-1]  # remove trailing '_'
-            # Print some information about this simulation
-            info = 'Running scenario: {0}'.format(desc)
-            print '=' * len(info)
-            print info
-            print '=' * len(info)
-            # HACK: replace remove list brackets
-            makeargs = makeargs.replace('[', '').replace(']', '')
-            # make a note of our intended sim directory
-            simdir = args.out + "/" + desc
-            # run a cooja simulation with these sim settings
-            if int(args.runcooja):
-                sim_log = run(contiki,
-                              args.log,
-                              args.wd,
-                              args.csc,
-                              simdir,
-                              makeargs,
-                              desc)
-
-            # generate results by parsing the cooja log
-            if int(args.parse) and desc is not None:
-                parse(simdir, desc, 'cooja')
+        desc = sim['desc']
+        makeargs = sim['makeargs']
+        # Print some information about this simulation
+        info = 'Running simulation: {0}'.format(desc)
+        print '=' * len(info)
+        print info
+        print '=' * len(info)
+        # HACK: replace remove list brackets
+        makeargs = makeargs.replace('[', '').replace(']', '')
+        print makeargs
+        # make a note of our intended sim directory
+        simdir = args.out + "/" + desc
+        # run a cooja simulation with these sim settings
+        if int(args.runcooja):
+            if 'csc' in sim:
+                csc = sim['csc']
+            else:
+                csc = args.csc
+            simlog = run(args.path,
+                         args.target,
+                         args.log,
+                         args.wd,
+                         csc,
+                         simdir,
+                         makeargs,
+                         desc)
+        # generate results by parsing the cooja log
+        if int(args.parse) and desc is not None:
+            parse(simlog, simdir, desc, 'cooja')
 
     # analyze the generated results
     if int(args.analyze):
@@ -115,33 +100,34 @@ def main():
 
 
 # ----------------------------------------------------------------------------#
-def parse(directory, desc, logfmt):
-    log = directory + '/' + desc + '.log'
+def parse(log, directory, desc, logfmt):
     print '**** Parse log and gererate results in: ' + directory
+    if log is None:
+        log = directory + "/" + desc + ".log"
     lp.generate_results(log, directory + '/', logfmt, desc)
 
 
 # ----------------------------------------------------------------------------#
-def run(contiki, log, wd, filename, outdir, args, desc):
-    print '**** Clean and make: ' + contiki + wd + filename
+def run(contiki, target, log, wd, csc, outdir, args, desc):
+    print '**** Clean and make: ' + contiki + wd + "/" + csc
     contikilog = contiki + log
     print '> Clean ' + contiki + wd
-    clean(contiki + wd)
+    clean(contiki + wd, target)
     # print '> Make ' + contiki + wd
     # make(contiki + wd, args)
     # Run the scenario in cooja with -nogui
-    print '**** Running simulation ' + desc
-    run_cooja(contiki, contiki + wd + '/' + filename, args)
-    # Plot results
-    print '**** Parse simulation logs'
+    print '**** Create simulation directory'
     # Create a new folder for this scenario
     if not os.path.exists(outdir):
         os.makedirs(outdir)
+    print '**** Running simulation ' + desc
+    run_cooja(contiki, contiki + wd + '/' + csc, args)
+    print '**** Copy log into simulation directory'
     # Copy contiki ouput log file and prefix the desc
-    new_log = outdir + '.log'
-    shutil.copyfile(contikilog, new_log)
+    simlog = outdir + "/" + desc + '.log'
+    shutil.copyfile(contikilog, simlog)
 
-    return new_log
+    return simlog
 
 
 # ----------------------------------------------------------------------------#
@@ -160,23 +146,22 @@ def run_cooja(contiki, sim, args):
 
 
 # ----------------------------------------------------------------------------#
-def clean(path):
+def clean(path, target):
     # make clean in case we have new cmd line arguments
-    subprocess.call('make clean TARGET=exp5438 '
+    subprocess.call('make clean TARGET=' + target + ' ' +
                     ' -C ' + path + '/controller',
                     shell=True)
-    subprocess.call('make clean TARGET=exp5438 '
+    subprocess.call('make clean TARGET=' + target + ' ' +
                     ' -C ' + path + '/node',
                     shell=True)
 
 
 # ----------------------------------------------------------------------------#
-def make(path, args):
+def make(path, args, target):
     print '> args: ' + args
-    subprocess.call('make TARGET=exp5438 ' + args +
-                    ' -C ' + path + '/controller',
-                    shell=True)
-    subprocess.call('make TARGET=exp5438 ' + args +
+    subprocess.call('make TARGET=' + target + ' ' + args +
+                    ' -C ' + path + '/controller', shell=True)
+    subprocess.call('make TARGET=' + target + ' ' + args +
                     ' -C ' + path + '/node',
                     shell=True)
 
