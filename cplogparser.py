@@ -131,7 +131,7 @@ def generate_results(log, out, fmt, desc):
     if(os.path.getsize(pow_log.name) != 0):
         pow_df = read_pow(csv_to_df(pow_log))
     # Specific SDN DFs
-    if 'SDN_1' in desc:
+    if 'SDN' in desc:
         if(os.path.getsize(sdn_log.name) != 0):
             sdn_df = read_sdn(csv_to_df(sdn_log))
         if(os.path.getsize(join_log.name) != 0):
@@ -167,12 +167,14 @@ def generate_results(log, out, fmt, desc):
         if node_df is not None and app_df is not None:
             # hops vs prr
             if cfg['stats']['st_prr_hops']:
+                print node_df
                 df = node_df.groupby('hops')['prr'] \
                             .apply(lambda x: x.mean()) \
                             .reset_index() \
                             .set_index('hops')
                 plot_bar(df, 'prr_hops', out,
                          df.index, 'Hops',  df.prr, 'PRR (\%)')
+
         # app
         if app_df is not None:
             # mean latency
@@ -189,7 +191,7 @@ def generate_results(log, out, fmt, desc):
                          df.index, 'End-to-end delay (ms)')
 
     # sdn statistics
-    if cfg['sdn_stats']['run'] and 'SDN_1' in desc:
+    if cfg['sdn_stats']['run'] and 'SDN' in desc:
         if join_df is not None:
             # histogram of join time
             if cfg['sdn_stats']['st_sdn_join']:
@@ -203,14 +205,14 @@ def generate_results(log, out, fmt, desc):
             if cfg['sdn_stats']['st_sdn_traffic_ratio']:
                 plot_tr(app_df, sdn_df, out)
 
-    # sdn scenarios
-    if cfg['sdn_scenarios']['run'] and 'SDN_1' in desc:
+    # scenarios
+    if cfg['scenarios']['run']:
         if app_df is not None:
             # sdn re-route scenario
-            if cfg['sdn_scenarios']['sc_sdn_rr']:
-                df = app_df[['app', 'lat']].set_index('app')
-                df = df[np.isfinite(df['lat'])].reset_index()  # drop NaN rows
-                df = df.pivot(index=df.index, columns='app')['lat']
+            if cfg['scenarios']['st_flow_lat']:
+                df = app_df.pivot_table(index=app_df.groupby('app').cumcount(),
+                                        columns=['app'],
+                                        values='lat')
                 plot_reroute_scenario(df, out)
 
     # save dfs for later
@@ -219,7 +221,7 @@ def generate_results(log, out, fmt, desc):
         node_df.to_pickle(out + 'node_df.pkl')
     if app_df is not None:
         app_df.to_pickle(out + 'app_df.pkl')
-    if 'SDN_1' in desc:
+    if 'SDN' in desc:
         if sdn_df is not None:
             sdn_df.to_pickle(out + 'sdn_df.pkl')
         if join_df is not None:
@@ -288,7 +290,6 @@ def read_app(df):
                    .reset_index() \
                    .rename(columns={'TX': 'txtime',
                                     'RX': 'rxtime'})
-
     # remove the columns' name
     df.columns.name = None
     # format column types
@@ -297,7 +298,6 @@ def read_app(df):
     df['drpd'] = df['rxtime'].apply(lambda x: True if np.isnan(x) else False)
     # calculate the latency/delay and add as a column
     df['lat'] = (df['rxtime'] - df['txtime'])/1000  # FIXME: /1000 = ns -> ms
-
     if node_df is not None:
         # Add hops to node_df. N.B. cols with NaN are always converted to float
         hops = df[['src', 'hops']].groupby('src').agg(lambda x: mode(x)[0])
@@ -400,7 +400,6 @@ def add_prr_to_node_df(node_df, app_df):
 # ----------------------------------------------------------------------------#
 def add_rdc_to_node_df(node_df, pow_df):
     print '> Add rdc for each node'
-    print pow_df
     node_df = node_df.join(pow_df['all_radio'].rename('rdc'))
     return node_df
 
@@ -437,7 +436,7 @@ def analyze_prr_over_br(outdir):
 # ----------------------------------------------------------------------------#
 def analyze_tr_over_br(outdir):
     print '**** Analyzing Traffic Ratio over Application BR'
-    df = plot_over(outdir, 'CBR|VBR', '.*SDN_1', 'traffic_ratio')
+    df = plot_over(outdir, 'CBR|VBR', '.*SDN', 'traffic_ratio')
     fig = plot_tr_over_br(df)
     fig.savefig(outdir + '/tr_over_br.pdf')
 
@@ -537,9 +536,22 @@ def plot_bar(df, desc, out, x, xlabel, y, ylabel):
 def plot_box(df, desc, out, x, xlabel, y, ylabel):
     print '> Plotting ' + desc + ' (box)'
     fig, ax = plt.subplots(figsize=(8, 6))
-    df.boxplot(ax=ax, grid=False)
+    df = df.dropna(how='all')
+    df = np.column_stack(df.transpose().values.tolist())
+    print df
+    # Filter data using np.isnan
+    mask = ~np.isnan(df)
+    filtered_data = [d[m] for d, m in zip(df.T, mask.T)]
+    print filtered_data
+    bp = ax.boxplot(filtered_data)
+
+    for box in bp['boxes']:
+        # change outline color
+        box.set(color='#7570b3', linewidth=2)
+        # # change fill color
+        box.set(facecolor='#7570b3')
+    plt.show()
     # ax.legend(['End-to-end delay (ms)'], loc=2)
-    fig.set_tight_layout(True)
     fig, ax = set_fig_and_save(df, fig, ax, desc, out, xlabel, ylabel)
 
     return fig, ax

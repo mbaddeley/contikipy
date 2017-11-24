@@ -1,6 +1,6 @@
 # contikipy config
 path:    /home/mike/Repos/contiki-usdn
-wd:      /examples/ipv6/sdn
+wd:      /examples/ipv6/sdn-udp
 log:     /tools/cooja/build/COOJA.testlog
 out:     /home/mike/Results
 csc:     usdn-20-node.csc
@@ -8,14 +8,14 @@ target:  exp5438
 
 # log parser config
 stats:
-  run:                  True
+  run:                  False
   st_rdc_hops:          1  # Radio duty cycle vs hops
   st_prr_hops:          1  # Packet receive ratio vs hops
   st_lat_hops_lat_mean: 1  # Hops vs mean latency
   st_lat_hops_lat_e2e:  1  # Hops vs end-to-end latency
 
 sdn_stats:
-  run:                  True
+  run:                  False
   st_sdn_join:          1  # SDN controller join timer
   st_sdn_traffic_ratio: 1  # Traffic ratio of all traffic (incl sdn)
 
@@ -23,12 +23,39 @@ multi_sim_analysis:
   run:                  False
   cmp_tr_br:            1  # Compare traffic ratio over bit rates
 
-sdn_scenarios:
+scenarios:
   run:                  True
-  sc_sdn_rr:            1  # SDN re-routing scenario
+  st_flow_lat:          1  # Flow vs latency
+
 
 # simulation config
 simulations:
+    - desc:           2_FLOW_REROUTE_RPL
+      csc:            usdn-reroute.csc
+      makeargs:
+        MAC:          CONTIKIMAC
+        SDN:          0
+        NUM_APPS:     2
+        APPID:        [0,1]
+        TXNODE:       [2,3]
+        RXNODE:       [1,1]
+        BRMIN:        [1,20]
+        BRMAX:        [5,20]
+        REROUTE:      1
+
+    # - desc:           2_FLOW_REROUTE_SDN
+    #   csc:            usdn-reroute.csc
+    #   makeargs:
+    #     MAC:          CONTIKIMAC
+    #     SDN:          1
+    #     NUM_APPS:     2
+    #     APPID:        [0,1]
+    #     TXNODE:       [2,3]
+    #     RXNODE:       [1,1]
+    #     BRMIN:        [1,20]
+    #     BRMAX:        [5,20]
+    #     REROUTE:      1
+
   # - desc:           RPL_APP
   #   makeargs:
   #     SDN:          0
@@ -48,14 +75,40 @@ simulations:
   #     RXNODE:       1
   #     BRMIN:        [60]
   #     BRMAX:        [75]
+  # - desc:           REROUTE_RPL_INTERF
+  #   csc:            usdn-reroute.csc
+  #   makeargs:
+  #     MAC:          CONTIKIMAC
+  #     SDN:          0
+  #     NUM_APPS:     3
+  #     APPID:        [0,1,2]
+  #     TXNODE:       [2,7,3]
+  #     RXNODE:       [1,1,1]
+  #     BRMIN:        [5,5,20]
+  #     BRMAX:        [6,6,20]
+  #     REROUTE:      1
+  #
+  # - desc:           REROUTE_SDN_INTERF
+  #   csc:            usdn-reroute.csc
+  #   makeargs:
+  #     MAC:          CONTIKIMAC
+  #     SDN:          1
+  #     NUM_APPS:     3
+  #     APPID:        [0,1,2]
+  #     TXNODE:       [2,7,3]
+  #     RXNODE:       [1,1,1]
+  #     BRMIN:        [5,5,20]
+  #     BRMAX:        [6,6,20]
+  #     REROUTE:      1
 
-  - desc:           SDN_REROUTE
-    csc:            usdn-reroute.csc
-    makeargs:
-      SDN:          1
-      NUM_APPS:     4
-      APPID:        [1,2,3,4]
-      TXNODE:       3
-      RXNODE:       1
-      BRMIN:        [10,20,30,60]
-      BRMAX:        [20,30,40,60]
+multiflow:
+  - FLOWID:         1
+    TXNODE:         3
+    RXNODE:         1
+    BRMIN:          0.23
+    BRMAX:          0.23
+  - FLOWID:         2
+    TXNODE:         3
+    RXNODE:         1
+    BRMIN:          10
+    BRMAX:          10
