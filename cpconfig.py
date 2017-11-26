@@ -66,5 +66,7 @@ class Config:
         SIMLIST.append(sim)
 
     def simconfig(self):
-        print self.SIMLIST
         return self.SIMLIST
+
+    def analysisconfig(self):
+        return cfg['analysis'][0]

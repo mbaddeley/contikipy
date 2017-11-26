@@ -14,6 +14,7 @@ import seaborn as sns  # fancy plotting
 import pandas as pd  # table manipulation
 import platform
 import yaml
+import pickle
 
 global node_df
 
@@ -27,9 +28,6 @@ plt.rc('axes', labelsize=10)
 pd.set_option('display.max_rows', 1000)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
-
-# import yaml config
-cfg = yaml.load(open("config.yaml", 'r'))
 
 
 # ----------------------------------------------------------------------------#
@@ -54,7 +52,7 @@ def main():
 
 
 # ----------------------------------------------------------------------------#
-def generate_results(log, out, fmt, desc):
+def generate_results(log, out, fmt, desc, plots):
     global node_df
 
     # Print some information about what's being parsed
@@ -130,7 +128,7 @@ def generate_results(log, out, fmt, desc):
         app_df = read_app(csv_to_df(app_log))
     if(os.path.getsize(pow_log.name) != 0):
         pow_df = read_pow(csv_to_df(pow_log))
-    # Specific SDN DFs
+    # Specific SDN dfs
     if 'SDN' in desc:
         if(os.path.getsize(sdn_log.name) != 0):
             sdn_df = read_sdn(csv_to_df(sdn_log))
@@ -143,92 +141,27 @@ def generate_results(log, out, fmt, desc):
         node_df = add_prr_to_node_df(node_df, app_df)
     if pow_df is not None and node_df is not None:
         node_df = add_rdc_to_node_df(node_df, pow_df)
-        # summarize(desc, summary_log, app_df, pow_df, node_df)
 
     if node_df is not None:
-        print '**** Plotting with matplotlib and saving figures...'
         # a bit of preparation
         node_df = node_df[np.isfinite(node_df['hops'])]  # drop NaN rows
         node_df.hops = node_df.hops.astype(int)
 
     prefix = out + desc + '_'
 
-    # general statistics
-    if cfg['stats']['run']:
-        if node_df is not None and pow_df is not None:
-            # hops vs rdc
-            if cfg['stats']['st_rdc_hops']:
-                df = node_df.groupby('hops')['rdc'] \
-                            .apply(lambda x: x.mean()) \
-                            .reset_index() \
-                            .set_index('hops')
-                plot_bar(df, 'rdc_hops', out, df.index, 'Hops',
-                         df.rdc, 'Radio duty cycle (\%)')
-        if node_df is not None and app_df is not None:
-            # hops vs prr
-            if cfg['stats']['st_prr_hops']:
-                print node_df
-                df = node_df.groupby('hops')['prr'] \
-                            .apply(lambda x: x.mean()) \
-                            .reset_index() \
-                            .set_index('hops')
-                plot_bar(df, 'prr_hops', out,
-                         df.index, 'Hops',  df.prr, 'PRR (\%)')
+    print '**** Generating plots...' + str(plots)
+    plot(plots, out, node_df=node_df, app_df=app_df, sdn_df=sdn_df,
+         join_df=join_df)
 
-        # app
-        if app_df is not None:
-            # mean latency
-            if cfg['stats']['st_lat_hops_lat_mean']:
-                df = app_df[['hops', 'lat']].reset_index(drop=True)
-                plot_line_mean(df, 'mean_lat', out,
-                               df.hops, 'Hops',  df.lat, 'Mean delay (ms)')
-            # end to end latency
-            if cfg['stats']['st_lat_hops_lat_e2e']:
-                df = app_df[['lat', 'hops']].set_index('hops')
-                df = df[np.isfinite(df['lat'])].reset_index()  # drop NaN rows
-                df = df.pivot(index=df.index, columns='hops')['lat']
-                plot_box(df, 'e2e_lat', out,  df.columns, 'Hops',
-                         df.index, 'End-to-end delay (ms)')
-
-    # sdn statistics
-    if cfg['sdn_stats']['run'] and 'SDN' in desc:
-        if join_df is not None:
-            # histogram of join time
-            if cfg['sdn_stats']['st_sdn_join']:
-                df = join_df.copy()
-                # FIXME: time in seconds (use timedelta)
-                df['time'] = join_df['time']/1000/1000
-                plot_hist(df, 'join', out, 'join', 'Time (s)',
-                          'time', 'Nodes joined (\#)')
-        if sdn_df is not None:
-            # traffic ratio
-            if cfg['sdn_stats']['st_sdn_traffic_ratio']:
-                plot_tr(app_df, sdn_df, out)
-
-    # scenarios
-    if cfg['scenarios']['run']:
-        if app_df is not None:
-            # sdn re-route scenario
-            if cfg['scenarios']['st_flow_lat']:
-                df = app_df.pivot_table(index=app_df.groupby('app').cumcount(),
-                                        columns=['app'],
-                                        values='lat')
-                plot_reroute_scenario(df, out)
-
-    # save dfs for later
     print '**** Pickling DataFrames ...'
+    # general
     if node_df is not None:
         node_df.to_pickle(out + 'node_df.pkl')
     if app_df is not None:
         app_df.to_pickle(out + 'app_df.pkl')
-    if 'SDN' in desc:
-        if sdn_df is not None:
-            sdn_df.to_pickle(out + 'sdn_df.pkl')
-        if join_df is not None:
-            join_df.to_pickle(out + 'sdn_df.pkl')
-
-    # close all open figs
-    plt.close('all')
+    # sdn
+    if sdn_df is not None:
+        sdn_df.to_pickle(out + 'sdn_df.pkl')
 
 
 # ----------------------------------------------------------------------------#
@@ -364,24 +297,6 @@ def read_node(df):
 
 
 # ----------------------------------------------------------------------------#
-def summarize(desc, log, app_df, pow_df, node_df):
-    print '> Summarizing scenario and saving to log'
-    # PRR
-    dropcount = np.count_nonzero(app_df['drpd'])
-    totalcount = len(app_df['drpd'])
-    recv_ratio = prr(totalcount, dropcount)
-    if not desc:
-        desc = 'Scenario_None'
-    log.write('{0}\t{1}\t{2}\t{3}\t'.format(desc, totalcount,
-                                            dropcount,
-                                            round(recv_ratio, 2)))
-    # RDC
-    # print pow_df
-    avg_rdc = pow_df['all_radio'].mean()
-    log.write('{0}\n'.format(round(avg_rdc, 2)))
-
-
-# ----------------------------------------------------------------------------#
 # Additional processing
 # ----------------------------------------------------------------------------#
 def prr(sent, dropped):
@@ -415,56 +330,29 @@ def add_mean_lat_to_node_df(node_df, app_df):
 # ----------------------------------------------------------------------------#
 # Results analysis
 # ----------------------------------------------------------------------------#
-def analyze_results():
-    print '**** Analyzing Results'
-    if A_CONFIG['PRR_BR']:
-        # prr over br
-        analyze_prr_over_br(args.out)
-    if A_CONFIG['TR_BR']:
-        # tr over br
-        analyze_tr_over_br(args.out)
-
-
-# ----------------------------------------------------------------------------#
-def analyze_prr_over_br(outdir):
-    print '**** Analyzing PRR over Application BR'
-    df = plot_over(outdir, 'CBR|VBR', '.*SDN_0', 'prr')
-    fig = plot_prr_over_br(df)
-    fig.savefig(outdir + '/prr_over_br.pdf')
-
-
-# ----------------------------------------------------------------------------#
-def analyze_tr_over_br(outdir):
-    print '**** Analyzing Traffic Ratio over Application BR'
-    df = plot_over(outdir, 'CBR|VBR', '.*SDN', 'traffic_ratio')
-    fig = plot_tr_over_br(df)
-    fig.savefig(outdir + '/tr_over_br.pdf')
-
-
-# ----------------------------------------------------------------------------#
-def plot_over(folder, index_re, filter_re, pkl):
-    ''' Searches for folders matching filter_re, and takes index
-        using index_re '''
+def compare_results(rootdir, simlist, plotlist):
+    print '**** Analyzing (comparing) results'
+    print '> SIMS: ',
+    print simlist
+    print '> Plots: ',
+    print plotlist
     index = []
-    df_list = []
-    regex = re.compile('^.*(?P<idx>' + index_re + ')_'
-                       '(?P<value>[\d,_]+)_' + filter_re + '.*$')
-    for root, dirs, files in os.walk(folder):
+    axes = []
+
+    for root, dirs, files in os.walk(rootdir):
         for dir in dirs:
-            m = regex.match(dir)
-            if m:
-                g = m.groupdict()
-                g['value'] = g['value'].replace('_', '-')
-                print ' ... Scanning \"' + root + '/' + dir + '/\"'
+            if dir in simlist:
+                print '> ... Scanning \"' + root + '/' + dir + '/\"'
                 for f in os.listdir(os.path.join(root, dir)):
-                    if f == (pkl + '.pkl'):
-                        print ' * found pickle!'
-                        df = pd.read_pickle(os.path.join(root, dir, f))
-                        index.append(g['idx'] + ' ' + g['value'])
-                        df_list.append(df)
-    if df_list:
-        df = pd.concat(df_list, keys=index, axis=0).reset_index(level=1)
-        return df
+                    for plot in plotlist:
+                        if f == (plot + '.pkl'):
+                            print ' * found pickle!'
+                            ax = pickle.load(file(os.path.join(root, dir, f)))
+                            axes.append(ax)
+    # compare results
+    fig, ax = plt.subplots()
+    for plot in axes:
+        ax.plot(plot)
 
 
 # ----------------------------------------------------------------------------#
@@ -496,16 +384,86 @@ def plot_tr_over_br(df):
 # ----------------------------------------------------------------------------#
 # General Plotting
 # ----------------------------------------------------------------------------#
-def set_fig_and_save(df, fig, ax, desc, out, xlabel, ylabel):
+# ----------------------------------------------------------------------------#
+def plot(plot_list, out, node_df=None, app_df=None, sdn_df=None, join_df=None):
+    # try:
+    for plot in plot_list:
+        # General plots
+        # hops vs rdc
+        if plot == 'hops_rdc':
+            df = node_df.groupby('hops')['rdc'] \
+                        .apply(lambda x: x.mean()) \
+                        .reset_index() \
+                        .set_index('hops')
+            fig, ax = plot_bar(df, plot, out, x=df.index, y=df.rdc)
+            set_fig_and_save(df, fig, ax, plot, out,
+                             'Hops', 'Radio duty cycle (\%)')
+        # hops vs prr
+        elif plot == 'hops_prr':
+            df = node_df.groupby('hops')['prr'] \
+                        .apply(lambda x: x.mean()) \
+                        .reset_index() \
+                        .set_index('hops')
+            fig, ax = plot_bar(df, plot, out, x=df.index, y=df.prr)
+            set_fig_and_save(df, fig, ax, plot, out,
+                             'Hops', 'PRR (\%)')
+        # hops mean latency
+        elif plot == 'hops_lat_mean':
+            df = app_df[['hops', 'lat']].reset_index(drop=True)
+            plot_line_mean(df, plot, out,
+                           df.hops, 'hops',  'lat', 'Mean delay (ms)')
+        # hops end to end latency
+        elif plot == 'hops_lat_e2e':
+            df = app_df[['lat', 'hops']].set_index('hops')
+            df = df[np.isfinite(df['lat'])].reset_index()  # drop NaN rows
+            df = df.pivot(index=df.index, columns='hops')['lat']
+            plot_box(df, plot, out,
+                     xlabel='Hops', ylabel='End-to-end delay (ms)')
+        # flows end to end latency
+        elif plot == 'flow_lat':
+            df = app_df.pivot_table(index=app_df.groupby('app').cumcount(),
+                                    columns=['app'],
+                                    values='lat')
+            # plot e2e delay of each flow
+            plot_box(df, plot, out,
+                     xlabel='Flow \#', ylabel='End-to-end delay (ms)')
+
+        # SDN plots
+        # histogram of join time
+        elif plot == 'sdn_join':
+            df = join_df.copy()
+            # FIXME: time in seconds (use timedelta)
+            df['time'] = join_df['time']/1000/1000
+            plot_hist(df, 'join', out, 'join', 'Time (s)',
+                      'time', 'Nodes joined (\#)')
+        # traffic ratio
+        elif plot == 'sdn_traffic_ratio':
+            plot_tr(app_df, sdn_df, out)
+
+    # except Exception as e:
+    #         print 'Exception: ...'
+    #         print e  # print the exception
+    #         pass  # continue
+            # sys.exit(0)
+
+
+# ----------------------------------------------------------------------------#
+def set_fig_and_save(df, fig, ax, desc, out,
+                     xlabel='xlabel', ylabel='ylabel'):
     # set axis' labels
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
+    # Remove top axes and right axes ticks
+    ax.get_xaxis().tick_bottom()
+    ax.get_yaxis().tick_left()
     # tight layout
-    fig.set_tight_layout(True)
-    # save df for post analysis
-    df.to_pickle(out + 'df_' + desc + '.pkl')
+    fig.set_tight_layout(False)
+    # save for post analysis
+    pickle.dump(ax, file(out + desc + '.pkl', 'w'))
     # save figure
     fig.savefig(out + 'fig_' + desc + '.pdf')
+    # close all open figs
+    plt.close('all')
 
     return fig, ax
 
@@ -522,36 +480,64 @@ def plot_hist(df, desc, out, x, xlabel, y, ylabel):
 
 
 # ----------------------------------------------------------------------------#
-def plot_bar(df, desc, out, x, xlabel, y, ylabel):
+def plot_bar(df, desc, out, x, y, ylim=None):
     print '> Plotting ' + desc + ' (bar)'
     fig, ax = plt.subplots(figsize=(8, 6))
-    df.plot(kind='bar', ax=ax, rot=0)
-    ax.legend_.remove()
-    fig, ax = set_fig_and_save(df, fig, ax, desc, out, xlabel, ylabel)
+
+    ind = np.arange(len(x))
+    width = 0.35       # the width of the bars
+
+    ax.bar(x=ind, height=y, width=width)
+    # bar2 = ax.bar(x=ind+width, height=y, width=width)
+
+    # set xticks
+    # ax.set_xticks(ind+(width/2))
+
+    # set x-axis
+    ax.set_xticks(np.arange(min(ind), max(ind)+1, 1.0))
+    ax.set_xticklabels(x)
+    # set y limits
+    if ylim:
+        ax.set_ylim(ylim)
+
+    # ax.legend((bar1[0], bar2[0]), ('Men', 'Women'))
 
     return fig, ax
 
 
 # ----------------------------------------------------------------------------#
-def plot_box(df, desc, out, x, xlabel, y, ylabel):
+def plot_box(df, desc, out, x=None, xlabel='X', y=None, ylabel='Y'):
     print '> Plotting ' + desc + ' (box)'
     fig, ax = plt.subplots(figsize=(8, 6))
+    # drop rows with all NaN
     df = df.dropna(how='all')
-    df = np.column_stack(df.transpose().values.tolist())
-    print df
+    # matplotlib needs a list
+    data = np.column_stack(df.transpose().values.tolist())
     # Filter data using np.isnan
-    mask = ~np.isnan(df)
-    filtered_data = [d[m] for d, m in zip(df.T, mask.T)]
-    print filtered_data
-    bp = ax.boxplot(filtered_data)
+    mask = ~np.isnan(data)
+    filtered_data = [d[m] for d, m in zip(data.T, mask.T)]
+    bp = ax.boxplot(filtered_data, patch_artist=True)
 
+    # set the linewidth for all
+    linewidth = 1.5
     for box in bp['boxes']:
         # change outline color
-        box.set(color='#7570b3', linewidth=2)
+        box.set(color='#7570b3', linewidth=linewidth)
         # # change fill color
-        box.set(facecolor='#7570b3')
-    plt.show()
-    # ax.legend(['End-to-end delay (ms)'], loc=2)
+        box.set(facecolor='b')
+    # change color and linewidth of the whiskers
+    for whisker in bp['whiskers']:
+        whisker.set(color='#7570b3', linewidth=linewidth)
+    # change color and linewidth of the caps
+    for cap in bp['caps']:
+        cap.set(color='#7570b3', linewidth=linewidth)
+    # change color and linewidth of the medians
+    for median in bp['medians']:
+        median.set(color='#b2df8a', linewidth=linewidth)
+    # change the style of fliers and their fill
+    for flier in bp['fliers']:
+        flier.set(marker='o', markerfacecolor='#e7298a', alpha=0.5)
+
     fig, ax = set_fig_and_save(df, fig, ax, desc, out, xlabel, ylabel)
 
     return fig, ax
@@ -578,18 +564,25 @@ def plot_violin(df, desc, out, x, xlabel, y, ylabel):
 # ----------------------------------------------------------------------------#
 def plot_line_mean(df, desc, out, x, xlabel, y, ylabel):
     print '> Plotting ' + desc + ' (line)'
+    # get mean and errors
     gp = df.groupby(x)
     means = gp.mean()
     means.index = means.index.astype(int)
     errors = gp.std()
+    # do plot
     fig, ax = plt.subplots(figsize=(8, 6))
-    means.plot(kind='line', lw=2, fmt='b--s', ax=ax,
-               yerr=errors, capsize=4, capthick=2)
-    # ax.set_ylim(0, None)
-    # xticks = [0, 1, 2, 3, 4, 5, 6]
-    # ax.xaxis.set_ticks(xticks)
+
+    ax.errorbar(means.index, means.lat, errors.lat,
+                linestyle='--', marker='s', linewidth=1.5, color='b',
+                capsize=3)
+
+    # set x-axis
+    ax.set_xticks(np.arange(min(means.index), max(means.index)+1, 1.0))
+    ax.set_xticklabels(x)
+    # set y limits
+    ax.set_ylim([min(errors['lat']), max(errors['lat'])+1])
+    # legend
     ax.legend([ylabel], loc=2)
-    fig.set_tight_layout(True)
 
     fig, ax = set_fig_and_save(df, fig, ax, desc, out, xlabel, ylabel)
 
@@ -612,20 +605,12 @@ def plot_tr(app_df, sdn_df, out):
                       index=['App', 'SDN-CBR', 'SDN-VBR'],
                       columns=['ratio'])
     df.index.name = 'type'
-    fig, ax = plot_bar(df, 'traffic_ratio', out, df.ratio, 'Traffic type',
-                       df.index, 'Percentage of total traffic (\%)')
+    fig, ax = plot_bar(df, 'traffic_ratio', out, x=df.index,
+                       y=df.ratio, ylim=1)
+    set_fig_and_save(df, fig, ax, 'traffic_ratio', out,
+                     'Traffic type', 'Percentage of total traffic (\%)')
 
     return fig, ax
-
-
-# ----------------------------------------------------------------------------#
-def plot_reroute_scenario(df, out):
-    print '> Analysis: Potting SDN reroute scenario'
-    # plot mean delay of each app
-    fig = plot_box(df, 'rr_scen', out, 'app', 'Application \#',
-                   'lat', 'Mean Delay (ms)')
-
-    return fig
 
 
 # ----------------------------------------------------------------------------#

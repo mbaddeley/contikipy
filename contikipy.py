@@ -44,27 +44,29 @@ def main():
                     help='Run the simulation')
     ap.add_argument('--parse', required=False, default=0,
                     help='Run the log parser')
-    ap.add_argument('--analyze', required=False, default=0,
-                    help='Run the analyzer')
+    ap.add_argument('--comp', required=False, default=0,
+                    help='Run the analyzer (compare sims)')
     args = ap.parse_args()
 
-    # get makefile arguments
     if not args.makeargs:
+        # get simulations configuration
         conf = config.Config()
         simulations = conf.simconfig()
+        # get analysis configuration
+        analysis = conf.analysisconfig()
     else:
         simulations = [{'desc': '', 'makeargs': str(args.makeargs)}]
-
-    print '**** Simulations to run...'
-    for sim in simulations:
-        print sim
+        analysis = None
 
     simlog = None
     print '**** Running through ' + str(len(simulations)) + ' simulations'
     for sim in simulations:
+        print '> SIM: ',
+        print sim
         # generate a simulation description
         desc = sim['desc']
         makeargs = sim['makeargs']
+        plot_config = sim['plot']
         # Print some information about this simulation
         info = 'Running simulation: {0}'.format(desc)
         print '=' * len(info)
@@ -91,20 +93,20 @@ def main():
                          desc)
         # generate results by parsing the cooja log
         if int(args.parse) and desc is not None:
-            parse(simlog, simdir, desc, 'cooja')
+            parse(simlog, simdir, desc, 'cooja', plot_config)
 
     # analyze the generated results
-    if int(args.analyze):
-        print '**** Analyzing results: '
-        lp.analyze_results()
+    if int(args.comp) and analysis is not None:
+        print '**** Analyzing (comparing) results...'
+        lp.compare_results(args.out, analysis['sims'], analysis['plots'])
 
 
 # ----------------------------------------------------------------------------#
-def parse(log, directory, desc, logfmt):
+def parse(log, directory, desc, logfmt, plot_config):
     print '**** Parse log and gererate results in: ' + directory
     if log is None:
         log = directory + "/" + desc + ".log"
-    lp.generate_results(log, directory + '/', logfmt, desc)
+    lp.generate_results(log, directory + '/', logfmt, desc, plot_config)
 
 
 # ----------------------------------------------------------------------------#
