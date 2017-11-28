@@ -15,62 +15,62 @@ multi_sim_analysis:
 multiflow:
   1_flow:
     - FLOWID:         1
-      TXNODE:         0
-      RXNODE:         1
+      TXNODES:        0
+      RXNODES:        1
       BRMIN:          60
       BRMAX:          75
   2_flow:
     - FLOWID:         1
-      TXNODE:         3
-      RXNODE:         1
+      TXNODES:        3
+      RXNODES:        1
       BRMIN:          0.23
       BRMAX:          0.23
     - FLOWID:         2
-      TXNODE:         3
-      RXNODE:         1
+      TXNODES:        3
+      RXNODES:        1
       BRMIN:          10
       BRMAX:          10
 
 # simulation config
 simulations:
-  # - desc:           REROUTE_RPL
+  # - desc:           RPL-Scenario
   #   csc:            usdn-reroute.csc
   #   makeargs:
   #     MAC:          CONTIKIMAC
   #     SDN:          0
   #     NUM_APPS:     2
   #     APPID:        [0,1]
-  #     TXNODE:       [2,3]
-  #     RXNODE:       [1,1]
+  #     TXNODES:      [2,3]
+  #     RXNODES:      [1,1]
   #     BRMIN:        [1,20]
   #     BRMAX:        [5,20]
   #     REROUTE:      1
   #   plot:
   #     - flow_lat            # Flow vs latency
   #
-  # - desc:           REROUTE_SDN
+  # - desc:           SDN-Scenario
   #   csc:            usdn-reroute.csc
   #   makeargs:
   #     MAC:          CONTIKIMAC
   #     SDN:          1
   #     NUM_APPS:     2
   #     APPID:        [0,1]
-  #     TXNODE:       [2,3]
-  #     RXNODE:       [1,1]
+  #     TXNODES:      [2,3]
+  #     RXNODES:      [1,1]
   #     BRMIN:        [1,20]
   #     BRMAX:        [5,20]
   #     REROUTE:      1
   #   plot:
   #     - flow_lat            # Flow vs latency
 
-  # - desc:           RPL_APP
+  # - desc:           RPL
   #   makeargs:
-  #     MAC:          CONTIKIMAC
+  #     MAC:          NULLMAC
   #     SDN:          0
   #     NUM_APPS:     1
   #     APPID:        [1]
-  #     TXNODE:       0
-  #     RXNODE:       1
+  #     TXNODES:      0
+  #     RXNODES:      1
   #     BRMIN:        [60]
   #     BRMAX:        [75]
   #   plot:
@@ -78,29 +78,34 @@ simulations:
   #     - hops_prr            # Packet receive ratio vs hops
   #     - hops_lat_mean       # Hops vs mean latency
   #     - hops_lat_e2e        # Hops vs end-to-end latency
-
-  - desc:           SDN_APP
+  - desc:           SDN
     makeargs:
-      MAC:          CONTIKIMAC
+      MAC:          NULLMAC
       SDN:          1
       NUM_APPS:     1
       APPID:        [1]
-      TXNODE:       0
-      RXNODE:       1
+      TXNODES:      0
+      RXNODES:      1
       BRMIN:        [60]
       BRMAX:        [75]
+      FTSRETRY:     0
+      NSUFREQ:      300
     plot:
-      - hops_rdc            # Radio duty cycle vs hops
-      - hops_prr            # Packet receive ratio vs hops
-      - hops_lat_mean       # Hops vs mean latency
-      - hops_lat_e2e        # Hops vs end-to-end latency
-      - sdn_join            # SDN controller join time
+      # - hops_rdc            # Radio duty cycle vs hops
+      # - hops_prr            # Packet receive ratio vs hops
+      # - hops_lat_mean       # Hops vs mean latency
+      # - hops_lat_e2e        # Hops vs end-to-end latency
+      # - sdn_join            # SDN controller join time
       - sdn_traffic_ratio   # SDN traffic ratio
 
 # analysis (comparison) config
 analysis:
   - sims:
-    - RPL_APP
-    - SDN_APP
+    - SDN
+    - RPL
     plots:
       - hops_rdc
+      - hops_prr
+      - hops_lat_mean
+      - hops_lat_e2e
+      # - join
