@@ -420,6 +420,7 @@ def compare_results(rootdir, simlist, plotlist, **kwargs):
         artists = []
         # work out xmax
         xmax = 0
+
         print '> Comparing ' + str(num_plots) + ' plots for ' + plot
         for sim_data in datalist[plot]:
             sim = sim_data.keys()[0]
@@ -433,6 +434,7 @@ def compare_results(rootdir, simlist, plotlist, **kwargs):
                 print pos
                 bp = ax.boxplot(data['y'], positions=pos, notch=True,
                                 widths=data['width'],
+                                showfliers=False,
                                 patch_artist=True)
                 set_box_colors(bp, count-1)
                 artists.append(bp["boxes"][0])
@@ -455,15 +457,17 @@ def compare_results(rootdir, simlist, plotlist, **kwargs):
                 print 'Error: no type \'' + data['type'] + '\''
             # increment plot count
             count += 1
+
         # set a few more params
         if data['type'] == 'box':
             plt.xlim(0, xmax)
+            # ax.set_ylim(top=15000)
             xticks = np.arange(1.5,
                                xmax,
                                count)
             ax.set_xticks(xticks)
             ax.set_xticklabels(data['x'])
-            ax.legend(artists, simlist, loc='upper right')
+            ax.legend(artists, list(reversed(simlist)), loc='upper left')
         elif data['type'] == 'line':
             xticks = np.arange(min(data['x']), max(data['x'])+1, 1)
             ax.set_xticks(xticks)
@@ -482,36 +486,8 @@ def compare_results(rootdir, simlist, plotlist, **kwargs):
                                    xlabel=data['xlabel'],
                                    ylabel=data['ylabel'])
 
-
-# ----------------------------------------------------------------------------#
-def plot_prr_over_br(df):
-    print '> Analysis: Plotting prr over bitrate (bar)'
-    df = df.pivot_table(index=[df.index], columns=['hops'], values='prr')
-
-    fig, ax = plt.subplots(figsize=(8, 6))
-    df.plot(kind='bar', ax=ax, rot=0)
-    ax.set_xlabel('Bitrate (s)')
-    ax.set_ylabel('PRR \%')
-    ax.legend(['1-Hop', '2-Hops', '3-Hops', '4-Hops', '5-Hops'], loc='best')
-    return fig, ax
-
-
-# ----------------------------------------------------------------------------#
-def plot_tr_over_br(df):
-    print '> Analysis: Plotting traffic ratio over bitrate (bar)'
-    df = df.pivot_table(index=[df.index], columns=['type'], values='ratio')
-
-    fig, ax = plt.subplots(figsize=(8, 6))
-    df.plot(kind='bar', ax=ax, rot=0)
-    ax.set_xlabel('Bitrate (s)')
-    ax.set_ylabel('Traffic ratio (\%)')
-    ax.legend(list(df.columns.values), loc=1)
-    return fig, ax
-
-
 # ----------------------------------------------------------------------------#
 # General Plotting
-# ----------------------------------------------------------------------------#
 # ----------------------------------------------------------------------------#
 def plot(plot_list, out, node_df=None, app_df=None, sdn_df=None,
          icmp_df=None, join_df=None):
@@ -533,7 +509,7 @@ def plot(plot_list, out, node_df=None, app_df=None, sdn_df=None,
                         .reset_index() \
                         .set_index('hops')
             fig, ax = plot_bar(df, plot, out, df.index, df.prr,
-                               xlabel='Hops', ylabel='PRR (\%)')
+                               xlabel='Hops', ylabel='PDR (\%)')
         # hops mean latency
         elif plot == 'hops_lat_mean':
             df = app_df[['hops', 'lat']].reset_index(drop=True)
@@ -712,7 +688,7 @@ def plot_box(desc, out, x, y, **kwargs):
     # Filter data using np.isnan
     mask = ~np.isnan(y)
     filtered_data = [d[m] for d, m in zip(y.T, mask.T)]
-    bp = ax.boxplot(filtered_data, patch_artist=True)
+    bp = ax.boxplot(filtered_data, showfliers=False, patch_artist=True)
     set_box_colors(bp, 0)
 
     data = {'x': x, 'y': filtered_data,
@@ -796,20 +772,33 @@ def plot_line(df, desc, out, x, y, **kwargs):
 # ----------------------------------------------------------------------------#
 def plot_tr(app_df, sdn_df, icmp_df, out):
     # FIXME: We are only looking at FTQ/FTS
-    sdn_cbr_len = (sdn_df['typ'] == 'NSU').sum()
-    sdn_vbr_len = (sdn_df['typ'] == 'FTQ').sum() + \
-                  (sdn_df['typ'] == 'FTS').sum()
+    if sdn_df is not None:
+        sdn_cbr_len = (sdn_df['typ'] == 'NSU').sum()
+        sdn_vbr_len = (sdn_df['typ'] == 'FTQ').sum() + \
+                      (sdn_df['typ'] == 'FTS').sum()
+        sdn_icmp_count = (icmp_df['type'] == 200).sum()
+
     rpl_icmp_count = (icmp_df['type'] == 155).sum()
-    sdn_icmp_count = (icmp_df['type'] == 200).sum()
-    total = len(app_df) + sdn_cbr_len + sdn_vbr_len + rpl_icmp_count + sdn_icmp_count
+    if sdn_df is not None:
+        total = len(app_df) + sdn_cbr_len + sdn_vbr_len + rpl_icmp_count + sdn_icmp_count
+    else:
+        total = len(app_df) + rpl_icmp_count
+
     app_ratio = len(app_df)/total  # get app packets as a % of total
-    sdn_cbr_ratio = sdn_cbr_len/total  # get sdn packets as a % of total
-    sdn_vbr_ratio = sdn_vbr_len/total  # get sdn packets as a % of total
+    if sdn_df is not None:
+        sdn_cbr_ratio = sdn_cbr_len/total  # get sdn packets as a % of total
+        sdn_vbr_ratio = sdn_vbr_len/total  # get sdn packets as a % of total
+        sdn_icmp_ratio = sdn_icmp_count/total
     rpl_icmp_ratio = rpl_icmp_count/total
-    sdn_icmp_ratio = sdn_icmp_count/total
-    df = pd.DataFrame([app_ratio, rpl_icmp_ratio, sdn_icmp_ratio, sdn_cbr_ratio, sdn_vbr_ratio],
-                      index=['App', 'RPL', 'SDN-ICMP', 'SDN-CBR', 'SDN-VBR'],
-                      columns=['ratio'])
+
+    if sdn_df is not None:
+        df = pd.DataFrame([app_ratio, rpl_icmp_ratio, sdn_icmp_ratio, sdn_cbr_ratio, sdn_vbr_ratio],
+                          index=['App', 'RPL', 'SDN-ICMP', 'SDN-CBR', 'SDN-VBR'],
+                          columns=['ratio'])
+    else:
+        df = pd.DataFrame([app_ratio, rpl_icmp_ratio],
+                          index=['App', 'RPL'],
+                          columns=['ratio'])
     df.index.name = 'type'
     fig, ax = plot_bar(df, 'traffic_ratio', out, x=df.index,
                        y=df.ratio)

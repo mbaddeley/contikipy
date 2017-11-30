@@ -6,11 +6,6 @@ out:     /home/mike/Results
 csc:     usdn-20-node.csc
 target:  exp5438
 
-# log parser config
-multi_sim_analysis:
-  run:                  False
-  cmp_tr_br:            1  # Compare traffic ratio over bit rates
-
 # multiflow config
 multiflow:
   1_flow:
@@ -44,7 +39,9 @@ simulations:
   #     RXNODES:      [1,1]
   #     BRMIN:        [1,20]
   #     BRMAX:        [5,20]
-  #     REROUTE:      1
+  #     REROUTE:      0
+  #     FTSRETRY:     0
+  #     NSUFREQ:      0
   #   plot:
   #     - flow_lat            # Flow vs latency
   #
@@ -59,13 +56,18 @@ simulations:
   #     RXNODES:      [1,1]
   #     BRMIN:        [1,20]
   #     BRMAX:        [5,20]
-  #     REROUTE:      1
+  #     REROUTE:      0
+  #     FTSRETRY:     0
+  #     NSUFREQ:      0
   #   plot:
   #     - flow_lat            # Flow vs latency
 
+# ----------------------------------------------------------------------------
+# RPL/SDN
+# ----------------------------------------------------------------------------
   # - desc:           RPL
   #   makeargs:
-  #     MAC:          NULLMAC
+  #     MAC:          CONTIKIMAC
   #     SDN:          0
   #     NUM_APPS:     1
   #     APPID:        [1]
@@ -78,34 +80,193 @@ simulations:
   #     - hops_prr            # Packet receive ratio vs hops
   #     - hops_lat_mean       # Hops vs mean latency
   #     - hops_lat_e2e        # Hops vs end-to-end latency
-  - desc:           SDN
+  #     - sdn_traffic_ratio   # SDN traffic ratio
+  # - desc:           SDN
+  #   makeargs:
+  #     MAC:          CONTIKIMAC
+  #     SDN:          1
+  #     NUM_APPS:     1
+  #     APPID:        [1]
+  #     TXNODES:      0
+  #     RXNODES:      1
+  #     BRMIN:        [60]
+  #     BRMAX:        [75]
+  #     FTSRETRY:     0
+  #     NSUFREQ:      0
+  #   plot:
+  #     - hops_rdc            # Radio duty cycle vs hops
+  #     - hops_prr            # Packet receive ratio vs hops
+  #     - hops_lat_mean       # Hops vs mean latency
+  #     - hops_lat_e2e        # Hops vs end-to-end latency
+  #     - sdn_join            # SDN controller join time
+  #     - sdn_traffic_ratio   # SDN traffic ratio
+# ----------------------------------------------------------------------------
+# NSU
+# ----------------------------------------------------------------------------
+  # - desc:           SDN-NSU-10
+  #   makeargs:
+  #     MAC:          NULLMAC
+  #     SDN:          1
+  #     NUM_APPS:     1
+  #     APPID:        [1]
+  #     TXNODES:      0
+  #     RXNODES:      1
+  #     BRMIN:        [60]
+  #     BRMAX:        [75]
+  #     FTSRETRY:     0
+  #     NSUFREQ:      10
+  #   plot:
+  #     - hops_rdc            # Radio duty cycle vs hops
+  #     - hops_prr            # Packet receive ratio vs hops
+  #     - hops_lat_mean       # Hops vs mean latency
+  #     - hops_lat_e2e        # Hops vs end-to-end latency
+  #     - sdn_join            # SDN controller join time
+  #     - sdn_traffic_ratio   # SDN traffic ratio
+  # - desc:           SDN-NSU-60
+  #   makeargs:
+  #     MAC:          NULLMAC
+  #     SDN:          1
+  #     NUM_APPS:     1
+  #     APPID:        [1]
+  #     TXNODES:      0
+  #     RXNODES:      1
+  #     BRMIN:        [60]
+  #     BRMAX:        [75]
+  #     FTSRETRY:     0
+  #     NSUFREQ:      60
+  #   plot:
+  #     - hops_rdc            # Radio duty cycle vs hops
+  #     - hops_prr            # Packet receive ratio vs hops
+  #     - hops_lat_mean       # Hops vs mean latency
+  #     - hops_lat_e2e        # Hops vs end-to-end latency
+  #     - sdn_join            # SDN controller join time
+  #     - sdn_traffic_ratio   # SDN traffic ratio
+  # - desc:           SDN-NSU-600
+  #   makeargs:
+  #     MAC:          NULLMAC
+  #     SDN:          1
+  #     NUM_APPS:     1
+  #     APPID:        [1]
+  #     TXNODES:      0
+  #     RXNODES:      1
+  #     BRMIN:        [60]
+  #     BRMAX:        [75]
+  #     FTSRETRY:     0
+  #     NSUFREQ:      600
+  #   plot:
+  #     - hops_rdc            # Radio duty cycle vs hops
+  #     - hops_prr            # Packet receive ratio vs hops
+  #     - hops_lat_mean       # Hops vs mean latency
+  #     - hops_lat_e2e        # Hops vs end-to-end latency
+  #     - sdn_join            # SDN controller join time
+  #     - sdn_traffic_ratio   # SDN traffic ratio
+
+# ----------------------------------------------------------------------------
+# FTS
+# ----------------------------------------------------------------------------
+  - desc:           SDN-FTS-60
     makeargs:
-      MAC:          NULLMAC
+      MAC:          CONTIKIMAC
       SDN:          1
       NUM_APPS:     1
       APPID:        [1]
       TXNODES:      0
       RXNODES:      1
-      BRMIN:        [60]
-      BRMAX:        [75]
-      FTSRETRY:     0
-      NSUFREQ:      300
+      BRMIN:        [10]
+      BRMAX:        [15]
+      FTSRETRY:     1
+      FTREFRESH:    0
+      FTSFREQ:      60
     plot:
-      # - hops_rdc            # Radio duty cycle vs hops
-      # - hops_prr            # Packet receive ratio vs hops
-      # - hops_lat_mean       # Hops vs mean latency
-      # - hops_lat_e2e        # Hops vs end-to-end latency
-      # - sdn_join            # SDN controller join time
+      - hops_rdc            # Radio duty cycle vs hops
+      - hops_prr            # Packet receive ratio vs hops
+      - hops_lat_mean       # Hops vs mean latency
+      - hops_lat_e2e        # Hops vs end-to-end latency
+      - sdn_join            # SDN controller join time
+      - sdn_traffic_ratio   # SDN traffic ratio
+  - desc:           SDN-FTS-180
+    makeargs:
+      MAC:          CONTIKIMAC
+      SDN:          1
+      NUM_APPS:     1
+      APPID:        [1]
+      TXNODES:      0
+      RXNODES:      1
+      BRMIN:        [10]
+      BRMAX:        [15]
+      FTSRETRY:     1
+      FTREFRESH:    0
+      FTSFREQ:      180
+    plot:
+      - hops_rdc            # Radio duty cycle vs hops
+      - hops_prr            # Packet receive ratio vs hops
+      - hops_lat_mean       # Hops vs mean latency
+      - hops_lat_e2e        # Hops vs end-to-end latency
+      - sdn_join            # SDN controller join time
+      - sdn_traffic_ratio   # SDN traffic ratio
+  - desc:           SDN-FTS-240
+    makeargs:
+      MAC:          CONTIKIMAC
+      SDN:          1
+      NUM_APPS:     1
+      APPID:        [1]
+      TXNODES:      0
+      RXNODES:      1
+      BRMIN:        [10]
+      BRMAX:        [15]
+      FTSRETRY:     1
+      FTREFRESH:    0
+      FTSFREQ:      240
+    plot:
+      - hops_rdc            # Radio duty cycle vs hops
+      - hops_prr            # Packet receive ratio vs hops
+      - hops_lat_mean       # Hops vs mean latency
+      - hops_lat_e2e        # Hops vs end-to-end latency
+      - sdn_join            # SDN controller join time
       - sdn_traffic_ratio   # SDN traffic ratio
 
+# ----------------------------------------------------------------------------
 # analysis (comparison) config
+# ----------------------------------------------------------------------------
 analysis:
+# ----------------------------------------------------------------------------
+  # - sims:
+  #   - SDN
+  #   - RPL
+  #   plots:
+  #     - hops_rdc
+  #     - hops_prr
+  #     - hops_lat_mean
+  #     - hops_lat_e2e
+# ----------------------------------------------------------------------------
+  #
+  # - sims:
+  #   - SDN
+  #   plots:
+  #   - join
+# ----------------------------------------------------------------------------
+  # - sims:
+  #   - SDN-Scenario
+  #   - RPL-Scenario
+  #   plots:
+  #     - flow_lat
+# ----------------------------------------------------------------------------
+  # - sims:
+  #   - SDN-NSU-10
+  #   - SDN-NSU-60
+  #   - SDN-NSU-600
+  #   plots:
+  #     - hops_rdc
+  #     - hops_prr
+  #     - hops_lat_mean
+  #     - hops_lat_e2e
+# ----------------------------------------------------------------------------
   - sims:
-    - SDN
-    - RPL
+    - SDN-FTS-60
+    - SDN-FTS-180
+    - SDN-FTS-240
     plots:
       - hops_rdc
       - hops_prr
       - hops_lat_mean
       - hops_lat_e2e
-      # - join
