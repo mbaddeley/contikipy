@@ -1,30 +1,30 @@
 #!/usr/bin/env python2.7
 from __future__ import division
 
-import sys
-import re  # regex
-import os  # for makedir
 import argparse  # command line arguments
-import csv
-import numpy as np  # number crunching
-from scipy.stats.mstats import mode
-from cycler import cycler
-import matplotlib as mpl
-import matplotlib.pyplot as plt  # general plotting
-import seaborn as sns  # fancy plotting
-import pandas as pd  # table manipulation
-import platform
-import yaml
+import os  # for makedir
 import pickle
+import re  # regex
+import sys
+
+import matplotlib.pyplot as plt  # general plotting
+import numpy as np  # number crunching
+# import seaborn as sns  # fancy plotting
+import pandas as pd  # table manipulation
+from scipy.stats.mstats import mode
 
 global node_df
 
 # Matplotlib settings for graphs (need texlive-full, ghostscript and dvipng)
-plt.rc('font', family='serif', serif='Times')
+plt.rc('font', family='sans-serif', weight='bold')
 plt.rc('text', usetex=True)
-plt.rc('xtick', labelsize=10)
-plt.rc('ytick', labelsize=10)
-plt.rc('axes', labelsize=10)
+# plt.rc('text.latex', preamble=r'\usepackage{cmbright}')
+plt.rc('text.latex', preamble='\usepackage{sfmath}')
+plt.rc('xtick', labelsize=18)
+plt.rc('ytick', labelsize=18)
+plt.rc('axes', labelsize=18)
+plt.rc('legend', fontsize=16)
+
 plt.style.use('seaborn-deep')
 
 # Pandas options
@@ -55,11 +55,12 @@ def main():
 
 
 # ----------------------------------------------------------------------------#
-def generate_results(log, out, fmt, desc, plots):
+def generate_results(log, out, fmt, label, plots):
     global node_df
 
     # Print some information about what's being parsed
-    info = 'Parsing directory: {0} | Log Format: {1}'.format(out, fmt)
+    info = 'Parsing directory: {0} | Log Format: {1}' \
+           '| Label: {2}'.format(out, fmt, label)
     print '-' * len(info)
     print info
     print '-' * len(info)
@@ -84,7 +85,6 @@ def generate_results(log, out, fmt, desc, plots):
         sys.exit(1)
     # debug pattern
     debug_pattern = '\s*(?P<module>[\w,-]+):\s*(?P<level>STAT):\s*'
-    sdn_ctrl_pattern = '\s*(?P<module>SDN-CTRL):\s*(?P<level>STAT):\s*'
     # packet patterns ... https://regex101.com/r/mE5wK0/1
     packet_pattern = '(?:\s+s:(?P<src>\d+)'\
                      '|\s+d:(?P<dest>\d+)'\
@@ -135,12 +135,12 @@ def generate_results(log, out, fmt, desc, plots):
         node_df = read_node(csv_to_df(node_log))
     if(os.path.getsize(app_log.name) != 0):
         app_df = read_app(csv_to_df(app_log))
-    if(os.path.getsize(node_log.name) != 0):
+    if(os.path.getsize(icmp_log.name) != 0):
         icmp_df = read_icmp(csv_to_df(icmp_log))
     if(os.path.getsize(pow_log.name) != 0):
         pow_df = read_pow(csv_to_df(pow_log))
     # Specific SDN dfs
-    if 'SDN' in desc:
+    if 'SDN' in label:
         if(os.path.getsize(sdn_log.name) != 0):
             sdn_df = read_sdn(csv_to_df(sdn_log))
         if(os.path.getsize(join_log.name) != 0):
@@ -157,8 +157,6 @@ def generate_results(log, out, fmt, desc, plots):
         # a bit of preparation
         node_df = node_df[np.isfinite(node_df['hops'])]  # drop NaN rows
         node_df.hops = node_df.hops.astype(int)
-
-    prefix = out + desc + '_'
 
     print '**** Generating plots...' + str(plots)
     plot(plots, out, node_df=node_df, app_df=app_df, sdn_df=sdn_df,
@@ -253,14 +251,13 @@ def read_app(df):
         # df.time.dt.total_seconds() * 1000
     return df
 
+
 # ----------------------------------------------------------------------------#
 def read_icmp(df):
     print '> Read icmp log'
-
     # TODO: Possibly do some processing?
-    print (df['type'] == 155).sum()
-    print (df['type'] == 200).sum()
-
+    # print (df['type'] == 155).sum()
+    # print (df['type'] == 200).sum()
     return df
 
 
@@ -353,7 +350,7 @@ def add_mean_lat_to_node_df(node_df, app_df):
 # ----------------------------------------------------------------------------#
 def set_box_colors(bp, index):
     color = list(plt.rcParams['axes.prop_cycle'])[index]['color']
-    lw = 1.5
+    # lw = 1.5
     for box in bp['boxes']:
         # change fill color
         box.set(facecolor=color)
@@ -378,62 +375,65 @@ def set_box_colors(bp, index):
 
 
 # ----------------------------------------------------------------------------#
-def compare_results(rootdir, simlist, plotlist, **kwargs):
+def compare_results(rootdir, simlist, plottypes, **kwargs):
     print '**** Analyzing (comparing) results'
     print '> SIMS: ',
     print simlist
     print '> Plots: ',
-    print plotlist
-    index = []
-    datalist = {}
-    labels = []
+    print plottypes
 
-    # get kwargs
-    xlabel = kwargs['xlabel'] if 'xlabel' in kwargs else ''
-    ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
+    plotdata = {}  # dictionary of plot data
+    gap = 0.5  # gap for xticks
+    xmax = None  # work out xmax
 
-    # iterate through root directory looking for pickles
-    for plot in plotlist:
-        # create new list in dict
-        datalist[plot] = []
+    # for each plot type
+    for plot in plottypes:
+        plotdata[plot] = []  # create a list to hold data structs
+        print '> Looking for plots of type ... ' + plot
+        # walk through directory structure
         for root, dirs, files in os.walk(rootdir):
             for dir in sorted(dirs):
                 if dir in simlist:
-                    print '> ... Scanning \"' + root + '/' + dir + '/\"'
+                    found = False
+                    print ' ... Scanning \"' + root + '/' + dir + '/\"',
                     for f in os.listdir(os.path.join(root, dir)):
                         if (plot + '.pkl') in f:
-                            print ' * found pickle!'
+                            print '- found pickle in ' + dir + '!'
                             d = pickle.load(file(os.path.join(root, dir, f)))
-                            datalist[plot].append({dir: d})
+                            plotdata[plot].append({dir: d})
+                            found = True
+                    if not found:
+                        print '- None'
 
-    # count number of data sets
-    for plot in plotlist:
-        # create plot
+    # iterate over all the plots we have data for
+    for plot in plotdata:
+        count = 1  # reset sim counter
+        total = len(plotdata[plot])  # number sims to compare
+        print '> Comparing ' + str(total) + ' plots for \'' + plot + '\''
+
         fig, ax = plt.subplots(1, 1, figsize=(8, 6))
-        # generate a description for this plot
-        description = plot + '_' + str(simlist)
-        # number of plots we are analyzing
-        num_plots = len(datalist[plot])
-        # keep track of which plot we are on
-        count = 1
-        # save the artists for the legend
-        artists = []
-        # work out xmax
-        xmax = 0
+        artists = []  # save the artists for the legend
+        labels = []  # save the labels for the legend
 
-        print '> Comparing ' + str(num_plots) + ' plots for ' + plot
-        for sim_data in datalist[plot]:
-            sim = sim_data.keys()[0]
-            data = sim_data.values()[0]
+        # iterate over all the sim data sets in the list for this plot
+        for sim in plotdata[plot]:
+            print ' ... ' + str(count) + '/' + str(total)
+            # sim label and data
+            label = sim.keys()[0]
+            labels.append(label)
+            data = sim.values()[0]
+            # plot color (cyclic)
             color = list(plt.rcParams['axes.prop_cycle'])[count-1]['color']
+            # work out width
+            if 'width' in data:
+                width = data['width']
+            # work out maximum xtick value
+            xmax = total * len(data['x']) + count + len(data['x']) - total
             # boxplots
             if data['type'] == 'box':
-                xmax = num_plots * len(data['x']) + \
-                       (count - 1) + len(data['x']) - num_plots + 1
-                pos = np.arange(count, xmax, num_plots + 1)
-                print pos
+                pos = np.arange(count, xmax, total + 1)
                 bp = ax.boxplot(data['y'], positions=pos, notch=True,
-                                widths=data['width'],
+                                widths=width,
                                 showfliers=False,
                                 patch_artist=True)
                 set_box_colors(bp, count-1)
@@ -442,12 +442,15 @@ def compare_results(rootdir, simlist, plotlist, **kwargs):
             elif data['type'] == 'line':
                 ax.plot(data['x'], data['y'],
                         color=color, marker='s', lw=2.0,
-                        label=sim)
+                        label=label)
             # barplots
             elif data['type'] == 'bar':
-                ax.bar((data['x'] + data['width']*count), data['y'],
-                       width=data['width'],
-                       color=color, label=sim)
+                xmax = max(data['x'])
+                start = gap + width*(count-1)
+                end = (gap + width*total) * xmax
+                step = gap + width*total
+                ind = np.arange(start, end, step)
+                ax.bar(ind, data['y'], width, color=color, label=label)
             # histograms
             elif data['type'] == 'hist':
                 ax.hist(data['x'], len(data['y']), normed=1, histtype='step',
@@ -462,36 +465,47 @@ def compare_results(rootdir, simlist, plotlist, **kwargs):
         if data['type'] == 'box':
             plt.xlim(0, xmax)
             # ax.set_ylim(top=15000)
-            xticks = np.arange(1.5,
+            xticks = np.arange(gap + (width*total),
                                xmax,
                                count)
             ax.set_xticks(xticks)
             ax.set_xticklabels(data['x'])
-            ax.legend(artists, list(reversed(simlist)), loc='upper left')
         elif data['type'] == 'line':
             xticks = np.arange(min(data['x']), max(data['x'])+1, 1)
             ax.set_xticks(xticks)
-            ax.legend(loc='upper left')
+            ax.legend(labels, loc='upper left')
         elif data['type'] == 'bar':
-            ax.set_xticks(data['x'] + data['width'] +
-                          (data['width']/count) + 0.05)
-            ax.legend(loc='upper right')
+            # ax.set_ylim(top=15000)
+            start = gap + (width*(total-1))/2
+            end = (gap + width*total) * xmax + gap
+            step = gap + width*total
+            xticks = np.arange(start, end, step)
+            ax.set_xticks(xticks)
             ax.set_xticklabels(data['x'])
         elif data['type'] == 'hist':
             ax.set_xticks(np.arange(0, max(data['x']), 5.0))
-            ax.legend(['RPL', 'SDN'], loc='upper left')
 
+        # legend
+        for label in labels:
+            label = r'\textbf{' + label + '}'  # make labels bold
+        if artists:
+            ax.legend(artists, labels, loc='best')
+        else:
+            ax.legend(labels, loc='best')
         # save figure
-        fig, ax = set_fig_and_save(fig, ax, None, description, rootdir + '/',
+        fig, ax = set_fig_and_save(fig, ax, None,
+                                   plot + '_' + str(simlist),  # filename
+                                   rootdir + '/',  # directory
                                    xlabel=data['xlabel'],
                                    ylabel=data['ylabel'])
+
 
 # ----------------------------------------------------------------------------#
 # General Plotting
 # ----------------------------------------------------------------------------#
 def plot(plot_list, out, node_df=None, app_df=None, sdn_df=None,
          icmp_df=None, join_df=None):
-    # try:
+
     for plot in plot_list:
         # General plots
         # hops vs rdc
@@ -555,19 +569,13 @@ def plot(plot_list, out, node_df=None, app_df=None, sdn_df=None,
                                 values='time').dropna(how='any')
             plot_hist('c_join', out,
                       df['SDN-CTRL'].tolist(), df.index.tolist(),
-                      xlabel='Time (s)', ylabel='Nodes joined (\%)')
+                      xlabel='Time (s)', ylabel='Nodes Joined (\%)')
             plot_hist('r_join', out,
                       df['SDN-RPL'].tolist(), df.index.tolist(),
-                      xlabel='Time (s)', ylabel='Nodes joined (\%)')
+                      xlabel='Time (s)', ylabel='Nodes Joined (\%)')
         # traffic ratio
         elif plot == 'sdn_traffic_ratio':
             plot_tr(app_df, sdn_df, icmp_df, out)
-
-    # except Exception as e:
-    #         print 'Exception: ...'
-    #         print e  # print the exception
-    #         pass  # continue
-            # sys.exit(0)
 
 
 # ----------------------------------------------------------------------------#
@@ -676,14 +684,10 @@ def plot_box(desc, out, x, y, **kwargs):
     color = list(plt.rcParams['axes.prop_cycle'])[0]['color']
 
     # get kwargs
-    steps = kwargs['steps'] if 'steps' in kwargs else 1
     color = kwargs['color'] if 'color' in kwargs else color
     ylim = kwargs['ylim'] if 'ylim' in kwargs else None
     xlabel = kwargs['xlabel'] if 'xlabel' in kwargs else ''
     ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
-
-    # set xticks
-    xticks = np.arange(min(x), max(x)+1, steps)
 
     # Filter data using np.isnan
     mask = ~np.isnan(y)
@@ -718,6 +722,11 @@ def plot_violin(df, desc, out, x, xlabel, y, ylabel):
                            df[df[x] == 3][y],
                            df[df[x] == 4][y]])
 
+    data = {'x': x, 'y': y,
+            'type': 'violin',
+            'xlabel': xlabel,
+            'ylabel': ylabel}
+
     fig, ax = set_fig_and_save(fig, ax, data, desc, out,
                                xlabel=xlabel, ylabel=ylabel)
 
@@ -729,8 +738,6 @@ def plot_line(df, desc, out, x, y, **kwargs):
     print '> Plotting ' + desc + ' (line)'
 
     # constants
-    capsize = 3
-    lw = 2.0
     color = list(plt.rcParams['axes.prop_cycle'])[0]['color']
 
     # get kwargs
@@ -780,7 +787,8 @@ def plot_tr(app_df, sdn_df, icmp_df, out):
 
     rpl_icmp_count = (icmp_df['type'] == 155).sum()
     if sdn_df is not None:
-        total = len(app_df) + sdn_cbr_len + sdn_vbr_len + rpl_icmp_count + sdn_icmp_count
+        total = len(app_df) + sdn_cbr_len + sdn_vbr_len \
+                + rpl_icmp_count + sdn_icmp_count
     else:
         total = len(app_df) + rpl_icmp_count
 
@@ -792,8 +800,10 @@ def plot_tr(app_df, sdn_df, icmp_df, out):
     rpl_icmp_ratio = rpl_icmp_count/total
 
     if sdn_df is not None:
-        df = pd.DataFrame([app_ratio, rpl_icmp_ratio, sdn_icmp_ratio, sdn_cbr_ratio, sdn_vbr_ratio],
-                          index=['App', 'RPL', 'SDN-ICMP', 'SDN-CBR', 'SDN-VBR'],
+        df = pd.DataFrame([app_ratio, rpl_icmp_ratio, sdn_icmp_ratio,
+                           sdn_cbr_ratio, sdn_vbr_ratio],
+                          index=['App', 'RPL', 'SDN-ICMP',
+                                 'SDN-CBR', 'SDN-VBR'],
                           columns=['ratio'])
     else:
         df = pd.DataFrame([app_ratio, rpl_icmp_ratio],

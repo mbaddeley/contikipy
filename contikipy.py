@@ -1,20 +1,13 @@
 #!/usr/bin/env python2.7
-import subprocess
 import argparse
-import itertools as it
 import os
-import re
 import shutil  # for copying files
-import numpy as np
-import matplotlib as plt
-import pandas as pd
-import collections
-import yaml
-import sys
+import subprocess
 
-import cplogparser as lp
-import cpcsc as csc
+import yaml
+
 import cpconfig as config
+import cplogparser as lp
 
 # import yaml config
 cfg = yaml.load(open("config.yaml", 'r'))

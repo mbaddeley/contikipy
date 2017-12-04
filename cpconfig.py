@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.7
-import itertools as it
-from itertools import product, combinations
+from itertools import product
+
 import yaml
 
 # import yaml config
@@ -60,13 +60,32 @@ def DICTLIST_TO_STRINGLIST(D):
 
 
 class Config:
-    SIMLIST = []
+    MFLOWS = {}
+    SIMS = []
+
+    # format multiflow makeargs
+    for config in cfg['multiflow']:
+        index = config['id']
+        # format the makeargs as strings
+        MFLOWS[index] = ''
+        # number of flow applications
+        MFLOWS[index] = (DICT_TO_STRING({'NUM_APPS': config['NUM_APPS']}))
+        # the rest of the makeargs for this flow
+        MFLOWS[index] = " ".join([MFLOWS[index],
+                                 DICT_TO_STRING(config['flows'])])
+
+    # format simulation makeargs
     for sim in cfg['simulations']:
+        # format the makeargs as strings
         sim['makeargs'] = DICT_TO_STRING(sim['makeargs'])
-        SIMLIST.append(sim)
+        # get multiflow args and add them to makeargs
+        sim['makeargs'] = " ".join([sim['makeargs'],
+                                    MFLOWS[sim['multiflow']]])
+        # add to the sims
+        SIMS.append(sim)
 
     def simconfig(self):
-        return self.SIMLIST
+        return self.SIMS
 
     def analysisconfig(self):
         return cfg['analysis'][0]
