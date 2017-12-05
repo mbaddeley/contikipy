@@ -6,7 +6,7 @@ path:    /home/mike/Repos/contiki-usdn
 wd:      /examples/ipv6/sdn-udp
 log:     /tools/cooja/build/COOJA.testlog
 out:     /home/mike/Results
-csc:     usdn-30-node.csc
+csc:     usdn-20-node.csc
 target:  exp5438
 
 # ----------------------------------------------------------------------------
@@ -92,19 +92,19 @@ simulations:
 # ----------------------------------------------------------------------------
 analysis:
 # ----------------------------------------------------------------------------
-  - sims:
-    - SDN
-    - RPL
-    plots:
-      - hops_rdc
-      - hops_prr
-      - hops_lat_mean
-      - hops_lat_e2e
-# ----------------------------------------------------------------------------
   # - sims:
   #   - SDN
+  #   - RPL
   #   plots:
-  #   - join
+  #     - hops_rdc
+  #     - hops_prr
+  #     - hops_lat_mean
+  #     - hops_lat_e2e
+# ----------------------------------------------------------------------------
+  - sims:
+    - SDN
+    plots:
+    - join
 # ----------------------------------------------------------------------------
   # - sims:
   #   - SDN-Scenario

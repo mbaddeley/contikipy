@@ -473,7 +473,6 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
         elif data['type'] == 'line':
             xticks = np.arange(min(data['x']), max(data['x'])+1, 1)
             ax.set_xticks(xticks)
-            ax.legend(labels, loc='upper left')
         elif data['type'] == 'bar':
             # ax.set_ylim(top=15000)
             start = gap + (width*(total-1))/2
@@ -491,7 +490,12 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
         if artists:
             ax.legend(artists, labels, loc='best')
         else:
-            ax.legend(labels, loc='best')
+            if 'hops_prr' in plot:
+                ax.legend(labels, loc='lower right')
+            elif 'join' in plot:
+                ax.legend(labels, loc='upper center')
+            else:
+                ax.legend(labels, loc='best')
         # save figure
         fig, ax = set_fig_and_save(fig, ax, None,
                                    plot + '_' + str(simlist),  # filename
