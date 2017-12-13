@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt  # general plotting
 import numpy as np  # number crunching
 # import seaborn as sns  # fancy plotting
 import pandas as pd  # table manipulation
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
 from scipy.stats.mstats import mode
 
 global node_df
@@ -375,6 +376,27 @@ def set_box_colors(bp, index):
 
 
 # ----------------------------------------------------------------------------#
+def boxplot_zoom(ax, data, width=1, height=1,
+                 xlim=None, ylim=None,
+                 bp_width=0.35, pos=[1], color=1):
+    if xlim is not None:
+        ax.set_xlim(xlim)
+    if ylim is not None:
+        ax.set_ylim(ylim)
+    axins = inset_axes(ax, width, height, loc=1)
+    bp = axins.boxplot(data, notch=False, positions=pos, widths=bp_width,
+                       showfliers=False, patch_artist=True)
+    set_box_colors(bp, color)
+    axins.axis([4.7, 5.3, 310, 370])
+    axins.set_xticks([])
+    mark_inset(ax, axins,
+               loc1=3, loc2=4,  # left and right line anchors
+               fc="none",  # facecolor
+               ec="0.3",  # edgecolor
+               ls='--')
+
+
+# ----------------------------------------------------------------------------#
 def compare_results(rootdir, simlist, plottypes, **kwargs):
     print '**** Analyzing (comparing) results'
     print '> SIMS: ',
@@ -404,12 +426,12 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
                             found = True
                     if not found:
                         print '- None'
-
+    lastdata = []
     # iterate over all the plots we have data for
     for plot in plotdata:
         count = 1  # reset sim counter
-        total = len(plotdata[plot])  # number sims to compare
-        print '> Comparing ' + str(total) + ' plots for \'' + plot + '\''
+        nsims = len(plotdata[plot])  # number sims to compare
+        print '> Comparing ' + str(nsims) + ' plots for \'' + plot + '\''
 
         fig, ax = plt.subplots(1, 1, figsize=(8, 6))
         artists = []  # save the artists for the legend
@@ -417,7 +439,6 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
 
         # iterate over all the sim data sets in the list for this plot
         for sim in plotdata[plot]:
-            print ' ... ' + str(count) + '/' + str(total)
             # sim label and data
             label = sim.keys()[0]
             labels.append(label)
@@ -428,10 +449,14 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
             if 'width' in data:
                 width = data['width']
             # work out maximum xtick value
-            xmax = total * len(data['x']) + count + len(data['x']) - total
+            xmax = nsims * len(data['x']) + count + len(data['x']) - nsims
+            print ' ... ' + data['type'] + ' plot',
+            print str(count) + '/' + str(nsims)
+
             # boxplots
             if data['type'] == 'box':
-                pos = np.arange(count, xmax, total + 1)
+                pos = np.arange(count, xmax, nsims + 1)
+                lastdata = data['y'][1]
                 bp = ax.boxplot(data['y'], positions=pos, notch=True,
                                 widths=width,
                                 showfliers=False,
@@ -447,8 +472,8 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
             elif data['type'] == 'bar':
                 xmax = max(data['x'])
                 start = gap + width*(count-1)
-                end = (gap + width*total) * xmax
-                step = gap + width*total
+                end = (gap + width*nsims) * xmax
+                step = gap + width*nsims
                 ind = np.arange(start, end, step)
                 ax.bar(ind, data['y'], width, color=color, label=label)
             # histograms
@@ -465,7 +490,7 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
         if data['type'] == 'box':
             plt.xlim(0, xmax)
             # ax.set_ylim(top=15000)
-            xticks = np.arange(gap + (width*total),
+            xticks = np.arange(gap + (width*nsims),
                                xmax,
                                count)
             ax.set_xticks(xticks)
@@ -475,9 +500,9 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
             ax.set_xticks(xticks)
         elif data['type'] == 'bar':
             # ax.set_ylim(top=15000)
-            start = gap + (width*(total-1))/2
-            end = (gap + width*total) * xmax + gap
-            step = gap + width*total
+            start = gap + (width*(nsims-1))/2
+            end = (gap + width*nsims) * xmax + gap
+            step = gap + width*nsims
             xticks = np.arange(start, end, step)
             ax.set_xticks(xticks)
             ax.set_xticklabels(data['x'])
@@ -488,14 +513,20 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
         for label in labels:
             label = r'\textbf{' + label + '}'  # make labels bold
         if artists:
-            ax.legend(artists, labels, loc='best')
+            ax.legend(artists, labels, loc='upper left')
         else:
             if 'hops_prr' in plot:
                 ax.legend(labels, loc='lower right')
             elif 'join' in plot:
-                ax.legend(labels, loc='upper center')
+                ax.legend(['RPL-DAG', r'$\mu$SDN-Controller'], loc='upper center')
             else:
                 ax.legend(labels, loc='best')
+
+        # boxplot_zoom(ax, lastdata,
+        #              width=1.5, height=1.5,
+        #              xlim=[0, 6.5], ylim=[0, 11000],
+        #              bp_width=width, pos=[5])
+
         # save figure
         fig, ax = set_fig_and_save(fig, ax, None,
                                    plot + '_' + str(simlist),  # filename
@@ -573,10 +604,10 @@ def plot(plot_list, out, node_df=None, app_df=None, sdn_df=None,
                                 values='time').dropna(how='any')
             plot_hist('c_join', out,
                       df['SDN-CTRL'].tolist(), df.index.tolist(),
-                      xlabel='Time (s)', ylabel='Nodes Joined (\%)')
+                      xlabel='Time (s)', ylabel='Propotion of Nodes Joined')
             plot_hist('r_join', out,
                       df['SDN-RPL'].tolist(), df.index.tolist(),
-                      xlabel='Time (s)', ylabel='Nodes Joined (\%)')
+                      xlabel='Time (s)', ylabel='Propotion of Nodes Joined')
         # traffic ratio
         elif plot == 'sdn_traffic_ratio':
             plot_tr(app_df, sdn_df, icmp_df, out)
