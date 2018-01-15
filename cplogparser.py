@@ -94,7 +94,7 @@ def generate_results(log, out, fmt, label, plots):
                      '|\s+h:(?P<hops>[1-5])'\
                      '|\s+m:(?P<mac>\d+))+.*?$'
     node_re = re.compile(log_pattern + debug_pattern +
-                         '(?P<rank>\d+), (?P<degree>\d+)')
+                         'h:(?P<rank>\d+), n:(?P<degree>\d+)')
     app_re = re.compile(log_pattern + debug_pattern +
                         '(?P<status>(TX|RX))\s+(?P<typ>\S+)' +
                         packet_pattern)
@@ -273,7 +273,7 @@ def read_sdn(sdn_df):
     # Fixes settingwithcopywarning
     df = sdn_df.copy()
     # Fill in empty hop values for tx packets
-    df['hops'] = sdn_df.groupby(['src', 'dest']).ffill().bfill()
+    df['hops'] = sdn_df.groupby(['src', 'dest']).ffill().bfill()['hops']
     # Pivot table. Lose the 'mac' and 'node' column.
     df = df.pivot_table(index=['src', 'dest', 'typ', 'seq', 'hops'],
                         columns=['status'],
@@ -286,7 +286,6 @@ def read_sdn(sdn_df):
     df = df.reset_index()
     df.columns = ['src', 'dest', 'typ', 'seq',
                   'hops', 'buf_t', 'in_t', 'out_t']
-
     # Set dest typ to int
     df.dest = df.dest.astype(int)
     # add a 'dropped' column
@@ -518,7 +517,8 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
             if 'hops_prr' in plot:
                 ax.legend(labels, loc='lower right')
             elif 'join' in plot:
-                ax.legend(['RPL-DAG', r'$\mu$SDN-Controller'], loc='upper center')
+                ax.legend(['RPL-DAG', r'$\mu$SDN-Controller'],
+                          loc='upper center')
             else:
                 ax.legend(labels, loc='best')
 
@@ -602,8 +602,9 @@ def plot(plot_list, out, node_df=None, app_df=None, sdn_df=None,
             df = df.pivot_table(index=['node'],
                                 columns=['module'],
                                 values='time').dropna(how='any')
+            print df
             plot_hist('c_join', out,
-                      df['SDN-CTRL'].tolist(), df.index.tolist(),
+                      df['SDN-CD'].tolist(), df.index.tolist(),
                       xlabel='Time (s)', ylabel='Propotion of Nodes Joined')
             plot_hist('r_join', out,
                       df['SDN-RPL'].tolist(), df.index.tolist(),
@@ -850,7 +851,7 @@ def plot_tr(app_df, sdn_df, icmp_df, out):
     data = {'x': df.index, 'y': df.ratio}
     set_fig_and_save(fig, ax, data, 'traffic_ratio', out,
                      xlabel='Traffic type',
-                     ylabel='Percentage of total traffic (\%)')
+                     ylabel='Ratio of total traffic')
 
     return fig, ax
 

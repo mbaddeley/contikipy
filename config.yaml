@@ -60,24 +60,24 @@ simulations:
   #     - flow_lat            # Flow vs latency
 
 # ----------------------------------------------------------------------------
-  - desc:           RPL
-    makeargs:
-      MAC:          CONTIKIMAC
-      SDN:          0
-    multiflow:      1_flow
-    plot:
-      - hops_rdc            # Radio duty cycle vs hops
-      - hops_prr            # Packet receive ratio vs hops
-      - hops_lat_mean       # Hops vs mean latency
-      - hops_lat_e2e        # Hops vs end-to-end latency
-      - sdn_traffic_ratio   # SDN traffic ratio
+  # - desc:           RPL
+  #   makeargs:
+  #     MAC:          CONTIKIMAC
+  #     SDN:          0
+  #   multiflow:      1_flow
+  #   plot:
+  #     - hops_rdc            # Radio duty cycle vs hops
+  #     - hops_prr            # Packet receive ratio vs hops
+  #     - hops_lat_mean       # Hops vs mean latency
+  #     - hops_lat_e2e        # Hops vs end-to-end latency
+  #     - sdn_traffic_ratio   # SDN traffic ratio
   - desc:           SDN
     makeargs:
       MAC:          CONTIKIMAC
       SDN:          1
       FTSRETRY:     0
       FTREFRESH:    1
-      NSUFREQ:      0
+      NSUFREQ:      60
     multiflow:      1_flow
     plot:
       - hops_rdc            # Radio duty cycle vs hops
@@ -92,19 +92,19 @@ simulations:
 # ----------------------------------------------------------------------------
 analysis:
 # ----------------------------------------------------------------------------
-  # - sims:
-  #   - SDN
-  #   - RPL
-  #   plots:
-  #     - hops_rdc
-  #     - hops_prr
-  #     - hops_lat_mean
-  #     - hops_lat_e2e
-# ----------------------------------------------------------------------------
   - sims:
     - SDN
+    - RPL
     plots:
-    - join
+      - hops_rdc
+      - hops_prr
+      - hops_lat_mean
+      - hops_lat_e2e
+# ----------------------------------------------------------------------------
+  # - sims:
+  #   - SDN
+  #   plots:
+  #   - join
 # ----------------------------------------------------------------------------
   # - sims:
   #   - SDN-Scenario
