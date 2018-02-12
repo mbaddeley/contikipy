@@ -602,9 +602,8 @@ def plot(plot_list, out, node_df=None, app_df=None, sdn_df=None,
             df = df.pivot_table(index=['node'],
                                 columns=['module'],
                                 values='time').dropna(how='any')
-            print df
             plot_hist('c_join', out,
-                      df['SDN-CD'].tolist(), df.index.tolist(),
+                      df['ATOM'].tolist(), df.index.tolist(),
                       xlabel='Time (s)', ylabel='Propotion of Nodes Joined')
             plot_hist('r_join', out,
                       df['SDN-RPL'].tolist(), df.index.tolist(),
@@ -654,6 +653,9 @@ def plot_hist(desc, out, x, y, **kwargs):
     # get kwargs
     xlabel = kwargs['xlabel'] if 'xlabel' in kwargs else ''
     ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
+
+    print x
+    print y
 
     ax.hist(x, len(y), normed=1, histtype='step', cumulative=True,
             stacked=True, fill=True, label=desc)
