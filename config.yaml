@@ -62,7 +62,7 @@ simulations:
 # ----------------------------------------------------------------------------
   - desc:           RPL
     makeargs:
-      MAC:          CONTIKIMAC
+      MAC:          NULLMAC
       SDN:          0
     multiflow:      1_flow
     plot:
@@ -73,7 +73,7 @@ simulations:
       - sdn_traffic_ratio   # SDN traffic ratio
   - desc:           SDN
     makeargs:
-      MAC:          CONTIKIMAC
+      MAC:          NULLMAC
       SDN:          1
       FTSRETRY:     0
       FTREFRESH:    1

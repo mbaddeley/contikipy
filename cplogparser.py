@@ -79,7 +79,7 @@ def generate_results(log, out, fmt, label, plots):
 
     print '**** Compiling regex....'
     # log pattern
-    log_pattern = {'cooja': '^\s*(?P<time>\d+):\s*(?P<node>\d+):',
+    log_pattern = {'cooja': '^\s*(?P<time>\d+):\s*(?P<id>\d+):',
                    }.get(fmt, None)
     if log_pattern is None:
         sys.stderr.write("Unknown record format: %s\n" % fmt)
@@ -93,7 +93,7 @@ def generate_results(log, out, fmt, label, plots):
                      '|\s+id:(?P<seq>\d+)'\
                      '|\s+h:(?P<hops>[1-5])'\
                      '|\s+m:(?P<mac>\d+))+.*?$'
-    node_re = re.compile(log_pattern + debug_pattern +
+    self_re = re.compile(log_pattern + debug_pattern +
                          'h:(?P<rank>\d+), n:(?P<degree>\d+)')
     app_re = re.compile(log_pattern + debug_pattern +
                         '(?P<status>(TX|RX))\s+(?P<typ>\S+)' +
@@ -105,8 +105,10 @@ def generate_results(log, out, fmt, label, plots):
                          '(?:\s+type:(?P<type>\d+)'
                          '|\s+code:(?P<code>\d+))+.*?$')
     join_re = re.compile(log_pattern + debug_pattern +
-                         '(?:\s+c:(?P<controller>\d+)'
-                         '|\s+r:(?P<dag>\d+))+.*?$')
+                         '(?:\s+n:(?P<node>\d+)'
+                         '|\s+c:(?P<controller>\d+)'
+                         '|\s+dag:(?P<dag>\d+)'
+                         '|\s+dao:(?P<dao>\d+))+.*?$')
     pow_re = re.compile(log_pattern + '.*P \d+.\d+ (?P<seqid>\d+).*'
                         '\(radio (?P<all_radio>\d+\W{1,2}\d+).*'
                         '(?P<radio>\d+\W{1,2}\d+).*'
@@ -121,7 +123,7 @@ def generate_results(log, out, fmt, label, plots):
     sdn_log = parse(log, out + "log_sdn_traffic.log", sdn_re)
     join_log = parse(log, out + "log_join.log", join_re)
     pow_log = parse(log, out + "log_pow.log", pow_re)
-    node_log = parse(log, out + "log_node.log", node_re)
+    self_log = parse(log, out + "log_self.log", self_re)
 
     print '**** Read logs into dataframes...'
     node_df = None
@@ -132,8 +134,8 @@ def generate_results(log, out, fmt, label, plots):
     join_df = None
 
     # General DFs
-    if(os.path.getsize(node_log.name) != 0):
-        node_df = read_node(csv_to_df(node_log))
+    if(os.path.getsize(self_log.name) != 0):
+        node_df = read_self(csv_to_df(self_log))
     if(os.path.getsize(app_log.name) != 0):
         app_df = read_app(csv_to_df(app_log))
     if(os.path.getsize(icmp_log.name) != 0):
@@ -221,7 +223,7 @@ def read_app(df):
     # this fixes NaN hop counts being filled incorrectly
     df = df.sort_values(['src', 'dest', 'app', 'seq']).reset_index(drop=True)
     # Rearrange columns
-    df = df[['node', 'status', 'src', 'dest', 'app', 'seq', 'time',
+    df = df[['id', 'status', 'src', 'dest', 'app', 'seq', 'time',
              'hops', 'typ', 'module', 'level']]
     # fill in hops where there is a TX/RX
     df['hops'] = df.groupby(['src', 'dest', 'app', 'seq'])['hops'].apply(
@@ -269,12 +271,12 @@ def read_sdn(sdn_df):
 
     # Rearrange columns
     sdn_df = sdn_df[['src', 'dest', 'typ', 'seq', 'time',
-                     'status', 'node', 'hops']]
+                     'status', 'id', 'hops']]
     # Fixes settingwithcopywarning
     df = sdn_df.copy()
     # Fill in empty hop values for tx packets
     df['hops'] = sdn_df.groupby(['src', 'dest']).ffill().bfill()['hops']
-    # Pivot table. Lose the 'mac' and 'node' column.
+    # Pivot table. Lose the 'mac' and 'id' column.
     df = df.pivot_table(index=['src', 'dest', 'typ', 'seq', 'hops'],
                         columns=['status'],
                         aggfunc={'time': np.sum},
@@ -299,8 +301,8 @@ def read_sdn(sdn_df):
 # ----------------------------------------------------------------------------#
 def read_pow(df):
     print '> Read power log'
-    # get last row of each 'node' group and use the all_radio value
-    df = df.groupby('node').last()
+    # get last row of each 'id' group and use the all_radio value
+    df = df.groupby('id').last()
     # need to convert all our columns to numeric values from strings
     df = df.apply(pd.to_numeric, errors='ignore')
 
@@ -308,9 +310,9 @@ def read_pow(df):
 
 
 # ----------------------------------------------------------------------------#
-def read_node(df):
-    print '> Read node log'
-    df = df.groupby('node')['rank', 'degree'].agg(lambda x: min(x.mode()))
+def read_self(df):
+    print '> Read self log'
+    df = df.groupby('id')['rank', 'degree'].agg(lambda x: min(x.mode()))
     return df
 
 
@@ -518,7 +520,7 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
                 ax.legend(labels, loc='lower right')
             elif 'join' in plot:
                 ax.legend(['RPL-DAG', r'$\mu$SDN-Controller'],
-                          loc='upper center')
+                          loc='upper left')
             else:
                 ax.legend(labels, loc='best')
 
@@ -598,10 +600,17 @@ def plot(plot_list, out, node_df=None, app_df=None, sdn_df=None,
         elif plot == 'sdn_join':
             df = join_df.copy()
             # FIXME: time in seconds (use timedelta)
+
             df['time'] = join_df['time']/1000/1000
-            df = df.pivot_table(index=['node'],
+            # merge 'node' col into 'id' col, where the value in id is 1
+            df.loc[df.id == 1, 'id'] = df.node
+            print df
+            # drop the 'node' column
+            df = df.drop('node', 1)
+            df = df.pivot_table(index=['id'],
                                 columns=['module'],
                                 values='time').dropna(how='any')
+            print df
             plot_hist('c_join', out,
                       df['ATOM'].tolist(), df.index.tolist(),
                       xlabel='Time (s)', ylabel='Propotion of Nodes Joined')
@@ -654,12 +663,9 @@ def plot_hist(desc, out, x, y, **kwargs):
     xlabel = kwargs['xlabel'] if 'xlabel' in kwargs else ''
     ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
 
-    print x
-    print y
-
     ax.hist(x, len(y), normed=1, histtype='step', cumulative=True,
             stacked=True, fill=True, label=desc)
-    ax.set_xticks(np.arange(0, max(x), 5.0))
+    # ax.set_xticks(np.arange(0, max(x), 5.0))
     # ax.legend_.remove()
 
     data = {'x': x, 'y': y,
