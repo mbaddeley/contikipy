@@ -427,7 +427,7 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
                             found = True
                     if not found:
                         print '- None'
-    lastdata = []
+    # lastdata = []
     # iterate over all the plots we have data for
     for plot in plotdata:
         count = 1  # reset sim counter
@@ -457,7 +457,7 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
             # boxplots
             if data['type'] == 'box':
                 pos = np.arange(count, xmax, nsims + 1)
-                lastdata = data['y'][1]
+                # lastdata = data['y'][1]
                 bp = ax.boxplot(data['y'], positions=pos, notch=True,
                                 widths=width,
                                 showfliers=False,
@@ -507,8 +507,8 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
             xticks = np.arange(start, end, step)
             ax.set_xticks(xticks)
             ax.set_xticklabels(data['x'])
-        elif data['type'] == 'hist':
-            ax.set_xticks(np.arange(0, max(data['x']), 5.0))
+        # elif data['type'] == 'hist':
+            # ax.set_xticks(np.arange(0, max(data['x']), 5.0))
 
         # legend
         for label in labels:
@@ -519,8 +519,8 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
             if 'hops_prr' in plot:
                 ax.legend(labels, loc='lower right')
             elif 'join' in plot:
-                ax.legend(['RPL-DAG', r'$\mu$SDN-Controller'],
-                          loc='upper left')
+                ax.legend(['RPL-DAO', 'RPL-DAG', r'$\mu$SDN-Controller'],
+                          loc='lower right')
             else:
                 ax.legend(labels, loc='best')
 
@@ -604,18 +604,30 @@ def plot(plot_list, out, node_df=None, app_df=None, sdn_df=None,
             df['time'] = join_df['time']/1000/1000
             # merge 'node' col into 'id' col, where the value in id is 1
             df.loc[df.id == 1, 'id'] = df.node
-            print df
-            # drop the 'node' column
+            # drop the node/module/level columns
             df = df.drop('node', 1)
+            df = df.drop('module', 1)
+            df = df.drop('level', 1)
+            # merge dis,dao,controller
+            # df = df.set_index(['time', 'id']).stack().reset_index()
+            df = (df.set_index(['time', 'id'])
+                  .stack()
+                  .reorder_levels([2, 0, 1])
+                  .reset_index(name='a')
+                  .drop('a', 1)
+                  .rename(columns={'level_0': 'type'}))
+            # pivot so we use the type column as our columns
             df = df.pivot_table(index=['id'],
-                                columns=['module'],
+                                columns=['type'],
                                 values='time').dropna(how='any')
-            print df
             plot_hist('c_join', out,
-                      df['ATOM'].tolist(), df.index.tolist(),
+                      df['controller'].tolist(), df.index.tolist(),
                       xlabel='Time (s)', ylabel='Propotion of Nodes Joined')
-            plot_hist('r_join', out,
-                      df['SDN-RPL'].tolist(), df.index.tolist(),
+            plot_hist('dag_join', out,
+                      df['dag'].tolist(), df.index.tolist(),
+                      xlabel='Time (s)', ylabel='Propotion of Nodes Joined')
+            plot_hist('dao_join', out,
+                      df['dao'].tolist(), df.index.tolist(),
                       xlabel='Time (s)', ylabel='Propotion of Nodes Joined')
         # traffic ratio
         elif plot == 'sdn_traffic_ratio':
