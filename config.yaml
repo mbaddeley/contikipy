@@ -20,6 +20,7 @@ multiflow:
       FLOWIDS:        1
       TXNODES:        0
       RXNODES:        1
+      DELAY:          120
       BRMIN:          60
       BRMAX:          75
 
@@ -29,6 +30,7 @@ multiflow:
       FLOWIDS:        [1,2]
       TXNODES:        [3,3]
       RXNODES:        [1,1]
+      DELAY:          [120,120]
       BRMIN:          [0.23,10]
       BRMAX:          [0.23,10]
 
@@ -60,25 +62,24 @@ simulations:
   #     - flow_lat            # Flow vs latency
 
 # ----------------------------------------------------------------------------
-  - desc:           RPL
-    makeargs:
-      MAC:          CSMA
-      SDN:          0
-    multiflow:      1_flow
-    plot:
-      - hops_rdc            # Radio duty cycle vs hops
-      - hops_prr            # Packet receive ratio vs hops
-      - hops_lat_mean       # Hops vs mean latency
-      - hops_lat_e2e        # Hops vs end-to-end latency
-      - sdn_traffic_ratio   # SDN traffic ratio
+  # - desc:           RPL
+  #   makeargs:
+  #     MAC:          CSMA
+  #     SDN:          0
+  #   multiflow:      1_flow
+  #   plot:
+  #     - hops_rdc            # Radio duty cycle vs hops
+  #     - hops_prr            # Packet receive ratio vs hops
+  #     - hops_lat_mean       # Hops vs mean latency
+  #     - hops_lat_e2e        # Hops vs end-to-end latency
+  #     - sdn_traffic_ratio   # SDN traffic ratio
   - desc:           SDN
     makeargs:
       MAC:          CSMA
       SDN:          1
-      FTSRETRY:     0
       FTREFRESH:    1
       FORCENSU:     1
-      NSUFREQ:      60
+      NSUFREQ:      600
     multiflow:      1_flow
     plot:
       - hops_rdc            # Radio duty cycle vs hops

@@ -162,8 +162,6 @@ def generate_results(log, out, fmt, label, plots):
         node_df.hops = node_df.hops.astype(int)
 
     print '**** Generating plots...' + str(plots)
-    print icmp_df
-    print join_df
     plot(plots, out, node_df=node_df, app_df=app_df, sdn_df=sdn_df,
          icmp_df=icmp_df, join_df=join_df)
 
@@ -622,7 +620,6 @@ def plot(plot_list, out, node_df=None, app_df=None, sdn_df=None,
             df = df.pivot_table(index=['id'],
                                 columns=['type'],
                                 values='time').dropna(how='any')
-            print df
             plot_hist('c_join', out,
                       df['controller'].tolist(), df.index.tolist(),
                       xlabel='Time (s)', ylabel='Propotion of Nodes Joined')
