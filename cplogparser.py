@@ -286,6 +286,7 @@ def read_sdn(sdn_df):
     # TODO: not very elegant but it does the job
     df.columns = df.columns.droplevel()
     df = df.reset_index()
+    print df
     df.columns = ['src', 'dest', 'typ', 'seq',
                   'hops', 'buf_t', 'in_t', 'out_t']
     # Set dest typ to int
@@ -398,6 +399,17 @@ def boxplot_zoom(ax, data, width=1, height=1,
 
 
 # ----------------------------------------------------------------------------#
+# def compare_boxplots():
+#     pos = np.arange(count, xmax, nsims + 1)
+#     # lastdata = data['y'][1]
+#     bp = ax.boxplot(data['y'], positions=pos, notch=True,
+#                     widths=width,
+#                     showfliers=False,
+#                     patch_artist=True)
+#     set_box_colors(bp, count-1)
+#     artists.append(bp["boxes"][0])
+
+# ----------------------------------------------------------------------------#
 def compare_results(rootdir, simlist, plottypes, **kwargs):
     print '**** Analyzing (comparing) results'
     print '> SIMS: ',
@@ -437,6 +449,8 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
         fig, ax = plt.subplots(1, 1, figsize=(8, 6))
         artists = []  # save the artists for the legend
         labels = []  # save the labels for the legend
+
+        # print plotdata[plot]
 
         # iterate over all the sim data sets in the list for this plot
         for sim in plotdata[plot]:
@@ -479,13 +493,15 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
                 ax.bar(ind, data['y'], width, color=color, label=label)
             # histograms
             elif data['type'] == 'hist':
-                ax.hist(data['x'], len(data['y']), normed=1, histtype='step',
-                        cumulative=True, stacked=True, fill=True,
+                ax.hist(data['x'], data['y'], normed=1, histtype='step',
+                        cumulative=True, stacked=True, fill=False,
                         color=color)
             else:
                 print 'Error: no type \'' + data['type'] + '\''
             # increment plot count
             count += 1
+
+        # finish the histogram (so teh stacked hist doesn't cover ones below)
 
         # set a few more params
         if data['type'] == 'box':
@@ -555,6 +571,7 @@ def plot(plot_list, out, node_df=None, app_df=None, sdn_df=None,
                                xlabel='Hops', ylabel='Radio duty cycle (\%)')
         # hops vs prr
         elif plot == 'hops_prr':
+            print node_df
             df = node_df.groupby('hops')['prr'] \
                         .apply(lambda x: x.mean()) \
                         .reset_index() \
@@ -623,17 +640,19 @@ def plot(plot_list, out, node_df=None, app_df=None, sdn_df=None,
             plot_hist('c_join', out,
                       df['controller'].tolist(), df.index.tolist(),
                       xlabel='Time (s)', ylabel='Propotion of Nodes Joined')
-            plot_hist('dag_join', out,
-                      df['dag'].tolist(), df.index.tolist(),
-                      xlabel='Time (s)', ylabel='Propotion of Nodes Joined')
             plot_hist('dao_join', out,
                       df['dao'].tolist(), df.index.tolist(),
+                      xlabel='Time (s)', ylabel='Propotion of Nodes Joined')
+            plot_hist('dag_join', out,
+                      df['dag'].tolist(), df.index.tolist(),
                       xlabel='Time (s)', ylabel='Propotion of Nodes Joined')
         # traffic ratio
         elif plot == 'sdn_traffic_ratio':
             plot_tr(app_df, sdn_df, icmp_df, out)
 
 
+# ----------------------------------------------------------------------------#
+# Actual graph plotting functions
 # ----------------------------------------------------------------------------#
 def set_fig_and_save(fig, ax, data, desc, out, **kwargs):
 
@@ -675,7 +694,7 @@ def plot_hist(desc, out, x, y, **kwargs):
     xlabel = kwargs['xlabel'] if 'xlabel' in kwargs else ''
     ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
 
-    ax.hist(x, len(y), normed=1, histtype='step', cumulative=True,
+    ax.hist(x, bins=y, normed=1, histtype='step', cumulative=True,
             stacked=True, fill=True, label=desc)
     # ax.set_xticks(np.arange(0, max(x), 5.0))
     # ax.legend_.remove()

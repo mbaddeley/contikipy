@@ -24,6 +24,16 @@ multiflow:
       BRMIN:          60
       BRMAX:          75
 
+  - id:               1_flow_p2p
+    NUM_APPS:         1
+    flows:
+      FLOWIDS:        1
+      TXNODES:        [18,19]
+      RXNODES:        [20,21]
+      DELAY:          [60,60]
+      BRMIN:          [60,60]
+      BRMAX:          [75,75]
+
   - id:               2_flow_rr
     NUM_APPS:         2
     flows:
@@ -78,8 +88,8 @@ simulations:
       MAC:          CSMA
       SDN:          1
       FTREFRESH:    1
-      FORCENSU:     1
-      NSUFREQ:      600
+      FORCENSU:     0
+      NSUFREQ:      0xFFFF
     multiflow:      1_flow
     plot:
       - hops_rdc            # Radio duty cycle vs hops
@@ -103,11 +113,6 @@ analysis:
       - hops_lat_mean
       - hops_lat_e2e
       - join
-# ----------------------------------------------------------------------------
-  # - sims:
-  #   - SDN
-  #   plots:
-  #   - join
 # ----------------------------------------------------------------------------
   # - sims:
   #   - SDN-Scenario
