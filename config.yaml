@@ -20,7 +20,6 @@ multiflow:
       FLOWIDS:        1
       TXNODES:        0
       RXNODES:        1
-      DELAY:          120
       BRMIN:          60
       BRMAX:          75
 
@@ -74,7 +73,7 @@ simulations:
 # ----------------------------------------------------------------------------
   # - desc:           RPL
   #   makeargs:
-  #     MAC:          CSMA
+  #     MAC:          CONTIKIMAC
   #     SDN:          0
   #   multiflow:      1_flow
   #   plot:
@@ -85,11 +84,12 @@ simulations:
   #     - sdn_traffic_ratio   # SDN traffic ratio
   - desc:           SDN
     makeargs:
-      MAC:          CSMA
+      MAC:          CONTIKIMAC
       SDN:          1
+      DELAY:        300
       FTREFRESH:    1
-      FORCENSU:     0
-      NSUFREQ:      0xFFFF
+      FORCENSU:     1
+      NSUFREQ:      0xFFFF  # NSU frequency actually helps over 0 frequency
     multiflow:      1_flow
     plot:
       - hops_rdc            # Radio duty cycle vs hops
