@@ -84,8 +84,9 @@ def generate_results(log, out, fmt, label, plots):
     if log_pattern is None:
         sys.stderr.write("Unknown record format: %s\n" % fmt)
         sys.exit(1)
-    # debug pattern
-    debug_pattern = '\s*(?P<module>[\w,-]+):\s*(?P<level>STAT):\s*'
+    # statistics pattern
+    # debug_pattern = '\s*(?P<module>[\w,-]+):\s*(?P<level>STAT):\s*'
+    debug_pattern = '\s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*'
     # packet patterns ... https://regex101.com/r/mE5wK0/1
     packet_pattern = '(?:\s+s:(?P<src>\d+)'\
                      '|\s+d:(?P<dest>\d+)'\

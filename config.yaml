@@ -71,20 +71,20 @@ simulations:
   #     - flow_lat            # Flow vs latency
 
 # ----------------------------------------------------------------------------
-  # - desc:           RPL
-  #   makeargs:
-  #     MAC:          CONTIKIMAC
-  #     SDN:          0
-  #   multiflow:      1_flow
-  #   plot:
-  #     - hops_rdc            # Radio duty cycle vs hops
-  #     - hops_prr            # Packet receive ratio vs hops
-  #     - hops_lat_mean       # Hops vs mean latency
-  #     - hops_lat_e2e        # Hops vs end-to-end latency
-  #     - sdn_traffic_ratio   # SDN traffic ratio
-  - desc:           SDN
+  - desc:           RPL
     makeargs:
       MAC:          CONTIKIMAC
+      SDN:          0
+    multiflow:      1_flow
+    plot:
+      - hops_rdc            # Radio duty cycle vs hops
+      - hops_prr            # Packet receive ratio vs hops
+      - hops_lat_mean       # Hops vs mean latency
+      - hops_lat_e2e        # Hops vs end-to-end latency
+      - sdn_traffic_ratio   # SDN traffic ratio
+  - desc:           SDN
+    makeargs:
+      MAC:          CSMA
       SDN:          1
       DELAY:        300
       FTREFRESH:    1
