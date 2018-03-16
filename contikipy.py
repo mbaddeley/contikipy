@@ -54,7 +54,7 @@ def main():
     simlog = None
     print '**** Running through ' + str(len(simulations)) + ' simulations'
     for sim in simulations:
-        print '> SIM: ',
+        print '\n\n> SIM: ',
         print sim
         # generate a simulation description
         desc = sim['desc']
