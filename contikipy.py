@@ -1,4 +1,5 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/python
+
 import argparse
 import os
 import shutil  # for copying files
@@ -11,7 +12,6 @@ import cplogparser as lp
 
 # import yaml config
 cfg = yaml.load(open("config.yaml", 'r'))
-
 
 # ----------------------------------------------------------------------------#
 def main():
@@ -69,7 +69,7 @@ def main():
         makeargs = makeargs.replace('[', '').replace(']', '')
         print makeargs
         # make a note of our intended sim directory
-        simdir = args.out + "/" + desc
+        outdir = args.out + "/" + desc
         # run a cooja simulation with these sim settings
         if int(args.runcooja):
             if 'csc' in sim:
@@ -81,12 +81,12 @@ def main():
                          args.log,
                          args.wd,
                          csc,
-                         simdir,
+                         outdir,
                          makeargs,
                          desc)
         # generate results by parsing the cooja log
         if int(args.parse) and desc is not None:
-            parse(simlog, simdir, desc, 'cooja', plot_config)
+            parse(simlog, outdir, desc, 'cooja', plot_config)
 
     # analyze the generated results
     if int(args.comp) and analysis is not None:

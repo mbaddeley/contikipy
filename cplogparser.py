@@ -287,7 +287,6 @@ def read_sdn(sdn_df):
     # TODO: not very elegant but it does the job
     df.columns = df.columns.droplevel()
     df = df.reset_index()
-    print df
     df.columns = ['src', 'dest', 'typ', 'seq',
                   'hops', 'buf_t', 'in_t', 'out_t']
     # Set dest typ to int
@@ -344,6 +343,7 @@ def add_rdc_to_node_df(node_df, pow_df):
 # ----------------------------------------------------------------------------#
 def add_mean_lat_to_node_df(node_df, app_df):
     print '> Add mean_lat for each node'
+    print app_df
     node_df['mean_lat'] = app_df.groupby('src')['lat'].apply(
                           lambda x: x.mean())
     return node_df
@@ -495,7 +495,7 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
             # histograms
             elif data['type'] == 'hist':
                 ax.hist(data['x'], data['y'], normed=1, histtype='step',
-                        cumulative=True, stacked=True, fill=False,
+                        cumulative=True, stacked=True, fill=True,
                         color=color)
             else:
                 print 'Error: no type \'' + data['type'] + '\''
@@ -536,7 +536,7 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
             if 'hops_prr' in plot:
                 ax.legend(labels, loc='lower right')
             elif 'join' in plot:
-                ax.legend(['RPL-DAO', 'RPL-DAG', r'$\mu$SDN-Controller'],
+                ax.legend(['RPL-DAG', r'$\mu$SDN-Controller'],
                           loc='lower right')
             else:
                 ax.legend(labels, loc='best')
@@ -572,7 +572,6 @@ def plot(plot_list, out, node_df=None, app_df=None, sdn_df=None,
                                xlabel='Hops', ylabel='Radio duty cycle (\%)')
         # hops vs prr
         elif plot == 'hops_prr':
-            print node_df
             df = node_df.groupby('hops')['prr'] \
                         .apply(lambda x: x.mean()) \
                         .reset_index() \
@@ -641,9 +640,9 @@ def plot(plot_list, out, node_df=None, app_df=None, sdn_df=None,
             plot_hist('c_join', out,
                       df['controller'].tolist(), df.index.tolist(),
                       xlabel='Time (s)', ylabel='Propotion of Nodes Joined')
-            plot_hist('dao_join', out,
-                      df['dao'].tolist(), df.index.tolist(),
-                      xlabel='Time (s)', ylabel='Propotion of Nodes Joined')
+            # plot_hist('dao_join', out,
+            #           df['dao'].tolist(), df.index.tolist(),
+            #           xlabel='Time (s)', ylabel='Propotion of Nodes Joined')
             plot_hist('dag_join', out,
                       df['dag'].tolist(), df.index.tolist(),
                       xlabel='Time (s)', ylabel='Propotion of Nodes Joined')
