@@ -10,9 +10,33 @@ csc:     usdn-30-node.csc
 target:  exp5438
 
 # ----------------------------------------------------------------------------
+# Results Options
+# packet regex ... https://regex101.com/r/mE5wK0/1
+# ----------------------------------------------------------------------------
+logtypes:
+  - type:    cooja
+    fmt_re:  '^\s*(?P<time>\d+):\s*(?P<id>\d+):'
+    log_re:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*
+
+data:
+  config:     [pow, app, sdn, node, icmp, join]
+  dictionary:
+    - type:   pow
+      regex:  .*P \d+.\d+ (?P<seqid>\d+).*\(radio (?P<all_radio>\d+\W{1,2}\d+).*(?P<radio>\d+\W{1,2}\d+).*(?P<all_tx>\d+\W{1,2}\d+).*(?P<tx>\d+\W{1,2}\d+).*(?P<all_listen>\d+\W{1,2}\d+).*(?P<listen>\d+\W{1,2}\d+)
+    - type:   app
+      regex:  (?P<status>(TX|RX))\s+(?P<typ>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>[1-5])|\s+m:(?P<mac>\d+))+.*?$
+    - type:   sdn
+      regex:  (?P<status>(OUT|BUF|IN))\s+(?P<typ>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>[1-5])|\s+m:(?P<mac>\d+))+.*?$
+    - type:   node
+      regex:  h:(?P<rank>\d+), n:(?P<degree>\d+)
+    - type:   icmp
+      regex:  (?:\s+type:(?P<type>\d+)|\s+code:(?P<code>\d+))+.*?$
+    - type:   join
+      regex:  (?:\s+n:(?P<node>\d+)|\s+c:(?P<controller>\d+)|\s+dag:(?P<dag>\d+)|\s+dao:(?P<dao>\d+))+.*?$
+
+# ----------------------------------------------------------------------------
 # Multiflow
 # ----------------------------------------------------------------------------
-
 multiflow:
   - id:               1_flow
     NUM_APPS:         1
@@ -48,29 +72,6 @@ multiflow:
 # Simulations
 # ----------------------------------------------------------------------------
 simulations:
-# ----------------------------------------------------------------------------
-  # - desc:           RPL-Scenario
-  #   csc:            usdn-reroute.csc
-  #   makeargs:
-  #     MAC:          CONTIKIMAC
-  #     SDN:          0
-  #     REROUTE:      0
-  #   multiflow:      2_flow_rr
-  #   plot:
-  #     - flow_lat            # Flow vs latency
-  #
-  # - desc:           SDN-Scenario
-  #   csc:            usdn-reroute.csc
-  #   makeargs:
-  #     MAC:          CONTIKIMAC
-  #     SDN:          1
-  #     REROUTE:      1
-  #     FTSRETRY:     0
-  #     NSUFREQ:      60
-  #   multiflow:      2_flow_rr
-  #   plot:
-  #     - flow_lat            # Flow vs latency
-
 # # ----------------------------------------------------------------------------
 #   - desc:           RPL
 #     makeargs:
@@ -171,9 +172,3 @@ analysis:
     plots:
     - hops_lat_e2e
     - sdn_traffic_ratio
-# ----------------------------------------------------------------------------
-  # - sims:
-  #   - SDN-Scenario
-  #   - RPL-Scenario
-  #   plots:
-  #     - flow_lat

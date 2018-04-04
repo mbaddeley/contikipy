@@ -13,6 +13,7 @@ import cplogparser as lp
 # import yaml config
 cfg = yaml.load(open("config.yaml", 'r'))
 
+
 # ----------------------------------------------------------------------------#
 def main():
     # fetch arguments
@@ -52,10 +53,8 @@ def main():
         analysis = None
 
     simlog = None
-    print '**** Running through ' + str(len(simulations)) + ' simulations'
+    print '**** Run ' + str(len(simulations)) + ' simulations'
     for sim in simulations:
-        print '\n\n> SIM: ',
-        print sim
         # generate a simulation description
         desc = sim['desc']
         makeargs = sim['makeargs']
@@ -76,6 +75,7 @@ def main():
                 csc = sim['csc']
             else:
                 csc = args.csc
+            print 'here'
             simlog = run(args.path,
                          args.target,
                          args.log,
@@ -95,15 +95,28 @@ def main():
 
 
 # ----------------------------------------------------------------------------#
-def parse(log, directory, desc, logfmt, plot_config):
-    print '**** Parse log and gererate results in: ' + directory
+def parse(log, dir, desc, fmt, plots):
+    """Parse the main log to generate the data."""
     if log is None:
-        log = directory + "/" + desc + ".log"
-    lp.generate_results(log, directory + '/', logfmt, desc, plot_config)
+        log = dir + "/" + desc + ".log"
+    print '**** Parse log and gererate results in: ' + dir
+    print '> plots: ' + ' '.join(plots)
+    logtype = (l for l in cfg['logtypes'] if l['type'] == fmt).next()
+    df_dict = {}
+    for d in cfg['data']['dictionary']:
+        if 'pow' in d['type']:
+            regex = logtype['fmt_re'] + d['regex']
+        else:
+            regex = logtype['fmt_re'] + logtype['log_re'] + d['regex']
+        df_dict.update(lp.parse_log(d['type'], log, dir, fmt, regex))
+    lp.extract_data(df_dict)
+    lp.pickle_data(dir, df_dict)
+    lp.plot_data(dir, df_dict, plots)
 
 
 # ----------------------------------------------------------------------------#
 def run(contiki, target, log, wd, csc, outdir, args, desc):
+    """Clean, make, and run cooja."""
     print '**** Clean and make: ' + contiki + wd + "/" + csc
     contikilog = contiki + log
     print '> Clean ' + contiki + wd
@@ -120,6 +133,7 @@ def run(contiki, target, log, wd, csc, outdir, args, desc):
     print '**** Copy log into simulation directory'
     # Copy contiki ouput log file and prefix the desc
     simlog = outdir + "/" + desc + '.log'
+    print simlog
     shutil.copyfile(contikilog, simlog)
 
     return simlog
@@ -127,6 +141,7 @@ def run(contiki, target, log, wd, csc, outdir, args, desc):
 
 # ----------------------------------------------------------------------------#
 def run_cooja(contiki, sim, args):
+    """Run cooja nogui."""
     # java = 'java -mx512m -jar'
     # cooja_jar = contiki + '/tools/cooja/dist/cooja.jar'
     # nogui = '-nogui=' + sim
@@ -142,6 +157,7 @@ def run_cooja(contiki, sim, args):
 
 # ----------------------------------------------------------------------------#
 def clean(path, target):
+    """Run contiki make clean."""
     # make clean in case we have new cmd line arguments
     subprocess.call('make clean TARGET=' + target + ' ' +
                     ' -C ' + path + '/controller',
@@ -153,6 +169,7 @@ def clean(path, target):
 
 # ----------------------------------------------------------------------------#
 def make(path, args, target):
+    """Run contiki make."""
     print '> args: ' + args
     subprocess.call('make TARGET=' + target + ' ' + args +
                     ' -C ' + path + '/controller', shell=True)

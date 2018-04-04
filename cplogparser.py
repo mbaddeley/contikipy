@@ -1,7 +1,10 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/python
+"""Parse logs and generate results.
+
+This module parses cooja logs according to a list of required data.
+"""
 from __future__ import division
 
-import argparse  # command line arguments
 import os  # for makedir
 import pickle
 import re  # regex
@@ -13,8 +16,6 @@ import numpy as np  # number crunching
 import pandas as pd  # table manipulation
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
 from scipy.stats.mstats import mode
-
-global node_df
 
 # Matplotlib settings for graphs (need texlive-full, ghostscript and dvipng)
 plt.rc('font', family='sans-serif', weight='bold')
@@ -35,152 +36,103 @@ pd.set_option('display.width', 1000)
 
 
 # ----------------------------------------------------------------------------#
-def main():
-    """ Main function is for standalone operation """
-    # Fetch arguments
-    ap = argparse.ArgumentParser(description='Simulation log parser')
-    ap.add_argument('--log', required=True,
-                    help='Absolute path to log file')
-    ap.add_argument('--out', required=False,
-                    default="./",
-                    help='Where to save logs and plots')
-    ap.add_argument('--fmt', required=False, default="cooja",
-                    help='Format of file to parse')
-    ap.add_argument('--desc', required=False,
-                    default="",
-                    help='Simulation desc to prefix to output graphs')
-    args = ap.parse_args()
-
-    # Generate the results
-    generate_results(args.log, args.out, args.fmt, args.desc)
-
-
-# ----------------------------------------------------------------------------#
-def generate_results(log, out, fmt, label, plots):
-    global node_df
-
+def parse_log(datatype, log, dir, fmt, regex):
+    """Parse the main log for data."""
     # Print some information about what's being parsed
-    info = 'Parsing directory: {0} | Log Format: {1}' \
-           '| Label: {2}'.format(out, fmt, label)
+    info = 'Data: {0} | Log: {1} ' \
+           '| Log Format: {2}'.format(datatype, log, fmt)
     print '-' * len(info)
     print info
     print '-' * len(info)
 
-    # check the simulation directory exists, and there is a log there
+    # dictionary of the various data df formatters
+    read_fnc_dict = {
+        "pow":  read_pow,
+        "app":  read_app,
+        "sdn":  read_sdn,
+        "node": read_node,
+        "icmp": read_icmp
+    }
+
     try:
+        # check the simulation directory exists, and there is a log there
         open(log, 'rb')
+        # do the parsing
+        print '**** Parsing log using ' + datatype + ' regex....'
+        data_re = re.compile(regex)
+        data_log = parse(log, dir + "/log_" + datatype + ".log", data_re)
+        if(os.path.getsize(data_log.name) != 0):
+            data_df = csv_to_df(data_log)
+            if datatype in read_fnc_dict.keys():
+                # do some formatting on the df
+                data_df = read_fnc_dict[datatype](data_df)
+            elif 'join' in datatype:
+                data_df = data_df
+            else:
+                data_df = None
+
+            if data_df is not None:
+                return {datatype: data_df}
+            else:
+                raise Exception('Error: df was None!')
+        else:
+            raise Exception('Error: log was None!')
     except Exception as e:
             print e
             sys.exit(0)
 
-    # create a summary of the scenario
-    summary_log = open(out + "log_summary.log", 'a')
-    summary_log.write("Scenario\ttotal\tdropped\tprr\tduty_cycle\n")
 
-    print '**** Compiling regex....'
-    # log pattern
-    log_pattern = {'cooja': '^\s*(?P<time>\d+):\s*(?P<id>\d+):',
-                   }.get(fmt, None)
-    if log_pattern is None:
-        sys.stderr.write("Unknown record format: %s\n" % fmt)
-        sys.exit(1)
-    # statistics pattern
-    # debug_pattern = '\s*(?P<module>[\w,-]+):\s*(?P<level>STAT):\s*'
-    debug_pattern = '\s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*'
-    # packet patterns ... https://regex101.com/r/mE5wK0/1
-    packet_pattern = '(?:\s+s:(?P<src>\d+)'\
-                     '|\s+d:(?P<dest>\d+)'\
-                     '|\s+a:(?P<app>\d+)'\
-                     '|\s+id:(?P<seq>\d+)'\
-                     '|\s+h:(?P<hops>[1-5])'\
-                     '|\s+m:(?P<mac>\d+))+.*?$'
-    self_re = re.compile(log_pattern + debug_pattern +
-                         'h:(?P<rank>\d+), n:(?P<degree>\d+)')
-    app_re = re.compile(log_pattern + debug_pattern +
-                        '(?P<status>(TX|RX))\s+(?P<typ>\S+)' +
-                        packet_pattern)
-    sdn_re = re.compile(log_pattern + debug_pattern +
-                        '(?P<status>(OUT|BUF|IN))\s+(?P<typ>\S+)' +
-                        packet_pattern)
-    icmp_re = re.compile(log_pattern + debug_pattern +
-                         '(?:\s+type:(?P<type>\d+)'
-                         '|\s+code:(?P<code>\d+))+.*?$')
-    join_re = re.compile(log_pattern + debug_pattern +
-                         '(?:\s+n:(?P<node>\d+)'
-                         '|\s+c:(?P<controller>\d+)'
-                         '|\s+dag:(?P<dag>\d+)'
-                         '|\s+dao:(?P<dao>\d+))+.*?$')
-    pow_re = re.compile(log_pattern + '.*P \d+.\d+ (?P<seqid>\d+).*'
-                        '\(radio (?P<all_radio>\d+\W{1,2}\d+).*'
-                        '(?P<radio>\d+\W{1,2}\d+).*'
-                        '(?P<all_tx>\d+\W{1,2}\d+).*'
-                        '(?P<tx>\d+\W{1,2}\d+).*'
-                        '(?P<all_listen>\d+\W{1,2}\d+).*'
-                        '(?P<listen>\d+\W{1,2}\d+)')
-
-    print '**** Creating log files in \'' + out + '\''
-    app_log = parse(log, out + "log_app_traffic.log", app_re)
-    icmp_log = parse(log, out + "log_icmp.log", icmp_re)
-    sdn_log = parse(log, out + "log_sdn_traffic.log", sdn_re)
-    join_log = parse(log, out + "log_join.log", join_re)
-    pow_log = parse(log, out + "log_pow.log", pow_re)
-    self_log = parse(log, out + "log_self.log", self_re)
-
-    print '**** Read logs into dataframes...'
-    node_df = None
-    app_df = None
-    icmp_df = None
-    pow_df = None
-    sdn_df = None
-    join_df = None
-
-    # General DFs
-    if(os.path.getsize(self_log.name) != 0):
-        node_df = read_self(csv_to_df(self_log))
-    if(os.path.getsize(app_log.name) != 0):
-        app_df = read_app(csv_to_df(app_log))
-    if(os.path.getsize(icmp_log.name) != 0):
-        icmp_df = read_icmp(csv_to_df(icmp_log))
-    if(os.path.getsize(pow_log.name) != 0):
-        pow_df = read_pow(csv_to_df(pow_log))
-    # Specific SDN dfs
-    if 'SDN' in label:
-        if(os.path.getsize(sdn_log.name) != 0):
-            sdn_df = read_sdn(csv_to_df(sdn_log))
-        if(os.path.getsize(join_log.name) != 0):
-            join_df = csv_to_df(join_log)
-
-    print '**** Do some additional processing...'
-    if app_df is not None and node_df is not None:
-        node_df = add_mean_lat_to_node_df(node_df, app_df)
-        node_df = add_prr_to_node_df(node_df, app_df)
-    if pow_df is not None and node_df is not None:
-        node_df = add_rdc_to_node_df(node_df, pow_df)
-
+# ----------------------------------------------------------------------------#
+def extract_data(df_dict):
+    """Take the dfs generated from the main log and analyze."""
+    print '**** Do some additional processing on the dataframes...'
+    # get general node data
+    node_df = df_dict.get('node')
     if node_df is not None:
-        # a bit of preparation
-        node_df = node_df[np.isfinite(node_df['hops'])]  # drop NaN rows
-        node_df.hops = node_df.hops.astype(int)
+        app_df = df_dict.get('app')
+        if app_df is not None:
+            node_df = add_mean_lat_to_node_df(node_df, app_df)
+            node_df = add_prr_to_node_df(node_df, app_df)
+            node_df = add_hops_to_node_df(node_df, app_df)
+            # node_df = node_df[np.isfinite(node_df['hops'])]  # drop NaN rows
+            # node_df.hops = node_df.hops.astype(int)  # convert to int
 
+        pow_df = df_dict.get('pow')
+        if pow_df is not None:
+            node_df = add_rdc_to_node_df(node_df, pow_df)
+        df_dict['node'] = node_df
+        print df_dict['node']
+
+
+# ----------------------------------------------------------------------------#
+def pickle_data(dir, data):
+    """Save data by pickling it."""
+    print '**** Pickling DataFrames ...'
+    print data.keys()
+    for k, v in data.items():
+        print '> Saving ' + k
+        if v is not None:
+            v.to_pickle(dir + k + '_df.pkl')
+
+
+# ----------------------------------------------------------------------------#
+def plot_data(dir, data, plots):
+    """Plot data according to required plot types."""
     print '**** Generating plots...' + str(plots)
-    plot(plots, out, node_df=node_df, app_df=app_df, sdn_df=sdn_df,
+    node_df = data['node']
+    app_df = data['app']
+    sdn_df = data['sdn']
+    icmp_df = data['icmp']
+    join_df = data['join']
+    plot(plots, dir, node_df=node_df, app_df=app_df, sdn_df=sdn_df,
          icmp_df=icmp_df, join_df=join_df)
 
-    print '**** Pickling DataFrames ...'
-    # general
-    if node_df is not None:
-        node_df.to_pickle(out + 'node_df.pkl')
-    if app_df is not None:
-        app_df.to_pickle(out + 'app_df.pkl')
-    # sdn
-    if sdn_df is not None:
-        sdn_df.to_pickle(out + 'sdn_df.pkl')
-
 
 # ----------------------------------------------------------------------------#
-# Write logs
+# Parse main log using regex
 # ----------------------------------------------------------------------------#
 def parse(file_from, file_to, pattern):
+    """Parse a log using regex and save in new log."""
     # Let's us know this is the first line and we need to write a header.
     write_header = 1
     # open the files
@@ -209,17 +161,17 @@ def parse(file_from, file_to, pattern):
 # Read logs
 # ----------------------------------------------------------------------------#
 def csv_to_df(file):
+    """Create df from csv."""
     df = pd.read_csv(file.name)
     # drop any ampty columns
     df = df.dropna(axis=1, how='all')
-
     return df
 
 
 # ----------------------------------------------------------------------------#
 def read_app(df):
+    """Read log for application data."""
     print '> Read app log'
-    global node_df
     # sort the table by src/dest/seq so txrx pairs will be next to each other
     # this fixes NaN hop counts being filled incorrectly
     df = df.sort_values(['src', 'dest', 'app', 'seq']).reset_index(drop=True)
@@ -244,20 +196,13 @@ def read_app(df):
     df['drpd'] = df['rxtime'].apply(lambda x: True if np.isnan(x) else False)
     # calculate the latency/delay and add as a column
     df['lat'] = (df['rxtime'] - df['txtime'])/1000  # FIXME: /1000 = ns -> ms
-    if node_df is not None:
-        # Add hops to node_df. N.B. cols with NaN are always converted to float
-        hops = df[['src', 'hops']].groupby('src').agg(lambda x: mode(x)[0])
-        node_df = node_df.join(hops['hops'].astype(int))
-        # convert to HH:mm:ss:ms
-        # app_df['rxtime'] = pd.to_timedelta(app_df.rxtime/10000, unit='ms')
-        # app_df['txtime'] = pd.to_timedelta(app_df.txtime/10000, unit='ms')
-        # get back to ms
-        # df.time.dt.total_seconds() * 1000
+
     return df
 
 
 # ----------------------------------------------------------------------------#
 def read_icmp(df):
+    """Read log for icmp data."""
     print '> Read icmp log'
     # TODO: Possibly do some processing?
     # print (df['type'] == 155).sum()
@@ -267,8 +212,8 @@ def read_icmp(df):
 
 # ----------------------------------------------------------------------------#
 def read_sdn(sdn_df):
+    """Read log for sdn data."""
     print '> Read sdn log'
-    global node_df
 
     # Rearrange columns
     sdn_df = sdn_df[['src', 'dest', 'typ', 'seq', 'time',
@@ -301,6 +246,7 @@ def read_sdn(sdn_df):
 
 # ----------------------------------------------------------------------------#
 def read_pow(df):
+    """Read log for power data."""
     print '> Read power log'
     # get last row of each 'id' group and use the all_radio value
     df = df.groupby('id').last()
@@ -311,9 +257,11 @@ def read_pow(df):
 
 
 # ----------------------------------------------------------------------------#
-def read_self(df):
-    print '> Read self log'
+def read_node(df):
+    """Read log for node data."""
+    print '> Read log for node data'
     df = df.groupby('id')['rank', 'degree'].agg(lambda x: min(x.mode()))
+    print df
     return df
 
 
@@ -327,6 +275,7 @@ def prr(sent, dropped):
 
 # ----------------------------------------------------------------------------#
 def add_prr_to_node_df(node_df, app_df):
+    """Add prr for each node."""
     print '> Add prr for each node'
     node_df['prr'] = app_df.groupby('src')['drpd'].apply(
                      lambda x: prr(len(x), x.sum()))
@@ -335,6 +284,7 @@ def add_prr_to_node_df(node_df, app_df):
 
 # ----------------------------------------------------------------------------#
 def add_rdc_to_node_df(node_df, pow_df):
+    """Add rdc for each node."""
     print '> Add rdc for each node'
     node_df = node_df.join(pow_df['all_radio'].rename('rdc'))
     return node_df
@@ -342,17 +292,34 @@ def add_rdc_to_node_df(node_df, pow_df):
 
 # ----------------------------------------------------------------------------#
 def add_mean_lat_to_node_df(node_df, app_df):
+    """Add mean lat for each node."""
     print '> Add mean_lat for each node'
-    print app_df
     node_df['mean_lat'] = app_df.groupby('src')['lat'].apply(
                           lambda x: x.mean())
     return node_df
 
 
 # ----------------------------------------------------------------------------#
+def add_hops_to_node_df(node_df, app_df):
+    """Add hops for each node."""
+    print '> Add hops for each node'
+    # Add hops to node_df. N.B. cols with NaN are always converted to float
+    hops = app_df[['src', 'hops']].groupby('src').agg(lambda x: mode(x)[0])
+    node_df = node_df.join(hops['hops'].astype(int))
+
+    return node_df
+    # convert to HH:mm:ss:ms
+    # app_df['rxtime'] = pd.to_timedelta(app_df.rxtime/10000, unit='ms')
+    # app_df['txtime'] = pd.to_timedelta(app_df.txtime/10000, unit='ms')
+    # get back to ms
+    # df.time.dt.total_seconds() * 1000
+
+
+# ----------------------------------------------------------------------------#
 # Results analysis
 # ----------------------------------------------------------------------------#
 def set_box_colors(bp, index):
+    """Set the boxplot colors."""
     color = list(plt.rcParams['axes.prop_cycle'])[index]['color']
     # lw = 1.5
     for box in bp['boxes']:
@@ -557,7 +524,7 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
 # ----------------------------------------------------------------------------#
 # General Plotting
 # ----------------------------------------------------------------------------#
-def plot(plot_list, out, node_df=None, app_df=None, sdn_df=None,
+def plot(plot_list, dir, node_df=None, app_df=None, sdn_df=None,
          icmp_df=None, join_df=None):
 
     for plot in plot_list:
@@ -568,7 +535,7 @@ def plot(plot_list, out, node_df=None, app_df=None, sdn_df=None,
                         .apply(lambda x: x.mean()) \
                         .reset_index() \
                         .set_index('hops')
-            fig, ax = plot_bar(df, plot, out, df.index, df.rdc,
+            fig, ax = plot_bar(df, plot, dir, df.index, df.rdc,
                                xlabel='Hops', ylabel='Radio duty cycle (\%)')
         # hops vs prr
         elif plot == 'hops_prr':
@@ -576,14 +543,14 @@ def plot(plot_list, out, node_df=None, app_df=None, sdn_df=None,
                         .apply(lambda x: x.mean()) \
                         .reset_index() \
                         .set_index('hops')
-            fig, ax = plot_bar(df, plot, out, df.index, df.prr,
+            fig, ax = plot_bar(df, plot, dir, df.index, df.prr,
                                xlabel='Hops', ylabel='PDR (\%)')
         # hops mean latency
         elif plot == 'hops_lat_mean':
             df = app_df[['hops', 'lat']].reset_index(drop=True)
             gp = df.groupby('hops')
             means = gp.mean()
-            plot_line(df, plot, out, means.index, means.lat,
+            plot_line(df, plot, dir, means.index, means.lat,
                       xlabel='Hops',  ylabel='Mean delay (ms)', steps=1.0)
         # hops end to end latency
         elif plot == 'hops_lat_e2e':
@@ -596,7 +563,7 @@ def plot(plot_list, out, node_df=None, app_df=None, sdn_df=None,
             data = np.column_stack(df.transpose().values.tolist())
             # ticks are the column headers
             xticks = list(df.columns.values)
-            plot_box(plot, out, xticks, data,
+            plot_box(plot, dir, xticks, data,
                      xlabel='Hops', ylabel='End-to-end delay (ms)')
         # flows end to end latency
         elif plot == 'flow_lat':
@@ -609,7 +576,7 @@ def plot(plot_list, out, node_df=None, app_df=None, sdn_df=None,
             data = np.column_stack(df.transpose().values.tolist())
             # ticks are the column headers
             xticks = list(df.columns.values)
-            plot_box(plot, out, xticks, data,
+            plot_box(plot, dir, xticks, data,
                      xlabel='Flow \#', ylabel='End-to-end delay (ms)')
 
         # SDN plots
@@ -637,24 +604,24 @@ def plot(plot_list, out, node_df=None, app_df=None, sdn_df=None,
             df = df.pivot_table(index=['id'],
                                 columns=['type'],
                                 values='time').dropna(how='any')
-            plot_hist('c_join', out,
+            plot_hist('c_join', dir,
                       df['controller'].tolist(), df.index.tolist(),
                       xlabel='Time (s)', ylabel='Propotion of Nodes Joined')
-            # plot_hist('dao_join', out,
+            # plot_hist('dao_join', dir,
             #           df['dao'].tolist(), df.index.tolist(),
             #           xlabel='Time (s)', ylabel='Propotion of Nodes Joined')
-            plot_hist('dag_join', out,
+            plot_hist('dag_join', dir,
                       df['dag'].tolist(), df.index.tolist(),
                       xlabel='Time (s)', ylabel='Propotion of Nodes Joined')
         # traffic ratio
         elif plot == 'sdn_traffic_ratio':
-            plot_tr(app_df, sdn_df, icmp_df, out)
+            plot_tr(app_df, sdn_df, icmp_df, dir)
 
 
 # ----------------------------------------------------------------------------#
 # Actual graph plotting functions
 # ----------------------------------------------------------------------------#
-def set_fig_and_save(fig, ax, data, desc, out, **kwargs):
+def set_fig_and_save(fig, ax, data, desc, dir, **kwargs):
 
     # get kwargs
     ylim = kwargs['ylim'] if 'ylim' in kwargs else None
@@ -674,10 +641,10 @@ def set_fig_and_save(fig, ax, data, desc, out, **kwargs):
     fig.set_tight_layout(False)
     # save  data for post analysis
     if data is not None:
-        pickle.dump(data, file(out + desc + '.pkl', 'w'))
+        pickle.dump(data, file(dir + desc + '.pkl', 'w'))
 
     # save figure
-    fig.savefig(out + 'fig_' + desc + '.pdf')
+    fig.savefig(dir + 'fig_' + desc + '.pdf')
 
     # close all open figs
     plt.close('all')
@@ -686,7 +653,7 @@ def set_fig_and_save(fig, ax, data, desc, out, **kwargs):
 
 
 # ----------------------------------------------------------------------------#
-def plot_hist(desc, out, x, y, **kwargs):
+def plot_hist(desc, dir, x, y, **kwargs):
     print '> Plotting ' + desc + ' (hist)'
     fig, ax = plt.subplots(figsize=(8, 6))
 
@@ -703,14 +670,14 @@ def plot_hist(desc, out, x, y, **kwargs):
             'type': 'hist',
             'xlabel': xlabel,
             'ylabel': ylabel}
-    fig, ax = set_fig_and_save(fig, ax, data, desc, out,
+    fig, ax = set_fig_and_save(fig, ax, data, desc, dir,
                                xlabel=xlabel, ylabel=ylabel)
 
     return fig, ax
 
 
 # ----------------------------------------------------------------------------#
-def plot_bar(df, desc, out, x, y, ylim=None, **kwargs):
+def plot_bar(df, desc, dir, x, y, ylim=None, **kwargs):
     print '> Plotting ' + desc + ' (bar)'
     fig, ax = plt.subplots(figsize=(8, 6))
 
@@ -740,14 +707,14 @@ def plot_bar(df, desc, out, x, y, ylim=None, **kwargs):
             'width': width,
             'xlabel': xlabel,
             'ylabel': ylabel}
-    fig, ax = set_fig_and_save(fig, ax, data, desc, out,
+    fig, ax = set_fig_and_save(fig, ax, data, desc, dir,
                                xlabel=xlabel, ylabel=ylabel)
 
     return fig, ax
 
 
 # ----------------------------------------------------------------------------#
-def plot_box(desc, out, x, y, **kwargs):
+def plot_box(desc, dir, x, y, **kwargs):
     print '> Plotting ' + desc + ' (box)'
 
     # subfigures
@@ -776,7 +743,7 @@ def plot_box(desc, out, x, y, **kwargs):
             'xlabel': xlabel,
             'ylabel': ylabel}
 
-    fig, ax = set_fig_and_save(fig, ax, data, desc, out,
+    fig, ax = set_fig_and_save(fig, ax, data, desc, dir,
                                ylim=ylim,
                                xlabel=xlabel,
                                ylabel=ylabel)
@@ -785,7 +752,7 @@ def plot_box(desc, out, x, y, **kwargs):
 
 
 # ----------------------------------------------------------------------------#
-def plot_violin(df, desc, out, x, xlabel, y, ylabel):
+def plot_violin(df, desc, dir, x, xlabel, y, ylabel):
     print '> Plotting ' + desc + ' (violin)'
     fig, ax = plt.subplots(figsize=(8, 6))
 
@@ -802,14 +769,14 @@ def plot_violin(df, desc, out, x, xlabel, y, ylabel):
             'xlabel': xlabel,
             'ylabel': ylabel}
 
-    fig, ax = set_fig_and_save(fig, ax, data, desc, out,
+    fig, ax = set_fig_and_save(fig, ax, data, desc, dir,
                                xlabel=xlabel, ylabel=ylabel)
 
     return fig, ax
 
 
 # ----------------------------------------------------------------------------#
-def plot_line(df, desc, out, x, y, **kwargs):
+def plot_line(df, desc, dir, x, y, **kwargs):
     print '> Plotting ' + desc + ' (line)'
 
     # constants
@@ -844,7 +811,7 @@ def plot_line(df, desc, out, x, y, **kwargs):
             'type': 'line',
             'xlabel': xlabel,
             'ylabel': ylabel}
-    fig, ax = set_fig_and_save(fig, ax, data, desc, out,
+    fig, ax = set_fig_and_save(fig, ax, data, desc, dir,
                                xlabel=xlabel, ylabel=ylabel)
     return fig, ax
 
@@ -852,18 +819,17 @@ def plot_line(df, desc, out, x, y, **kwargs):
 # ----------------------------------------------------------------------------#
 # SDN Plotting
 # ----------------------------------------------------------------------------#
-def plot_tr(app_df, sdn_df, icmp_df, out):
+def plot_tr(app_df, sdn_df, icmp_df, dir):
     # FIXME: We are only looking at FTQ/FTS
     if sdn_df is not None:
         sdn_cbr_len = (sdn_df['typ'] == 'NSU').sum()
         sdn_vbr_len = (sdn_df['typ'] == 'FTQ').sum() + \
                       (sdn_df['typ'] == 'FTS').sum()
-        sdn_icmp_count = (icmp_df['type'] == 200).sum()
 
     rpl_icmp_count = (icmp_df['type'] == 155).sum()
     if sdn_df is not None:
         total = len(app_df) + sdn_cbr_len + sdn_vbr_len \
-                + rpl_icmp_count + sdn_icmp_count
+                + rpl_icmp_count
     else:
         total = len(app_df) + rpl_icmp_count
 
@@ -871,24 +837,22 @@ def plot_tr(app_df, sdn_df, icmp_df, out):
     if sdn_df is not None:
         sdn_cbr_ratio = sdn_cbr_len/total  # get sdn packets as a % of total
         sdn_vbr_ratio = sdn_vbr_len/total  # get sdn packets as a % of total
-        sdn_icmp_ratio = sdn_icmp_count/total
     rpl_icmp_ratio = rpl_icmp_count/total
 
     if sdn_df is not None:
-        df = pd.DataFrame([app_ratio, rpl_icmp_ratio, sdn_icmp_ratio,
+        df = pd.DataFrame([app_ratio, rpl_icmp_ratio,
                            sdn_cbr_ratio, sdn_vbr_ratio],
-                          index=['App', 'RPL', 'SDN-ICMP',
-                                 'SDN-CBR', 'SDN-VBR'],
+                          index=['App', 'RPL', 'SDN-CBR', 'SDN-VBR'],
                           columns=['ratio'])
     else:
         df = pd.DataFrame([app_ratio, rpl_icmp_ratio],
                           index=['App', 'RPL'],
                           columns=['ratio'])
     df.index.name = 'type'
-    fig, ax = plot_bar(df, 'traffic_ratio', out, x=df.index,
+    fig, ax = plot_bar(df, 'traffic_ratio', dir, x=df.index,
                        y=df.ratio)
     data = {'x': df.index, 'y': df.ratio}
-    set_fig_and_save(fig, ax, data, 'traffic_ratio', out,
+    set_fig_and_save(fig, ax, data, 'traffic_ratio', dir,
                      xlabel='Traffic type',
                      ylabel='Ratio of total traffic')
 
