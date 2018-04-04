@@ -6,7 +6,7 @@ path:    /home/mike/Repos/usdn
 wd:      /examples/ipv6/sdn-udp
 log:     /tools/cooja/build/COOJA.testlog
 out:     /home/mike/Results/NSU_COMP
-csc:     usdn-30-node.csc
+csc:     usdn-20-node.csc
 target:  exp5438
 
 # ----------------------------------------------------------------------------

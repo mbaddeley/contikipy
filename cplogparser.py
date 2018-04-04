@@ -101,7 +101,9 @@ def extract_data(df_dict):
         if pow_df is not None:
             node_df = add_rdc_to_node_df(node_df, pow_df)
         df_dict['node'] = node_df
-        print df_dict['node']
+
+    print '> Node data summary...'
+    print df_dict['node']
 
 
 # ----------------------------------------------------------------------------#
@@ -261,7 +263,6 @@ def read_node(df):
     """Read log for node data."""
     print '> Read log for node data'
     df = df.groupby('id')['rank', 'degree'].agg(lambda x: min(x.mode()))
-    print df
     return df
 
 

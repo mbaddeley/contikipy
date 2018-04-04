@@ -1,5 +1,5 @@
 #!/usr/bin/python
-
+"""Contiki log parser."""
 import argparse
 import os
 import shutil  # for copying files
@@ -16,6 +16,7 @@ cfg = yaml.load(open("config.yaml", 'r'))
 
 # ----------------------------------------------------------------------------#
 def main():
+    """Take in command line arguments and parses log accordingly."""
     # fetch arguments
     ap = argparse.ArgumentParser(prog='ContikiPy',
                                  description='Cooja simulation runner and '
