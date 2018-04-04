@@ -69,7 +69,7 @@ def main():
         makeargs = makeargs.replace('[', '').replace(']', '')
         print makeargs
         # make a note of our intended sim directory
-        outdir = args.out + "/" + desc
+        outdir = args.out + "/" + desc + "/"
         # run a cooja simulation with these sim settings
         if int(args.runcooja):
             if 'csc' in sim:
@@ -99,7 +99,7 @@ def main():
 def parse(log, dir, desc, fmt, plots):
     """Parse the main log to generate the data."""
     if log is None:
-        log = dir + "/" + desc + ".log"
+        log = dir + desc + ".log"
     print '**** Parse log and gererate results in: ' + dir
     print '> plots: ' + ' '.join(plots)
     logtype = (l for l in cfg['logtypes'] if l['type'] == fmt).next()
@@ -109,7 +109,9 @@ def parse(log, dir, desc, fmt, plots):
             regex = logtype['fmt_re'] + d['regex']
         else:
             regex = logtype['fmt_re'] + logtype['log_re'] + d['regex']
-        df_dict.update(lp.parse_log(d['type'], log, dir, fmt, regex))
+        df = lp.parse_log(d['type'], log, dir, fmt, regex)
+        if df is not None:
+            df_dict.update({d['type']: df})
     lp.extract_data(df_dict)
     lp.pickle_data(dir, df_dict)
     lp.plot_data(dir, df_dict, plots)

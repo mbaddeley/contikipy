@@ -60,8 +60,8 @@ def parse_log(datatype, log, dir, fmt, regex):
         # do the parsing
         print '**** Parsing log using ' + datatype + ' regex....'
         data_re = re.compile(regex)
-        data_log = parse(log, dir + "/log_" + datatype + ".log", data_re)
-        if(os.path.getsize(data_log.name) != 0):
+        data_log = parse(log, dir + "log_" + datatype + ".log", data_re)
+        if (os.path.getsize(data_log.name) != 0):
             data_df = csv_to_df(data_log)
             if datatype in read_fnc_dict.keys():
                 # do some formatting on the df
@@ -72,11 +72,11 @@ def parse_log(datatype, log, dir, fmt, regex):
                 data_df = None
 
             if data_df is not None:
-                return {datatype: data_df}
+                return data_df
             else:
-                raise Exception('Error: df was None!')
+                raise Exception('ERROR: Dataframe was None!')
         else:
-            raise Exception('Error: log was None!')
+            print 'WARN: Log was empty'
     except Exception as e:
             print e
             sys.exit(0)
@@ -123,9 +123,12 @@ def plot_data(dir, data, plots):
     print '**** Generating plots...' + str(plots)
     node_df = data['node']
     app_df = data['app']
-    sdn_df = data['sdn']
     icmp_df = data['icmp']
     join_df = data['join']
+    if 'sdn' in data.keys():
+        sdn_df = data['sdn']
+    else:
+        sdn_df = None
     plot(plots, dir, node_df=node_df, app_df=app_df, sdn_df=sdn_df,
          icmp_df=icmp_df, join_df=join_df)
 
@@ -462,6 +465,7 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
                 ax.bar(ind, data['y'], width, color=color, label=label)
             # histograms
             elif data['type'] == 'hist':
+                print data['y']
                 ax.hist(data['x'], data['y'], normed=1, histtype='step',
                         cumulative=True, stacked=True, fill=True,
                         color=color)
@@ -502,6 +506,8 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
             ax.legend(artists, labels, loc='upper left')
         else:
             if 'hops_prr' in plot:
+                ax.legend(labels, loc='best')
+            if 'hops_rdc' in plot:
                 ax.legend(labels, loc='lower right')
             elif 'join' in plot:
                 ax.legend(['RPL-DAG', r'$\mu$SDN-Controller'],
@@ -678,6 +684,11 @@ def plot_hist(desc, dir, x, y, **kwargs):
 
 
 # ----------------------------------------------------------------------------#
+def checkstring(obj):
+        return all(isinstance(elem, basestring) for elem in obj)
+
+
+# ----------------------------------------------------------------------------#
 def plot_bar(df, desc, dir, x, y, ylim=None, **kwargs):
     print '> Plotting ' + desc + ' (bar)'
     fig, ax = plt.subplots(figsize=(8, 6))
@@ -696,12 +707,13 @@ def plot_bar(df, desc, dir, x, y, ylim=None, **kwargs):
 
     # set x-axis
     ax.set_xticks(np.arange(min(ind), max(ind)+1, 1.0))
+    # check for string, if not then convert x to ints for the label
+    if not checkstring(x):
+        x = [int(i) for i in x]
     ax.set_xticklabels(x)
     # set y limits
     if ylim is not None:
         ax.set_ylim(ylim)
-
-    # ax.legend((bar1[0], bar2[0]), ('Men', 'Women'))
 
     data = {'x': x, 'y': y,
             'type': 'bar',
