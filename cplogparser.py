@@ -17,6 +17,9 @@ import pandas as pd  # table manipulation
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
 from scipy.stats.mstats import mode
 
+from pprint import pprint
+from operator import itemgetter
+
 # Matplotlib settings for graphs (need texlive-full, ghostscript and dvipng)
 plt.rc('font', family='sans-serif', weight='bold')
 plt.rc('text', usetex=True)
@@ -46,7 +49,7 @@ def parse_log(datatype, log, dir, fmt, regex):
     print '-' * len(info)
 
     # dictionary of the various data df formatters
-    read_fnc_dict = {
+    read_function_map = {
         "pow":  read_pow,
         "app":  read_app,
         "sdn":  read_sdn,
@@ -63,9 +66,9 @@ def parse_log(datatype, log, dir, fmt, regex):
         data_log = parse(log, dir + "log_" + datatype + ".log", data_re)
         if (os.path.getsize(data_log.name) != 0):
             data_df = csv_to_df(data_log)
-            if datatype in read_fnc_dict.keys():
+            if datatype in read_function_map.keys():
                 # do some formatting on the df
-                data_df = read_fnc_dict[datatype](data_df)
+                data_df = read_function_map[datatype](data_df)
             elif 'join' in datatype:
                 data_df = data_df
             else:
@@ -102,7 +105,7 @@ def extract_data(df_dict):
             node_df = add_rdc_to_node_df(node_df, pow_df)
         df_dict['node'] = node_df
 
-    print '> Node data summary...'
+    print '**** Node data summary...'
     print df_dict['node']
 
 
@@ -118,7 +121,7 @@ def pickle_data(dir, data):
 
 
 # ----------------------------------------------------------------------------#
-def plot_data(dir, data, plots):
+def plot_data(sim, dir, data, plots):
     """Plot data according to required plot types."""
     print '**** Generating plots...' + str(plots)
     node_df = data['node']
@@ -129,7 +132,7 @@ def plot_data(dir, data, plots):
         sdn_df = data['sdn']
     else:
         sdn_df = None
-    plot(plots, dir, node_df=node_df, app_df=app_df, sdn_df=sdn_df,
+    plot(sim, plots, dir, node_df=node_df, app_df=app_df, sdn_df=sdn_df,
          icmp_df=icmp_df, join_df=join_df)
 
 
@@ -370,7 +373,7 @@ def boxplot_zoom(ax, data, width=1, height=1,
                ls='--')
 
 
-# ----------------------------------------------------------------------------#
+# # ----------------------------------------------------------------------------#
 # def compare_boxplots():
 #     pos = np.arange(count, xmax, nsims + 1)
 #     # lastdata = data['y'][1]
@@ -382,17 +385,19 @@ def boxplot_zoom(ax, data, width=1, height=1,
 #     artists.append(bp["boxes"][0])
 
 # ----------------------------------------------------------------------------#
-def compare_results(rootdir, simlist, plottypes, **kwargs):
-    print '**** Analyzing (comparing) results'
-    print '> SIMS: ',
-    print simlist
-    print '> Plots: ',
-    print plottypes
+def int_from_string(string):
+    """Return the first integer number found in a string."""
+    int = re.search('\d+', string).group()
+    if int is None:
+        return None
+    else:
+        return int
 
+
+# ----------------------------------------------------------------------------#
+def search_dirs(rootdir, simlist, plottypes):
+    """Search simulation folders to collate data."""
     plotdata = {}  # dictionary of plot data
-    gap = 0.5  # gap for xticks
-    xmax = None  # work out xmax
-
     # for each plot type
     for plot in plottypes:
         plotdata[plot] = []  # create a list to hold data structs
@@ -407,29 +412,51 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
                         if (plot + '.pkl') in f:
                             print '- found pickle in ' + dir + '!'
                             d = pickle.load(file(os.path.join(root, dir, f)))
-                            plotdata[plot].append({dir: d})
+                            id = int_from_string(dir)
+                            print id
+                            plotdata[plot].append({'id': int(id),
+                                                   'label': dir,
+                                                   'data': d})
                             found = True
                     if not found:
                         print '- None'
-    # lastdata = []
+
+    return plotdata
+
+
+# ----------------------------------------------------------------------------#
+def compare_results(rootdir, simlist, plottypes, **kwargs):
+    print '**** Analyzing (comparing) results'
+    print '> SIMS: ',
+    print simlist
+    print '> Plots: ',
+    print plottypes
+
+    gap = 0.5  # gap for xticks
+    xmax = None  # work out xmax
+
+    plotdata = search_dirs(rootdir, simlist, plottypes)
+
     # iterate over all the plots we have data for
-    for plot in plotdata:
+    for plot, sims in plotdata.items():
         count = 1  # reset sim counter
-        nsims = len(plotdata[plot])  # number sims to compare
+        nsims = len(sims)  # number sims to compare
         print '> Comparing ' + str(nsims) + ' plots for \'' + plot + '\''
 
         fig, ax = plt.subplots(1, 1, figsize=(8, 6))
         artists = []  # save the artists for the legend
         labels = []  # save the labels for the legend
 
-        # print plotdata[plot]
+        # sort the data
+        # data = sorted(data, key=lambda d: d.keys(''))
+        sims = sorted(sims, key=lambda d: d['id'], reverse=False)
 
         # iterate over all the sim data sets in the list for this plot
-        for sim in plotdata[plot]:
+        for sim in sims:
             # sim label and data
-            label = sim.keys()[0]
+            label = sim['label']
             labels.append(label)
-            data = sim.values()[0]
+            data = sim['data']
             # plot color (cyclic)
             color = list(plt.rcParams['axes.prop_cycle'])[count-1]['color']
             # work out width
@@ -444,7 +471,7 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
             if data['type'] == 'box':
                 pos = np.arange(count, xmax, nsims + 1)
                 # lastdata = data['y'][1]
-                bp = ax.boxplot(data['y'], positions=pos, notch=True,
+                bp = ax.boxplot(data['y'], positions=pos, notch=False,
                                 widths=width,
                                 showfliers=False,
                                 patch_artist=True)
@@ -503,18 +530,19 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
         for label in labels:
             label = r'\textbf{' + label + '}'  # make labels bold
         if artists:
-            ax.legend(artists, labels, loc='upper left')
+            ax.legend(artists, labels, loc='upper right')
+            ax.set_xticks([1, 2, 3])
+            ax.set_xticklabels(['60', '180', '300'])
         else:
             if 'hops_prr' in plot:
                 ax.legend(labels, loc='best')
-            if 'hops_rdc' in plot:
+            elif 'hops_rdc' in plot:
                 ax.legend(labels, loc='lower right')
             elif 'join' in plot:
                 ax.legend(['RPL-DAG', r'$\mu$SDN-Controller'],
                           loc='lower right')
             else:
                 ax.legend(labels, loc='best')
-
         # boxplot_zoom(ax, lastdata,
         #              width=1.5, height=1.5,
         #              xlim=[0, 6.5], ylim=[0, 11000],
@@ -531,9 +559,10 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
 # ----------------------------------------------------------------------------#
 # General Plotting
 # ----------------------------------------------------------------------------#
-def plot(plot_list, dir, node_df=None, app_df=None, sdn_df=None,
+def plot(sim, plot_list, dir, node_df=None, app_df=None, sdn_df=None,
          icmp_df=None, join_df=None):
-
+    """Process the data for all plottypes."""
+    print '**** Do plots for simulation: ' + sim
     for plot in plot_list:
         # General plots
         # hops vs rdc
@@ -568,10 +597,22 @@ def plot(plot_list, dir, node_df=None, app_df=None, sdn_df=None,
             df = df.dropna(how='all')
             # matplotlib needs a list
             data = np.column_stack(df.transpose().values.tolist())
+            print data
             # ticks are the column headers
             xticks = list(df.columns.values)
             plot_box(plot, dir, xticks, data,
                      xlabel='Hops', ylabel='End-to-end delay (ms)')
+        # hops end to end latency
+        elif plot == 'avg_lat':
+            df = node_df['mean_lat']
+            df = df.dropna(how='all')
+            data = df.tolist()
+            xticks = [sim]
+            xlabel = 'Flowtable Lifetime (s)'
+            # xlabel = 'Controller Update Period (s)'
+            ylabel = 'End-to-end delay (ms)'
+            plot_box(plot, dir, xticks, data, xlabel=xlabel, ylabel=ylabel)
+
         # flows end to end latency
         elif plot == 'flow_lat':
             df = app_df.pivot_table(index=app_df.groupby('app').cumcount(),
@@ -728,7 +769,10 @@ def plot_bar(df, desc, dir, x, y, ylim=None, **kwargs):
 
 # ----------------------------------------------------------------------------#
 def plot_box(desc, dir, x, y, **kwargs):
+    """Plot a boxplot and save."""
     print '> Plotting ' + desc + ' (box)'
+
+    print x
 
     # subfigures
     fig, ax = plt.subplots(figsize=(8, 6))
@@ -745,12 +789,12 @@ def plot_box(desc, dir, x, y, **kwargs):
     ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
 
     # Filter data using np.isnan
-    mask = ~np.isnan(y)
-    filtered_data = [d[m] for d, m in zip(y.T, mask.T)]
-    bp = ax.boxplot(filtered_data, showfliers=False, patch_artist=True)
+    # mask = ~np.isnan(y)
+    # filtered_data = [d[m] for d, m in zip(y.T, mask.T)]
+    bp = ax.boxplot(y, showfliers=False, patch_artist=True)
     set_box_colors(bp, 0)
 
-    data = {'x': x, 'y': filtered_data,
+    data = {'x': x, 'y': y,
             'type': 'box',
             'width': width,
             'xlabel': xlabel,

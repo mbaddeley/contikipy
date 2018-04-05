@@ -50,18 +50,18 @@ def main():
         # get analysis configuration
         analysis = conf.analysisconfig()
     else:
-        simulations = [{'desc': '', 'makeargs': str(args.makeargs)}]
+        simulations = [{'simname': '', 'makeargs': str(args.makeargs)}]
         analysis = None
 
     simlog = None
     print '**** Run ' + str(len(simulations)) + ' simulations'
     for sim in simulations:
         # generate a simulation description
-        desc = sim['desc']
+        simname = sim['desc']
         makeargs = sim['makeargs']
         plot_config = sim['plot']
         # Print some information about this simulation
-        info = 'Running simulation: {0}'.format(desc)
+        info = 'Running simulation: {0}'.format(simname)
         print '=' * len(info)
         print info
         print '=' * len(info)
@@ -69,7 +69,7 @@ def main():
         makeargs = makeargs.replace('[', '').replace(']', '')
         print makeargs
         # make a note of our intended sim directory
-        outdir = args.out + "/" + desc + "/"
+        outdir = args.out + "/" + simname + "/"
         # run a cooja simulation with these sim settings
         if int(args.runcooja):
             if 'csc' in sim:
@@ -84,10 +84,10 @@ def main():
                          csc,
                          outdir,
                          makeargs,
-                         desc)
+                         simname)
         # generate results by parsing the cooja log
-        if int(args.parse) and desc is not None:
-            parse(simlog, outdir, desc, 'cooja', plot_config)
+        if int(args.parse) and simname is not None:
+            parse(simlog, outdir, simname, 'cooja', plot_config)
 
     # analyze the generated results
     if int(args.comp) and analysis is not None:
@@ -96,12 +96,11 @@ def main():
 
 
 # ----------------------------------------------------------------------------#
-def parse(log, dir, desc, fmt, plots):
-    """Parse the main log to generate the data."""
+def parse(log, dir, simname, fmt, plots):
+    """Parse the main log for each datatype."""
     if log is None:
-        log = dir + desc + ".log"
-    print '**** Parse log and gererate results in: ' + dir
-    print '> plots: ' + ' '.join(plots)
+        log = dir + simname + ".log"
+    print '**** Parse log and gererate data logs in: ' + dir
     logtype = (l for l in cfg['logtypes'] if l['type'] == fmt).next()
     df_dict = {}
     for d in cfg['data']['dictionary']:
@@ -113,12 +112,14 @@ def parse(log, dir, desc, fmt, plots):
         if df is not None:
             df_dict.update({d['type']: df})
     lp.extract_data(df_dict)
+    print '**** Pickle the data...'
     lp.pickle_data(dir, df_dict)
-    lp.plot_data(dir, df_dict, plots)
+    print '**** Generate the following plots: ' + ' '.join(plots)
+    lp.plot_data(simname, dir, df_dict, plots)
 
 
 # ----------------------------------------------------------------------------#
-def run(contiki, target, log, wd, csc, outdir, args, desc):
+def run(contiki, target, log, wd, csc, outdir, args, simname):
     """Clean, make, and run cooja."""
     print '**** Clean and make: ' + contiki + wd + "/" + csc
     contikilog = contiki + log
@@ -131,11 +132,11 @@ def run(contiki, target, log, wd, csc, outdir, args, desc):
     # Create a new folder for this scenario
     if not os.path.exists(outdir):
         os.makedirs(outdir)
-    print '**** Running simulation ' + desc
+    print '**** Running simulation ' + simname
     run_cooja(contiki, contiki + wd + '/' + csc, args)
     print '**** Copy log into simulation directory'
-    # Copy contiki ouput log file and prefix the desc
-    simlog = outdir + "/" + desc + '.log'
+    # Copy contiki ouput log file and prefix the simname
+    simlog = outdir + "/" + simname + '.log'
     print simlog
     shutil.copyfile(contikilog, simlog)
 
