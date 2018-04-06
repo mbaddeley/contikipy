@@ -9,6 +9,7 @@ import yaml
 
 import cpconfig as config
 import cplogparser as lp
+import cpcomp
 
 # import yaml config
 cfg = yaml.load(open("config.yaml", 'r'))
@@ -92,7 +93,7 @@ def main():
     # analyze the generated results
     if int(args.comp) and analysis is not None:
         print '**** Analyzing (comparing) results...'
-        lp.compare_results(args.out, analysis['sims'], analysis['plots'])
+        cpcomp.compare_results(args.out, analysis['sims'], analysis['plots'])
 
 
 # ----------------------------------------------------------------------------#
@@ -108,10 +109,10 @@ def parse(log, dir, simname, fmt, plots):
             regex = logtype['fmt_re'] + d['regex']
         else:
             regex = logtype['fmt_re'] + logtype['log_re'] + d['regex']
-        df = lp.parse_log(d['type'], log, dir, fmt, regex)
+        df = lp.scrape_data(d['type'], log, dir, fmt, regex)
         if df is not None:
             df_dict.update({d['type']: df})
-    lp.extract_data(df_dict)
+    lp.analyze_data(df_dict)
     print '**** Pickle the data...'
     lp.pickle_data(dir, df_dict)
     print '**** Generate the following plots: ' + ' '.join(plots)

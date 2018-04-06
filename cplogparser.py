@@ -4,20 +4,18 @@
 This module parses cooja logs according to a list of required data.
 """
 from __future__ import division
-
 import os  # for makedir
-import pickle
 import re  # regex
 import sys
-
 import matplotlib.pyplot as plt  # general plotting
 import numpy as np  # number crunching
 # import seaborn as sns  # fancy plotting
 import pandas as pd  # table manipulation
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
 from scipy.stats.mstats import mode
 
-from pprint import pprint
+import cpplotter as cpplot
+
+# from pprint import pprint
 
 # Matplotlib settings for graphs (need texlive-full, ghostscript and dvipng)
 plt.rc('font', family='sans-serif', weight='bold')
@@ -38,8 +36,8 @@ pd.set_option('display.width', 1000)
 
 
 # ----------------------------------------------------------------------------#
-def parse_log(datatype, log, dir, fmt, regex):
-    """Parse the main log for data."""
+def scrape_data(datatype, log, dir, fmt, regex):
+    """Scrape the main log for data."""
     # Print some information about what's being parsed
     info = 'Data: {0} | Log: {1} ' \
            '| Log Format: {2}'.format(datatype, log, fmt)
@@ -49,11 +47,11 @@ def parse_log(datatype, log, dir, fmt, regex):
 
     # dictionary of the various data df formatters
     read_function_map = {
-        "pow":  read_pow,
-        "app":  read_app,
-        "sdn":  read_sdn,
-        "node": read_node,
-        "icmp": read_icmp
+        "pow":  format_pow_data,
+        "app":  format_app_data,
+        "sdn":  format_sdn_data,
+        "node": format_node_data,
+        "icmp": format_icmp_data
     }
 
     try:
@@ -62,7 +60,7 @@ def parse_log(datatype, log, dir, fmt, regex):
         # do the parsing
         print '*** Parsing log using ' + datatype + ' regex....'
         data_re = re.compile(regex)
-        data_log = parse(log, dir + "log_" + datatype + ".log", data_re)
+        data_log = parse_log(log, dir + "log_" + datatype + ".log", data_re)
         if (os.path.getsize(data_log.name) != 0):
             data_df = csv_to_df(data_log)
             if datatype in read_function_map.keys():
@@ -85,7 +83,7 @@ def parse_log(datatype, log, dir, fmt, regex):
 
 
 # ----------------------------------------------------------------------------#
-def extract_data(df_dict):
+def analyze_data(df_dict):
     """Take the dfs generated from the main log and analyze."""
     print '*** Do some additional processing on the dataframes...'
     # get general node data
@@ -135,48 +133,10 @@ def plot_data(sim, dir, data, plots):
 
 
 # ----------------------------------------------------------------------------#
-# Parse main log using regex
-# ----------------------------------------------------------------------------#
-def parse(file_from, file_to, pattern):
-    """Parse a log using regex and save in new log."""
-    # Let's us know this is the first line and we need to write a header.
-    write_header = 1
-    # open the files
-    with open(file_from, 'rb') as f:
-        with open(file_to, 'wb') as t:
-            for l in f:
-                # HACK: Fixes issue with '-' in pow
-                m = pattern.match(l.replace('.-', '.'))
-                if m:
-                    g = m.groupdict('')
-                    if write_header:
-                        t.write(','.join(g.keys()))
-                        t.write('\n')
-                        write_header = 0
-                    t.write(','.join(g.values()))
-                    t.write('\n')
-                continue
-    # Remember to close the logs!
-    f.close()
-    t.close()
-
-    return t
-
-
-# ----------------------------------------------------------------------------#
 # Read logs
 # ----------------------------------------------------------------------------#
-def csv_to_df(file):
-    """Create df from csv."""
-    df = pd.read_csv(file.name)
-    # drop any ampty columns
-    df = df.dropna(axis=1, how='all')
-    return df
-
-
-# ----------------------------------------------------------------------------#
-def read_app(df):
-    """Read log for application data."""
+def format_app_data(df):
+    """Format application data."""
     print '> Read app log'
     # sort the table by src/dest/seq so txrx pairs will be next to each other
     # this fixes NaN hop counts being filled incorrectly
@@ -207,8 +167,8 @@ def read_app(df):
 
 
 # ----------------------------------------------------------------------------#
-def read_icmp(df):
-    """Read log for icmp data."""
+def format_icmp_data(df):
+    """Format icmp data."""
     print '> Read icmp log'
     # TODO: Possibly do some processing?
     # print (df['type'] == 155).sum()
@@ -217,8 +177,8 @@ def read_icmp(df):
 
 
 # ----------------------------------------------------------------------------#
-def read_sdn(sdn_df):
-    """Read log for sdn data."""
+def format_sdn_data(sdn_df):
+    """Format sdn data."""
     print '> Read sdn log'
 
     # Rearrange columns
@@ -251,8 +211,8 @@ def read_sdn(sdn_df):
 
 
 # ----------------------------------------------------------------------------#
-def read_pow(df):
-    """Read log for power data."""
+def format_pow_data(df):
+    """Format power data."""
     print '> Read power log'
     # get last row of each 'id' group and use the all_radio value
     df = df.groupby('id').last()
@@ -263,10 +223,48 @@ def read_pow(df):
 
 
 # ----------------------------------------------------------------------------#
-def read_node(df):
-    """Read log for node data."""
-    print '> Read log for node data'
+def format_node_data(df):
+    """Format node data."""
+    print '> Format node data'
     df = df.groupby('id')['rank', 'degree'].agg(lambda x: min(x.mode()))
+    return df
+
+
+# ----------------------------------------------------------------------------#
+# Parse main log using regex
+# ----------------------------------------------------------------------------#
+def parse_log(file_from, file_to, pattern):
+    """Parse a log using regex and save in new log."""
+    # Let's us know this is the first line and we need to write a header.
+    write_header = 1
+    # open the files
+    with open(file_from, 'rb') as f:
+        with open(file_to, 'wb') as t:
+            for l in f:
+                # HACK: Fixes issue with '-' in pow
+                m = pattern.match(l.replace('.-', '.'))
+                if m:
+                    g = m.groupdict('')
+                    if write_header:
+                        t.write(','.join(g.keys()))
+                        t.write('\n')
+                        write_header = 0
+                    t.write(','.join(g.values()))
+                    t.write('\n')
+                continue
+    # Remember to close the logs!
+    f.close()
+    t.close()
+
+    return t
+
+
+# ----------------------------------------------------------------------------#
+def csv_to_df(file):
+    """Create df from csv."""
+    df = pd.read_csv(file.name)
+    # drop any ampty columns
+    df = df.dropna(axis=1, how='all')
     return df
 
 
@@ -321,232 +319,6 @@ def add_hops_to_node_df(node_df, app_df):
 
 
 # ----------------------------------------------------------------------------#
-# Results analysis
-# ----------------------------------------------------------------------------#
-def set_box_colors(bp, index):
-    """Set the boxplot colors."""
-    color = list(plt.rcParams['axes.prop_cycle'])[index]['color']
-    # lw = 1.5
-    for box in bp['boxes']:
-        # change fill color
-        box.set(facecolor=color)
-    # change color the medians
-    for median in bp['medians']:
-        median.set(color='black')
-
-    # for box in bp['boxes']:
-    #     # change outline color
-    #     box.set(color='#7570b3', linewidth=linewidth)
-    #     # # change fill color
-    #     box.set(facecolor='b')
-    # # change color and linewidth of the whiskers
-    # for whisker in bp['whiskers']:
-    #     whisker.set(color='#7570b3', linewidth=linewidth)
-    # # change color and linewidth of the caps
-    # for cap in bp['caps']:
-    #     cap.set(color='#7570b3', linewidth=linewidth)
-    # # change the style of fliers and their fill
-    # for flier in bp['fliers']:
-    #     flier.set(marker='o', markerfacecolor='#e7298a', alpha=0.5)
-
-
-# ----------------------------------------------------------------------------#
-def boxplot_zoom(ax, data, width=1, height=1,
-                 xlim=None, ylim=None,
-                 bp_width=0.35, pos=[1], color=1):
-    """Plot a zoomed boxplot and save."""
-    if xlim is not None:
-        ax.set_xlim(xlim)
-    if ylim is not None:
-        ax.set_ylim(ylim)
-    axins = inset_axes(ax, width, height, loc=1)
-    bp = axins.boxplot(data, notch=False, positions=pos, widths=bp_width,
-                       showfliers=False, patch_artist=True)
-    set_box_colors(bp, color)
-    axins.axis([4.7, 5.3, 310, 370])
-    axins.set_xticks([])
-    mark_inset(ax, axins,
-               loc1=3, loc2=4,  # left and right line anchors
-               fc="none",  # facecolor
-               ec="0.3",  # edgecolor
-               ls='--')
-
-
-# ----------------------------------------------------------------------------#
-# def compare_boxplots():
-#     pos = np.arange(count, xmax, nsims + 1)
-#     # lastdata = data['y'][1]
-#     bp = ax.boxplot(data['y'], positions=pos, notch=True,
-#                     widths=width,
-#                     showfliers=False,
-#                     patch_artist=True)
-#     set_box_colors(bp, count-1)
-#     artists.append(bp["boxes"][0])
-
-# ----------------------------------------------------------------------------#
-
-
-# ----------------------------------------------------------------------------#
-def search_dirs(rootdir, simlist, plottypes):
-    """Search simulation folders to collate data."""
-    plotdata = {}  # dictionary of plot data
-    # for each plot type
-    for plot in plottypes:
-        plotdata[plot] = []  # create a list to hold data structs
-        print '> Looking for plots of type ... ' + plot
-        # walk through directory structure
-        for root, dirs, files in os.walk(rootdir):
-            for dir in sorted(dirs):
-                if dir in simlist:
-                    found = False
-                    print ' ... Scanning \"' + root + '/' + dir + '/\"',
-                    for f in os.listdir(os.path.join(root, dir)):
-                        if (plot + '.pkl') in f:
-                            print '- found pickle in ' + dir + '!'
-                            d = pickle.load(file(os.path.join(root, dir, f)))
-                            id = contains_int(dir)
-                            plotdata[plot].append({'id': id,
-                                                   'label': dir,
-                                                   'data': d})
-                            found = True
-                    if not found:
-                        print '- None'
-
-    return plotdata
-
-
-# ----------------------------------------------------------------------------#
-def compare_results(rootdir, simlist, plottypes, **kwargs):
-    """Compare results between data sets for a list of plot types."""
-    print '> SIMS: ',
-    print simlist
-    print '> Plots: ',
-    print plottypes
-
-    gap = 0.5  # gap for xticks
-    xmax = None  # work out xmax
-
-    plotdata = search_dirs(rootdir, simlist, plottypes)
-
-    # iterate over all the plots we have data for
-    for plot, sims in plotdata.items():
-        count = 1  # reset sim counter
-        nsims = len(sims)  # number sims to compare
-        print '> Comparing ' + str(nsims) + ' plots for \'' + plot + '\''
-
-        fig, ax = plt.subplots(1, 1, figsize=(8, 6))
-        artists = []  # save the artists for the legend
-        labels = []  # save the labels for the legend
-
-        # sort the data
-        # data = sorted(data, key=lambda d: d.keys(''))
-        sims = sorted(sims, key=lambda d: d['id'], reverse=False)
-
-        # iterate over all the sim data sets in the list for this plot
-        for sim in sims:
-            # sim label and data
-            label = sim['label']
-            labels.append(label)
-            data = sim['data']
-            # plot color (cyclic)
-            color = list(plt.rcParams['axes.prop_cycle'])[count-1]['color']
-            # work out width
-            if 'width' in data:
-                width = data['width']
-            # work out maximum xtick value
-            xmax = nsims * len(data['x']) + count + len(data['x']) - nsims
-            print ' ... ' + data['type'] + ' plot',
-            print str(count) + '/' + str(nsims)
-
-            # boxplots
-            if data['type'] == 'box':
-                pos = np.arange(count, xmax, nsims + 1)
-                # lastdata = data['y'][1]
-                bp = ax.boxplot(data['y'], positions=pos, notch=False,
-                                widths=width,
-                                showfliers=False,
-                                patch_artist=True)
-                set_box_colors(bp, count-1)
-                artists.append(bp["boxes"][0])
-            # lineplots
-            elif data['type'] == 'line':
-                ax.plot(data['x'], data['y'],
-                        color=color, marker='s', lw=2.0,
-                        label=label)
-            # barplots
-            elif data['type'] == 'bar':
-                xmax = max(data['x'])
-                start = gap + width*(count-1)
-                end = (gap + width*nsims) * xmax
-                step = gap + width*nsims
-                ind = np.arange(start, end, step)
-                ax.bar(ind, data['y'], width, color=color, label=label)
-            # histograms
-            elif data['type'] == 'hist':
-                ax.hist(data['x'], data['y'], normed=1, histtype='step',
-                        cumulative=True, stacked=True, fill=True,
-                        color=color)
-            else:
-                print 'Error: no type \'' + data['type'] + '\''
-            # increment plot count
-            count += 1
-
-        # finish the histogram (so teh stacked hist doesn't cover ones below)
-
-        # set a few more params
-        if data['type'] == 'box':
-            plt.xlim(0, xmax)
-            # ax.set_ylim(top=15000)
-            xticks = np.arange(gap + (width*nsims),
-                               xmax,
-                               count)
-            ax.set_xticks(xticks)
-            ax.set_xticklabels(data['x'])
-        elif data['type'] == 'line':
-            xticks = np.arange(min(data['x']), max(data['x'])+1, 1)
-            ax.set_xticks(xticks)
-        elif data['type'] == 'bar':
-            # ax.set_ylim(top=15000)
-            start = gap + (width*(nsims-1))/2
-            end = (gap + width*nsims) * xmax + gap
-            step = gap + width*nsims
-            xticks = np.arange(start, end, step)
-            ax.set_xticks(xticks)
-            ax.set_xticklabels(data['x'])
-        # elif data['type'] == 'hist':
-            # ax.set_xticks(np.arange(0, max(data['x']), 5.0))
-
-        # legend
-        for label in labels:
-            label = r'\textbf{' + label + '}'  # make labels bold
-        if artists:
-            ax.legend(artists, labels, loc='best')
-            # ax.set_xticks([1, 2, 3])
-            # ax.set_xticklabels(['180', '300', '600'])
-        else:
-            if 'hops_prr' in plot:
-                ax.legend(labels, loc='best')
-            elif 'hops_rdc' in plot:
-                ax.legend(labels, loc='lower right')
-            elif 'join' in plot:
-                ax.legend(['RPL-DAG', r'$\mu$SDN-Controller'],
-                          loc='lower right')
-            else:
-                ax.legend(labels, loc='best')
-        # boxplot_zoom(ax, lastdata,
-        #              width=1.5, height=1.5,
-        #              xlim=[0, 6.5], ylim=[0, 11000],
-        #              bp_width=width, pos=[5])
-
-        # save figure
-        fig, ax = set_fig_and_save(fig, ax, None,
-                                   plot + '_' + str(simlist),  # filename
-                                   rootdir + '/',  # directory
-                                   xlabel=data['xlabel'],
-                                   ylabel=data['ylabel'])
-
-
-# ----------------------------------------------------------------------------#
 # General Plotting
 # ----------------------------------------------------------------------------#
 def plot(sim, plot_list, dir, node_df=None, app_df=None, sdn_df=None,
@@ -561,23 +333,24 @@ def plot(sim, plot_list, dir, node_df=None, app_df=None, sdn_df=None,
                         .apply(lambda x: x.mean()) \
                         .reset_index() \
                         .set_index('hops')
-            fig, ax = plot_bar(df, plot, dir, df.index, df.rdc,
-                               xlabel='Hops', ylabel='Radio duty cycle (\%)')
+            cpplot.plot_bar(df, plot, dir, df.index, df.rdc,
+                            xlabel='Hops', ylabel='Radio duty cycle (\%)')
         # hops vs prr
         elif plot == 'hops_prr':
             df = node_df.groupby('hops')['prr'] \
                         .apply(lambda x: x.mean()) \
                         .reset_index() \
                         .set_index('hops')
-            fig, ax = plot_bar(df, plot, dir, df.index, df.prr,
-                               xlabel='Hops', ylabel='PDR (\%)')
+            cpplot.plot_bar(df, plot, dir, df.index, df.prr,
+                            xlabel='Hops', ylabel='PDR (\%)')
         # hops mean latency
         elif plot == 'hops_lat_mean':
             df = app_df[['hops', 'lat']].reset_index(drop=True)
             gp = df.groupby('hops')
             means = gp.mean()
-            plot_line(df, plot, dir, means.index, means.lat,
-                      xlabel='Hops',  ylabel='Mean delay (ms)', steps=1.0)
+            cpplot.plot_line(df, plot, dir, means.index, means.lat,
+                             xlabel='Hops',
+                             ylabel='Mean delay (ms)', steps=1.0)
         # hops end to end latency
         elif plot == 'hops_lat_e2e':
             df = app_df.pivot_table(index=app_df.groupby('hops').cumcount(),
@@ -589,8 +362,8 @@ def plot(sim, plot_list, dir, node_df=None, app_df=None, sdn_df=None,
             data = np.column_stack(df.transpose().values.tolist())
             # ticks are the column headers
             xticks = list(df.columns.values)
-            plot_box(plot, dir, xticks, data,
-                     xlabel='Hops', ylabel='End-to-end delay (ms)')
+            cpplot.plot_box(plot, dir, xticks, data,
+                            xlabel='Hops', ylabel='End-to-end delay (ms)')
         # hops end to end latency
         elif plot == 'avg_lat':
             df = node_df['mean_lat']
@@ -600,7 +373,8 @@ def plot(sim, plot_list, dir, node_df=None, app_df=None, sdn_df=None,
             xlabel = 'Flowtable Lifetime (s)'
             # xlabel = 'Controller Update Period (s)'
             ylabel = 'End-to-end delay (ms)'
-            plot_box(plot, dir, xticks, data, xlabel=xlabel, ylabel=ylabel)
+            cpplot.plot_box(plot, dir, xticks, data,
+                            xlabel=xlabel, ylabel=ylabel)
 
         # flows end to end latency
         elif plot == 'flow_lat':
@@ -613,8 +387,8 @@ def plot(sim, plot_list, dir, node_df=None, app_df=None, sdn_df=None,
             data = np.column_stack(df.transpose().values.tolist())
             # ticks are the column headers
             xticks = list(df.columns.values)
-            plot_box(plot, dir, xticks, data,
-                     xlabel='Flow \#', ylabel='End-to-end delay (ms)')
+            cpplot.plot_box(plot, dir, xticks, data,
+                            xlabel='Flow \#', ylabel='End-to-end delay (ms)')
 
         # SDN plots
         # histogram of join time
@@ -641,279 +415,17 @@ def plot(sim, plot_list, dir, node_df=None, app_df=None, sdn_df=None,
             df = df.pivot_table(index=['id'],
                                 columns=['type'],
                                 values='time').dropna(how='any')
-            plot_hist('c_join', dir,
-                      df['controller'].tolist(), df.index.tolist(),
-                      xlabel='Time (s)', ylabel='Propotion of Nodes Joined')
+            cpplot.plot_hist('c_join', dir,
+                             df['controller'].tolist(), df.index.tolist(),
+                             xlabel='Time (s)',
+                             ylabel='Propotion of Nodes Joined')
             # plot_hist('dao_join', dir,
             #           df['dao'].tolist(), df.index.tolist(),
             #           xlabel='Time (s)', ylabel='Propotion of Nodes Joined')
-            plot_hist('dag_join', dir,
-                      df['dag'].tolist(), df.index.tolist(),
-                      xlabel='Time (s)', ylabel='Propotion of Nodes Joined')
+            cpplot.plot_hist('dag_join', dir,
+                             df['dag'].tolist(), df.index.tolist(),
+                             xlabel='Time (s)',
+                             ylabel='Propotion of Nodes Joined')
         # traffic ratio
         elif plot == 'net_tr':
-            traffic_ratio(app_df, sdn_df, icmp_df, dir)
-
-
-# ----------------------------------------------------------------------------#
-# Actual graph plotting functions
-# ----------------------------------------------------------------------------#
-def set_fig_and_save(fig, ax, data, desc, dir, **kwargs):
-    """Set figure properties and save as pdf."""
-    # get kwargs
-    ylim = kwargs['ylim'] if 'ylim' in kwargs else None
-    xlabel = kwargs['xlabel'] if 'xlabel' in kwargs else ''
-    ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
-
-    # set axis' labels
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
-    # set y limits
-    if ylim is not None:
-        ax.set_ylim(ylim)
-    # Remove top axes and right axes ticks
-    ax.get_xaxis().tick_bottom()
-    ax.get_yaxis().tick_left()
-    # tight layout
-    fig.set_tight_layout(False)
-    # save  data for post analysis
-    if data is not None:
-        pickle.dump(data, file(dir + desc + '.pkl', 'w'))
-
-    # save figure
-    fig.savefig(dir + 'fig_' + desc + '.pdf')
-
-    # close all open figs
-    plt.close('all')
-
-    return fig, ax
-
-
-# ----------------------------------------------------------------------------#
-def plot_hist(desc, dir, x, y, **kwargs):
-    """Plot a histogram and save."""
-    print '> Plotting ' + desc + ' (hist)'
-    fig, ax = plt.subplots(figsize=(8, 6))
-
-    # get kwargs
-    xlabel = kwargs['xlabel'] if 'xlabel' in kwargs else ''
-    ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
-
-    ax.hist(x, bins=y, normed=1, histtype='step', cumulative=True,
-            stacked=True, fill=True, label=desc)
-    # ax.set_xticks(np.arange(0, max(x), 5.0))
-    # ax.legend_.remove()
-
-    data = {'x': x, 'y': y,
-            'type': 'hist',
-            'xlabel': xlabel,
-            'ylabel': ylabel}
-    fig, ax = set_fig_and_save(fig, ax, data, desc, dir,
-                               xlabel=xlabel, ylabel=ylabel)
-
-    return fig, ax
-
-
-# ----------------------------------------------------------------------------#
-def plot_bar(df, desc, dir, x, y, ylim=None, **kwargs):
-    """Plot a barchart and save."""
-    print '> Plotting ' + desc + ' (bar)'
-    fig, ax = plt.subplots(figsize=(8, 6))
-
-    # constants
-    width = 0.35  # the width of the bars
-    color = list(plt.rcParams['axes.prop_cycle'])[0]['color']
-
-    # get kwargs
-    color = kwargs['color'] if 'color' in kwargs else color
-    xlabel = kwargs['xlabel'] if 'xlabel' in kwargs else ''
-    ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
-
-    ind = np.arange(len(x))
-    ax.bar(x=ind, height=y, width=width, color=color)
-
-    # set x-axis
-    ax.set_xticks(np.arange(min(ind), max(ind)+1, 1.0))
-    # check for string, if not then convert x to ints for the label
-    if not is_string(x):
-        x = [int(i) for i in x]
-    ax.set_xticklabels(x)
-    # set y limits
-    if ylim is not None:
-        ax.set_ylim(ylim)
-
-    data = {'x': x, 'y': y,
-            'type': 'bar',
-            'width': width,
-            'xlabel': xlabel,
-            'ylabel': ylabel}
-    fig, ax = set_fig_and_save(fig, ax, data, desc, dir,
-                               xlabel=xlabel, ylabel=ylabel)
-
-    return fig, ax
-
-
-# ----------------------------------------------------------------------------#
-def plot_box(desc, dir, x, y, **kwargs):
-    """Plot a boxplot and save."""
-    print '> Plotting ' + desc + ' (box)'
-    # subfigures
-    fig, ax = plt.subplots(figsize=(8, 6))
-
-    # constants
-    # ylim = [0, 1500]
-    width = 0.5   # the width of the boxes
-    color = list(plt.rcParams['axes.prop_cycle'])[0]['color']
-
-    # get kwargs
-    color = kwargs['color'] if 'color' in kwargs else color
-    ylim = kwargs['ylim'] if 'ylim' in kwargs else None
-    xlabel = kwargs['xlabel'] if 'xlabel' in kwargs else ''
-    ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
-
-    # Filter data using np.isnan
-    mask = ~np.isnan(y)
-    y = [d[m] for d, m in zip(y.T, mask.T)]
-    bp = ax.boxplot(y, showfliers=False, patch_artist=True)
-    set_box_colors(bp, 0)
-
-    data = {'x': x, 'y': y,
-            'type': 'box',
-            'width': width,
-            'xlabel': xlabel,
-            'ylabel': ylabel}
-
-    fig, ax = set_fig_and_save(fig, ax, data, desc, dir,
-                               ylim=ylim,
-                               xlabel=xlabel,
-                               ylabel=ylabel)
-
-    return fig, ax
-
-
-# ----------------------------------------------------------------------------#
-def plot_violin(df, desc, dir, x, xlabel, y, ylabel):
-    """Plot a violin plot and save."""
-    print '> Plotting ' + desc + ' (violin)'
-    fig, ax = plt.subplots(figsize=(8, 6))
-
-    xticks = [0, 1, 2, 3, 4, 5, 6]
-    ax.xaxis.set_ticks(xticks)
-
-    ax.violinplot(dataset=[df[df[x] == 1][y],
-                           df[df[x] == 2][y],
-                           df[df[x] == 3][y],
-                           df[df[x] == 4][y]])
-
-    data = {'x': x, 'y': y,
-            'type': 'violin',
-            'xlabel': xlabel,
-            'ylabel': ylabel}
-
-    fig, ax = set_fig_and_save(fig, ax, data, desc, dir,
-                               xlabel=xlabel, ylabel=ylabel)
-
-    return fig, ax
-
-
-# ----------------------------------------------------------------------------#
-def plot_line(df, desc, dir, x, y, **kwargs):
-    """Plot a line graph and save."""
-    print '> Plotting ' + desc + ' (line)'
-
-    # constants
-    color = list(plt.rcParams['axes.prop_cycle'])[0]['color']
-
-    # get kwargs
-    errors = kwargs['errors'] if 'errors' in kwargs else None
-    steps = kwargs['steps'] if 'steps' in kwargs else 1
-    color = kwargs['color'] if 'color' in kwargs else color
-    marker = kwargs['marker'] if 'marker' in kwargs else 's'
-    ls = kwargs['ls'] if 'ls' in kwargs else '-'
-    xlabel = kwargs['xlabel'] if 'xlabel' in kwargs else ''
-    ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
-    label = kwargs['label'] if 'label' in kwargs else ylabel
-
-    # set xticks
-    xticks = np.arange(min(x), max(x)+1, steps)
-
-    # plot
-    fig, ax = plt.subplots(figsize=(8, 6))
-    if errors is not None:
-        ax.errorbar(xticks, y, errors, color=color, marker=marker,
-                    ls=ls, lw=2.0)
-    else:
-        ax.plot(xticks, y, color=color, marker=marker, ls=ls, lw=2.0)
-
-    # legend
-    ax.legend(label, loc=2)
-
-    # save figure
-    data = {'x': x, 'y': y,
-            'type': 'line',
-            'xlabel': xlabel,
-            'ylabel': ylabel}
-    fig, ax = set_fig_and_save(fig, ax, data, desc, dir,
-                               xlabel=xlabel, ylabel=ylabel)
-    return fig, ax
-
-
-# ----------------------------------------------------------------------------#
-# SDN Plotting
-# ----------------------------------------------------------------------------#
-def traffic_ratio(app_df, sdn_df, icmp_df, dir):
-    """Plot traffic ratio."""
-    # FIXME: Make this generic
-    if sdn_df is not None:
-        sdn_cbr_len = (sdn_df['typ'] == 'NSU').sum()
-        sdn_vbr_len = (sdn_df['typ'] == 'FTQ').sum() + \
-                      (sdn_df['typ'] == 'FTS').sum()
-
-    rpl_icmp_count = (icmp_df['type'] == 155).sum()
-    if sdn_df is not None:
-        total = len(app_df) + sdn_cbr_len + sdn_vbr_len \
-                + rpl_icmp_count
-    else:
-        total = len(app_df) + rpl_icmp_count
-
-    app_ratio = len(app_df)/total  # get app packets as a % of total
-    if sdn_df is not None:
-        sdn_cbr_ratio = sdn_cbr_len/total  # get sdn packets as a % of total
-        sdn_vbr_ratio = sdn_vbr_len/total  # get sdn packets as a % of total
-    rpl_icmp_ratio = rpl_icmp_count/total
-
-    if sdn_df is not None:
-        df = pd.DataFrame([app_ratio, rpl_icmp_ratio,
-                           sdn_cbr_ratio, sdn_vbr_ratio],
-                          index=['App', 'RPL', 'SDN-CBR', 'SDN-VBR'],
-                          columns=['ratio'])
-    else:
-        df = pd.DataFrame([app_ratio, rpl_icmp_ratio],
-                          index=['App', 'RPL'],
-                          columns=['ratio'])
-    df.index.name = 'type'
-    fig, ax = plot_bar(df, 'traffic_ratio', dir, x=df.index,
-                       y=df.ratio)
-    data = {'x': df.index, 'y': df.ratio}
-    set_fig_and_save(fig, ax, data, 'traffic_ratio', dir,
-                     xlabel='Traffic type',
-                     ylabel='Ratio of total traffic')
-
-    return fig, ax
-
-
-# ----------------------------------------------------------------------------#
-def is_string(obj):
-    """Check if an object is a string."""
-    return all(isinstance(elem, basestring) for elem in obj)
-
-
-# ----------------------------------------------------------------------------#
-def contains_int(string):
-    """Return the first integer number found in a string."""
-    match = re.search('\d+', string)
-    print match
-    if match is None:
-        return string
-    else:
-        return int(match.group())
+            cpplot.traffic_ratio(app_df, sdn_df, icmp_df, dir)
