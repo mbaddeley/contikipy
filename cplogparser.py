@@ -333,8 +333,11 @@ def plot(sim, plot_list, dir, node_df=None, app_df=None, sdn_df=None,
                         .apply(lambda x: x.mean()) \
                         .reset_index() \
                         .set_index('hops')
-            cpplot.plot_bar(df, plot, dir, df.index, df.rdc,
-                            xlabel='Hops', ylabel='Radio duty cycle (\%)')
+            x = df.index.tolist()
+            y = df['rdc'].tolist()
+            cpplot.plot_bar(df, plot, dir, x, y,
+                            xlabel='Hops',
+                            ylabel='Radio duty cycle (\%)')
         # hops vs prr
         elif plot == 'hops_prr':
             df = node_df.groupby('hops')['prr'] \
@@ -348,7 +351,9 @@ def plot(sim, plot_list, dir, node_df=None, app_df=None, sdn_df=None,
             df = app_df[['hops', 'lat']].reset_index(drop=True)
             gp = df.groupby('hops')
             means = gp.mean()
-            cpplot.plot_line(df, plot, dir, means.index, means.lat,
+            cpplot.plot_line(df, plot, dir,
+                             means.index.tolist(),
+                             means['lat'].tolist(),
                              xlabel='Hops',
                              ylabel='Mean delay (ms)', steps=1.0)
         # hops end to end latency

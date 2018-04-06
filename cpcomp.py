@@ -11,7 +11,7 @@ import numpy as np  # number crunching
 # import seaborn as sns  # fancy plotting
 import pandas as pd  # table manipulation
 
-# from pprint import pprint
+from pprint import pprint
 
 import cpplotter as cpplot
 
@@ -37,7 +37,6 @@ pd.set_option('display.width', 1000)
 def contains_int(string):
     """Return the first integer number found in a string."""
     match = re.search('\d+', string)
-    print match
     if match is None:
         return string
     else:
@@ -55,6 +54,8 @@ def search_dirs(rootdir, simlist, plottypes):
         # walk through directory structure
         for root, dirs, files in os.walk(rootdir):
             for dir in sorted(dirs):
+                print dir
+                print simlist
                 if dir in simlist:
                     found = False
                     print ' ... Scanning \"' + root + '/' + dir + '/\"',
@@ -74,84 +75,121 @@ def search_dirs(rootdir, simlist, plottypes):
 
 
 # ----------------------------------------------------------------------------#
-def compare_results(rootdir, simlist, plottypes, **kwargs):
+def add_box(ax, artists, current_index, max_index, label, data):
+    width = 0.35
+    notch = False
+    fliers = False
+    x = data['x']
+    y = data['y']
+    xmax = max_index * len(x) + current_index + len(y) - max_index
+    pos = np.arange(current_index, xmax, max_index + 1)
+    bp = ax.boxplot(data['y'],
+                    positions=pos,
+                    notch=notch,
+                    widths=width,
+                    showfliers=fliers,
+                    patch_artist=True)
+    cpplot.set_box_colors(bp, current_index-1)
+    artists.append(bp["boxes"][0])
+
+
+# ----------------------------------------------------------------------------#
+def add_line(ax, color, label, data):
+    """Add data to bar."""
+    lw = 2.0
+    marker = 's'
+    ax.plot(data['x'], data['y'],
+            color=color, marker=marker, lw=lw, label=label)
+
+
+# ----------------------------------------------------------------------------#
+def add_bar(ax, current_index, max_index, color, label, data):
+    """Add data to bar."""
+    gap = 0.5
+    width = 0.35
+    xmax = max(data['x'])
+    start = gap + width*(current_index-1)
+    end = (gap + width * max_index) * xmax
+    step = gap + width * max_index
+    ind = np.arange(start, end, step)
+    print ind
+    ax.bar(ind, data['y'], width, color=color, label=label)
+
+
+# ----------------------------------------------------------------------------#
+def add_hist(ax, color, data):
+    """Add data to histogram."""
+    norm = 1
+    type = 'step'
+    cumul = True
+    stack = True
+    fill = True
+    ax.hist(data['x'], data['y'],
+            normed=norm, histtype=type,
+            cumulative=cumul, stacked=stack, fill=fill,
+            color=color)
+
+
+# ----------------------------------------------------------------------------#
+def compare(dir, simlist, plottypes, **kwargs):
     """Compare results between data sets for a list of plot types."""
-    print '> SIMS: ',
-    print simlist
-    print '> Plots: ',
-    print plottypes
+    print '*** Analyzing (comparing) results in dir: ' + dir
+    print '* Comparing simulations: [' + ', '.join(simlist) + ']'
+    print '* Generating plots: [' + ', '.join(plottypes) + ']'
 
     gap = 0.5  # gap for xticks
     xmax = None  # work out xmax
 
-    plotdata = search_dirs(rootdir, simlist, plottypes)
-
+    plotdata = search_dirs(dir, simlist, plottypes)
     # iterate over all the plots we have data for
-    for plot, sims in plotdata.items():
-        count = 1  # reset sim counter
-        nsims = len(sims)  # number sims to compare
-        print '> Comparing ' + str(nsims) + ' plots for \'' + plot + '\''
 
+    # pprint(plotdata.items())
+    # for each plot type where we have found sims to compare
+    for plottype, sims in plotdata.items():
+        count = 1               # reset sim counter
+        nsims = len(sims)       # number sims to compare
+        artists = []            # save the artists for the legend
+        labels = []             # save the labels for the legend
+        # create a new figure
         fig, ax = plt.subplots(1, 1, figsize=(8, 6))
-        artists = []  # save the artists for the legend
-        labels = []  # save the labels for the legend
-
         # sort the data
-        # data = sorted(data, key=lambda d: d.keys(''))
         sims = sorted(sims, key=lambda d: d['id'], reverse=False)
 
-        # iterate over all the sim data sets in the list for this plot
+        print '> Compare ' + str(nsims) + ' plots of type \'' + plottype + '\''
+        # for each sim which has this plot type
         for sim in sims:
-            # sim label and data
-            label = sim['label']
-            labels.append(label)
             data = sim['data']
-            # plot color (cyclic)
+            label = sim['label']
+            labels.append(label)  # save the label for the legend
+            # Set the color for this iteration color (cyclic)
             color = list(plt.rcParams['axes.prop_cycle'])[count-1]['color']
-            # work out width
+
+            # print some info about this simulation
+            print ' ... ' + label + ' ' + data['type'] + ' plot',
+            print '(' + str(count) + '/' + str(nsims) + ') color=' + color
+
+            # work out width (box + bar)
             if 'width' in data:
                 width = data['width']
             # work out maximum xtick value
             xmax = nsims * len(data['x']) + count + len(data['x']) - nsims
-            print ' ... ' + data['type'] + ' plot',
-            print str(count) + '/' + str(nsims)
 
-            # boxplots
+            # Add the data to the figure
             if data['type'] == 'box':
-                pos = np.arange(count, xmax, nsims + 1)
-                # lastdata = data['y'][1]
-                bp = ax.boxplot(data['y'], positions=pos, notch=False,
-                                widths=width,
-                                showfliers=False,
-                                patch_artist=True)
-                cpplot.set_box_colors(bp, count-1)
-                artists.append(bp["boxes"][0])
-            # lineplots
+                add_box(ax, artists, count, nsims, label, data)
             elif data['type'] == 'line':
-                ax.plot(data['x'], data['y'],
-                        color=color, marker='s', lw=2.0,
-                        label=label)
-            # barplots
+                add_line(ax, color, label, data)
             elif data['type'] == 'bar':
-                xmax = max(data['x'])
-                start = gap + width*(count-1)
-                end = (gap + width*nsims) * xmax
-                step = gap + width*nsims
-                ind = np.arange(start, end, step)
-                ax.bar(ind, data['y'], width, color=color, label=label)
-            # histograms
+                add_bar(ax, count, nsims, color, label, data)
             elif data['type'] == 'hist':
-                ax.hist(data['x'], data['y'], normed=1, histtype='step',
-                        cumulative=True, stacked=True, fill=True,
-                        color=color)
+                add_hist(ax, color, data)
             else:
                 print 'Error: no type \'' + data['type'] + '\''
+
             # increment plot count
             count += 1
 
-        # finish the histogram (so teh stacked hist doesn't cover ones below)
-
-        # set a few more params
+        # We have gone over each simulation type. Set a few more params
         if data['type'] == 'box':
             plt.xlim(0, xmax)
             # ax.set_ylim(top=15000)
@@ -182,11 +220,11 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
             # ax.set_xticks([1, 2, 3])
             # ax.set_xticklabels(['180', '300', '600'])
         else:
-            if 'hops_prr' in plot:
+            if 'hops_prr' in plottype:
                 ax.legend(labels, loc='best')
-            elif 'hops_rdc' in plot:
+            elif 'hops_rdc' in plottype:
                 ax.legend(labels, loc='lower right')
-            elif 'join' in plot:
+            elif 'join' in plottype:
                 ax.legend(['RPL-DAG', r'$\mu$SDN-Controller'],
                           loc='lower right')
             else:
@@ -198,7 +236,8 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
 
         # save figure
         cpplot.set_fig_and_save(fig, ax, None,
-                                plot + '_' + str(simlist),  # filename
-                                rootdir + '/',  # directory
+                                plottype + '_' + str(simlist),  # filename
+                                dir + '/',  # directory
                                 xlabel=data['xlabel'],
                                 ylabel=data['ylabel'])
+    print '*** Finished analysis!'

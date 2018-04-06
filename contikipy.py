@@ -92,8 +92,7 @@ def main():
 
     # analyze the generated results
     if int(args.comp) and analysis is not None:
-        print '**** Analyzing (comparing) results...'
-        cpcomp.compare_results(args.out, analysis['sims'], analysis['plots'])
+        cpcomp.compare(args.out, analysis['sims'], analysis['plots'])
 
 
 # ----------------------------------------------------------------------------#

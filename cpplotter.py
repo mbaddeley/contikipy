@@ -275,7 +275,6 @@ def plot_line(df, desc, dir, x, y, **kwargs):
 
     # legend
     ax.legend(label, loc=2)
-
     # save figure
     data = {'x': x, 'y': y,
             'type': 'line',
