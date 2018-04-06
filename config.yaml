@@ -5,7 +5,7 @@
 path:    /home/mike/Repos/usdn
 wd:      /examples/ipv6/sdn-udp
 log:     /tools/cooja/build/COOJA.testlog
-out:     /home/mike/Results/ALL
+out:     /home/mike/Results/CSMA
 csc:     usdn-30-node.csc
 target:  exp5438
 
@@ -46,7 +46,7 @@ multiflow:
       RXNODES:        1
       DELAY:          120
       BRMIN:          10
-      BRMAX:          15
+      BRMAX:          10
 
   - id:               1_flow
     NUM_APPS:         1
@@ -54,7 +54,7 @@ multiflow:
       FLOWIDS:        1
       TXNODES:        0
       RXNODES:        1
-      DELAY:          240
+      DELAY:          120
       BRMIN:          60
       BRMAX:          75
 
@@ -82,36 +82,8 @@ multiflow:
 # Simulations
 # ----------------------------------------------------------------------------
 simulations:
-# # ----------------------------------------------------------------------------
-  - desc:           SDN-CONTIKIMAC
-    makeargs:
-      MAC:          CONTIKIMAC
-      SDN:          0
-    multiflow:      1_flow
-    plot:
-      - hops_rdc            # Radio duty cycle vs hops
-      - hops_prr            # Packet receive ratio vs hops
-      - hops_lat_mean       # Hops vs mean latency
-      - hops_lat_e2e        # Hops vs end-to-end latency
-      - sdn_traffic_ratio   # SDN traffic ratio
-  - desc:           SDN-CONTIKIMAC
-    makeargs:
-      MAC:          CONTIKIMAC
-      SDN:          1
-      FTREFRESH:    1
-      FTSRETRY:     0
-      FORCENSU:     1
-      NSUFREQ:      180  # NSU frequency actually helps over 0 frequency
-    multiflow:      1_flow
-    plot:
-      - hops_rdc            # Radio duty cycle vs hops
-      - hops_prr            # Packet receive ratio vs hops
-      - hops_lat_mean       # Hops vs mean latency
-      - hops_lat_e2e        # Hops vs end-to-end latency
-      - sdn_join            # SDN controller join time
-      - sdn_traffic_ratio   # SDN traffic ratio
-
-  - desc:           RPL-CSMA
+# ----------------------------------------------------------------------------
+  - desc:           RPL
     makeargs:
       MAC:          CSMA
       SDN:          0
@@ -121,15 +93,16 @@ simulations:
       - hops_prr            # Packet receive ratio vs hops
       - hops_lat_mean       # Hops vs mean latency
       - hops_lat_e2e        # Hops vs end-to-end latency
-      - sdn_traffic_ratio   # SDN traffic ratio
-  - desc:           SDN-CSMA
+      - net_tr              # Network traffic ratio
+
+  - desc:           SDN
     makeargs:
-      MAC:          CMSA
+      MAC:          CSMA
       SDN:          1
       FTREFRESH:    1
-      FTSRETRY:     0
+      FTSRETRY:     1
       FORCENSU:     1
-      NSUFREQ:      180  # NSU frequency actually helps over 0 frequency
+      NSUFREQ:      600     # NSU frequency actually helps over 0 frequency
     multiflow:      1_flow
     plot:
       - hops_rdc            # Radio duty cycle vs hops
@@ -137,96 +110,94 @@ simulations:
       - hops_lat_mean       # Hops vs mean latency
       - hops_lat_e2e        # Hops vs end-to-end latency
       - sdn_join            # SDN controller join time
-      - sdn_traffic_ratio   # SDN traffic ratio
-
-
-# ----------------------------------------------------------------------------
-  - desc:           SDN-NSU-10
-    makeargs:
-      MAC:          CONTIKIMAC
-      SDN:          1
-      FTREFRESH:    1
-      FORCENSU:     1
-      NSUFREQ:      10  # NSU frequency actually helps over 0 frequency
-    multiflow:      1_flow
-    plot:
-      - avg_lat
-
-  - desc:           SDN-NSU-30
-    makeargs:
-      MAC:          CONTIKIMAC
-      SDN:          1
-      FTREFRESH:    1
-      FORCENSU:     1
-      NSUFREQ:      30  # NSU frequency actually helps over 0 frequency
-    multiflow:      1_flow
-    plot:
-      - avg_lat
-
-  - desc:           SDN-NSU-60
-    makeargs:
-      MAC:          CONTIKIMAC
-      SDN:          1
-      FTREFRESH:    1
-      FORCENSU:     1
-      NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
-    multiflow:      1_flow
-    plot:
-      - avg_lat
+      - net_tr   # SDN traffic ratio
 
 # ----------------------------------------------------------------------------
-  - desc:           SDN-FT-60
-    makeargs:
-      MAC:          CONTIKIMAC
-      SDN:          1
-      FTREFRESH:    1
-      FORCENSU:     1
-      NSUFREQ:      300  # NSU frequency actually helps over 0 frequency
-      FTSFREQ:      60
-    multiflow:      1_flow
-    plot:
-      - avg_lat
+  # - desc:           SDN-NSU-10
+  #   makeargs:
+  #     MAC:          CSMA
+  #     SDN:          1
+  #     FTREFRESH:    1
+  #     FORCENSU:     1
+  #     NSUFREQ:      10  # NSU frequency actually helps over 0 frequency
+  #   multiflow:      1_flow_10s
+  #   plot:
+  #     - avg_lat
+  #
+  # - desc:           SDN-NSU-30
+  #   makeargs:
+  #     MAC:          CSMA
+  #     SDN:          1
+  #     FTREFRESH:    1
+  #     FORCENSU:     1
+  #     NSUFREQ:      30  # NSU frequency actually helps over 0 frequency
+  #   multiflow:      1_flow_10s
+  #   plot:
+  #     - avg_lat
+  #
+  # - desc:           SDN-NSU-60
+  #   makeargs:
+  #     MAC:          CSMA
+  #     SDN:          1
+  #     FTREFRESH:    1
+  #     FORCENSU:     1
+  #     NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
+  #   multiflow:      1_flow_10s
+  #   plot:
+  #     - avg_lat
 
-  - desc:           SDN-FT-180
-    makeargs:
-      MAC:          CONTIKIMAC
-      SDN:          1
-      FTREFRESH:    1
-      FORCENSU:     1
-      NSUFREQ:      300  # NSU frequency actually helps over 0 frequency
-      FTSFREQ:      180
-    multiflow:      1_flow
-    plot:
-      - avg_lat
-
-
-  - desc:           SDN-FT-300
-    makeargs:
-      MAC:          CONTIKIMAC
-      SDN:          1
-      FTREFRESH:    1
-      FORCENSU:     1
-      NSUFREQ:      300  # NSU frequency actually helps over 0 frequency
-      FTSFREQ:      300
-    multiflow:      1_flow
-    plot:
-      - avg_lat
-
+# ----------------------------------------------------------------------------
+  # - desc:           SDN-FT-180
+  #   makeargs:
+  #     MAC:          CSMA
+  #     SDN:          1
+  #     FTREFRESH:    0
+  #     FORCENSU:     1
+  #     NSUFREQ:      0
+  #     FTSFREQ:      180
+  #   multiflow:      1_flow_10s
+  #   plot:
+  #     - avg_lat
+  #
+  #
+  # - desc:           SDN-FT-300
+  #   makeargs:
+  #     MAC:          CSMA
+  #     SDN:          1
+  #     FTREFRESH:    0
+  #     FORCENSU:     1
+  #     NSUFREQ:      0
+  #     FTSFREQ:      300
+  #   multiflow:      1_flow_10s
+  #   plot:
+  #     - avg_lat
+  #
+  # - desc:           SDN-FT-600
+  #   makeargs:
+  #     MAC:          CSMA
+  #     SDN:          1
+  #     FTREFRESH:    0
+  #     FORCENSU:     1
+  #     NSUFREQ:      0
+  #     FTSFREQ:      600
+  #   multiflow:      1_flow_10s
+  #   plot:
+  #     - avg_lat
 
 # ----------------------------------------------------------------------------
 # analysis (comparison) config
 # ----------------------------------------------------------------------------
 analysis:
 # ----------------------------------------------------------------------------
-  # - sims:
-  #   - SDN
-  #   - RPL
-  #   plots:
-  #     - hops_rdc
-  #     - hops_prr
-  #     - hops_lat_mean
-  #     - hops_lat_e2e
-  #     - join
+  - sims:
+    - SDN
+    - RPL
+    plots:
+      - hops_rdc
+      - hops_prr
+      - hops_lat_mean
+      - hops_lat_e2e
+      - join
 
 # ----------------------------------------------------------------------------
   # - sims:
@@ -237,9 +208,9 @@ analysis:
   #   - avg_lat
 
 # ----------------------------------------------------------------------------
-  - sims:
-    -  SDN-FT-60
-    -  SDN-FT-180
-    -  SDN-FT-300
-    plots:
-    - avg_lat
+  # - sims:
+  #   -  SDN-FT-180
+  #   -  SDN-FT-300
+  #   -  SDN-FT-600
+  #   plots:
+  #   - avg_lat

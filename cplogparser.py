@@ -18,7 +18,6 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
 from scipy.stats.mstats import mode
 
 from pprint import pprint
-from operator import itemgetter
 
 # Matplotlib settings for graphs (need texlive-full, ghostscript and dvipng)
 plt.rc('font', family='sans-serif', weight='bold')
@@ -61,7 +60,7 @@ def parse_log(datatype, log, dir, fmt, regex):
         # check the simulation directory exists, and there is a log there
         open(log, 'rb')
         # do the parsing
-        print '**** Parsing log using ' + datatype + ' regex....'
+        print '*** Parsing log using ' + datatype + ' regex....'
         data_re = re.compile(regex)
         data_log = parse(log, dir + "log_" + datatype + ".log", data_re)
         if (os.path.getsize(data_log.name) != 0):
@@ -88,7 +87,7 @@ def parse_log(datatype, log, dir, fmt, regex):
 # ----------------------------------------------------------------------------#
 def extract_data(df_dict):
     """Take the dfs generated from the main log and analyze."""
-    print '**** Do some additional processing on the dataframes...'
+    print '*** Do some additional processing on the dataframes...'
     # get general node data
     node_df = df_dict.get('node')
     if node_df is not None:
@@ -105,14 +104,14 @@ def extract_data(df_dict):
             node_df = add_rdc_to_node_df(node_df, pow_df)
         df_dict['node'] = node_df
 
-    print '**** Node data summary...'
+    print '*** Node data summary...'
     print df_dict['node']
 
 
 # ----------------------------------------------------------------------------#
 def pickle_data(dir, data):
     """Save data by pickling it."""
-    print '**** Pickling DataFrames ...'
+    print '*** Pickling DataFrames ...'
     print data.keys()
     for k, v in data.items():
         print '> Saving ' + k
@@ -123,7 +122,6 @@ def pickle_data(dir, data):
 # ----------------------------------------------------------------------------#
 def plot_data(sim, dir, data, plots):
     """Plot data according to required plot types."""
-    print '**** Generating plots...' + str(plots)
     node_df = data['node']
     app_df = data['app']
     icmp_df = data['icmp']
@@ -241,13 +239,13 @@ def read_sdn(sdn_df):
     df.columns = df.columns.droplevel()
     df = df.reset_index()
     df.columns = ['src', 'dest', 'typ', 'seq',
-                  'hops', 'buf_t', 'in_t', 'out_t']
+                  'hops', 'in_t', 'out_t']
     # Set dest typ to int
     df.dest = df.dest.astype(int)
     # add a 'dropped' column
     df['drpd'] = df['in_t'].apply(lambda x: True if np.isnan(x) else False)
     # calculate the latency/delay and add as a column
-    df['lat'] = (df['buf_t'] - df['out_t'])/1000  # FIXME: /1000 = ns -> ms
+    df['lat'] = (df['in_t'] - df['out_t'])/1000  # FIXME: /1000 = ns -> ms
 
     return df
 
@@ -356,6 +354,7 @@ def set_box_colors(bp, index):
 def boxplot_zoom(ax, data, width=1, height=1,
                  xlim=None, ylim=None,
                  bp_width=0.35, pos=[1], color=1):
+    """Plot a zoomed boxplot and save."""
     if xlim is not None:
         ax.set_xlim(xlim)
     if ylim is not None:
@@ -373,7 +372,7 @@ def boxplot_zoom(ax, data, width=1, height=1,
                ls='--')
 
 
-# # ----------------------------------------------------------------------------#
+# ----------------------------------------------------------------------------#
 # def compare_boxplots():
 #     pos = np.arange(count, xmax, nsims + 1)
 #     # lastdata = data['y'][1]
@@ -385,13 +384,6 @@ def boxplot_zoom(ax, data, width=1, height=1,
 #     artists.append(bp["boxes"][0])
 
 # ----------------------------------------------------------------------------#
-def int_from_string(string):
-    """Return the first integer number found in a string."""
-    int = re.search('\d+', string).group()
-    if int is None:
-        return None
-    else:
-        return int
 
 
 # ----------------------------------------------------------------------------#
@@ -412,9 +404,8 @@ def search_dirs(rootdir, simlist, plottypes):
                         if (plot + '.pkl') in f:
                             print '- found pickle in ' + dir + '!'
                             d = pickle.load(file(os.path.join(root, dir, f)))
-                            id = int_from_string(dir)
-                            print id
-                            plotdata[plot].append({'id': int(id),
+                            id = contains_int(dir)
+                            plotdata[plot].append({'id': id,
                                                    'label': dir,
                                                    'data': d})
                             found = True
@@ -426,7 +417,7 @@ def search_dirs(rootdir, simlist, plottypes):
 
 # ----------------------------------------------------------------------------#
 def compare_results(rootdir, simlist, plottypes, **kwargs):
-    print '**** Analyzing (comparing) results'
+    """Compare results between data sets for a list of plot types."""
     print '> SIMS: ',
     print simlist
     print '> Plots: ',
@@ -492,7 +483,6 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
                 ax.bar(ind, data['y'], width, color=color, label=label)
             # histograms
             elif data['type'] == 'hist':
-                print data['y']
                 ax.hist(data['x'], data['y'], normed=1, histtype='step',
                         cumulative=True, stacked=True, fill=True,
                         color=color)
@@ -530,9 +520,9 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
         for label in labels:
             label = r'\textbf{' + label + '}'  # make labels bold
         if artists:
-            ax.legend(artists, labels, loc='upper right')
-            ax.set_xticks([1, 2, 3])
-            ax.set_xticklabels(['60', '180', '300'])
+            ax.legend(artists, labels, loc='best')
+            # ax.set_xticks([1, 2, 3])
+            # ax.set_xticklabels(['180', '300', '600'])
         else:
             if 'hops_prr' in plot:
                 ax.legend(labels, loc='best')
@@ -562,7 +552,7 @@ def compare_results(rootdir, simlist, plottypes, **kwargs):
 def plot(sim, plot_list, dir, node_df=None, app_df=None, sdn_df=None,
          icmp_df=None, join_df=None):
     """Process the data for all plottypes."""
-    print '**** Do plots for simulation: ' + sim
+    print '*** Do plots for simulation: ' + sim
     for plot in plot_list:
         # General plots
         # hops vs rdc
@@ -597,7 +587,6 @@ def plot(sim, plot_list, dir, node_df=None, app_df=None, sdn_df=None,
             df = df.dropna(how='all')
             # matplotlib needs a list
             data = np.column_stack(df.transpose().values.tolist())
-            print data
             # ticks are the column headers
             xticks = list(df.columns.values)
             plot_box(plot, dir, xticks, data,
@@ -662,15 +651,15 @@ def plot(sim, plot_list, dir, node_df=None, app_df=None, sdn_df=None,
                       df['dag'].tolist(), df.index.tolist(),
                       xlabel='Time (s)', ylabel='Propotion of Nodes Joined')
         # traffic ratio
-        elif plot == 'sdn_traffic_ratio':
-            plot_tr(app_df, sdn_df, icmp_df, dir)
+        elif plot == 'net_tr':
+            traffic_ratio(app_df, sdn_df, icmp_df, dir)
 
 
 # ----------------------------------------------------------------------------#
 # Actual graph plotting functions
 # ----------------------------------------------------------------------------#
 def set_fig_and_save(fig, ax, data, desc, dir, **kwargs):
-
+    """Set figure properties and save as pdf."""
     # get kwargs
     ylim = kwargs['ylim'] if 'ylim' in kwargs else None
     xlabel = kwargs['xlabel'] if 'xlabel' in kwargs else ''
@@ -702,6 +691,7 @@ def set_fig_and_save(fig, ax, data, desc, dir, **kwargs):
 
 # ----------------------------------------------------------------------------#
 def plot_hist(desc, dir, x, y, **kwargs):
+    """Plot a histogram and save."""
     print '> Plotting ' + desc + ' (hist)'
     fig, ax = plt.subplots(figsize=(8, 6))
 
@@ -725,12 +715,8 @@ def plot_hist(desc, dir, x, y, **kwargs):
 
 
 # ----------------------------------------------------------------------------#
-def checkstring(obj):
-        return all(isinstance(elem, basestring) for elem in obj)
-
-
-# ----------------------------------------------------------------------------#
 def plot_bar(df, desc, dir, x, y, ylim=None, **kwargs):
+    """Plot a barchart and save."""
     print '> Plotting ' + desc + ' (bar)'
     fig, ax = plt.subplots(figsize=(8, 6))
 
@@ -749,7 +735,7 @@ def plot_bar(df, desc, dir, x, y, ylim=None, **kwargs):
     # set x-axis
     ax.set_xticks(np.arange(min(ind), max(ind)+1, 1.0))
     # check for string, if not then convert x to ints for the label
-    if not checkstring(x):
+    if not is_string(x):
         x = [int(i) for i in x]
     ax.set_xticklabels(x)
     # set y limits
@@ -771,9 +757,6 @@ def plot_bar(df, desc, dir, x, y, ylim=None, **kwargs):
 def plot_box(desc, dir, x, y, **kwargs):
     """Plot a boxplot and save."""
     print '> Plotting ' + desc + ' (box)'
-
-    print x
-
     # subfigures
     fig, ax = plt.subplots(figsize=(8, 6))
 
@@ -789,8 +772,8 @@ def plot_box(desc, dir, x, y, **kwargs):
     ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
 
     # Filter data using np.isnan
-    # mask = ~np.isnan(y)
-    # filtered_data = [d[m] for d, m in zip(y.T, mask.T)]
+    mask = ~np.isnan(y)
+    y = [d[m] for d, m in zip(y.T, mask.T)]
     bp = ax.boxplot(y, showfliers=False, patch_artist=True)
     set_box_colors(bp, 0)
 
@@ -810,6 +793,7 @@ def plot_box(desc, dir, x, y, **kwargs):
 
 # ----------------------------------------------------------------------------#
 def plot_violin(df, desc, dir, x, xlabel, y, ylabel):
+    """Plot a violin plot and save."""
     print '> Plotting ' + desc + ' (violin)'
     fig, ax = plt.subplots(figsize=(8, 6))
 
@@ -834,6 +818,7 @@ def plot_violin(df, desc, dir, x, xlabel, y, ylabel):
 
 # ----------------------------------------------------------------------------#
 def plot_line(df, desc, dir, x, y, **kwargs):
+    """Plot a line graph and save."""
     print '> Plotting ' + desc + ' (line)'
 
     # constants
@@ -876,8 +861,9 @@ def plot_line(df, desc, dir, x, y, **kwargs):
 # ----------------------------------------------------------------------------#
 # SDN Plotting
 # ----------------------------------------------------------------------------#
-def plot_tr(app_df, sdn_df, icmp_df, dir):
-    # FIXME: We are only looking at FTQ/FTS
+def traffic_ratio(app_df, sdn_df, icmp_df, dir):
+    """Plot traffic ratio."""
+    # FIXME: Make this generic
     if sdn_df is not None:
         sdn_cbr_len = (sdn_df['typ'] == 'NSU').sum()
         sdn_vbr_len = (sdn_df['typ'] == 'FTQ').sum() + \
@@ -917,5 +903,17 @@ def plot_tr(app_df, sdn_df, icmp_df, dir):
 
 
 # ----------------------------------------------------------------------------#
-if __name__ == "__main__":
-    main()
+def is_string(obj):
+    """Check if an object is a string."""
+    return all(isinstance(elem, basestring) for elem in obj)
+
+
+# ----------------------------------------------------------------------------#
+def contains_int(string):
+    """Return the first integer number found in a string."""
+    match = re.search('\d+', string)
+    print match
+    if match is None:
+        return string
+    else:
+        return int(match.group())
