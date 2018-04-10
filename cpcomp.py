@@ -145,24 +145,28 @@ def add_bar(ax, index, color, label, data):
 
 
 # ----------------------------------------------------------------------------#
-def add_hist(ax, color, data):
+def add_hist(ax, color, data, bins=30):
     """Add data to histogram plot."""
-    # TODO check for outliers and remove
-    norm = 0
-    type = 'step'
+    # FIXME: Currently an issue with outliers causing smaller plots to be
+    #       unreadable. Using range() in mean time.
+    norm = 1
+    bins = 30
+    range = (0, 50)
+    type = 'bar'
     cumul = True
-    stack = True
+    stack = False
     fill = True
-    # x = filter(lambda x: x <= 16, x)
-    x = sorted(data['x'])
-    bins = x
-    bins = ax.hist(x, bins,
-                   normed=norm,
-                   histtype=type,
-                   cumulative=cumul,
-                   stacked=stack,
-                   fill=fill,
-                   color=color)
+    x = sorted(data)
+    if bins is None:
+        bins = x
+    (n, bins, patches) = ax.hist(x, bins=bins, range=range,
+                                 normed=norm,
+                                 histtype=type,
+                                 cumulative=cumul,
+                                 stacked=stack,
+                                 fill=fill,
+                                 color=color)
+    # pprint(bins)
 
 
 # ----------------------------------------------------------------------------#
@@ -178,44 +182,45 @@ def compare(dir, simlist, plottypes, **kwargs):
     # pprint(plotdata.items())
     # for each plot type where we have found sims to compare
     for plottype, sims in plotdata.items():
-        count = 1               # reset sim counter
-        nsims = len(sims)       # number sims to compare
+        index = 1               # reset sim index
+        max_index = len(sims)   # total number of sims
         artists = []            # save the artists for the legend
         labels = []             # save the labels for the legend
+        history = []            # save the data history
         # create a new figure
         fig, ax = plt.subplots(1, 1, figsize=(8, 6))
         # sort the data
         sims = sorted(sims, key=lambda d: d['id'], reverse=False)
 
-        print '> Compare ' + str(nsims) + ' plots of type \'' + plottype + '\''
+        print '> Compare ' + str(max_index),
+        print ' plots of type \'' + plottype + '\''
         # for each sim which has this plot type
         for sim in sims:
             data = sim['data']
+            history.append(data)  # save the data
             label = sim['label']
-
-            # save the label for the legend
-            labels.append(label)
+            labels.append(label)  # save the label
             # Set the color for this iteration color (cyclic)
-            color = list(plt.rcParams['axes.prop_cycle'])[count-1]['color']
+            color = list(plt.rcParams['axes.prop_cycle'])[index-1]['color']
 
             # print some info about this simulation
             print ' ... ' + label + ' ' + data['type'] + ' plot',
-            print '(' + str(count) + '/' + str(nsims) + ') color=' + color
+            print '(' + str(index) + '/' + str(max_index) + ') color=' + color
 
             # Add the data to the figure
             if data['type'] == 'box':
-                add_box(ax, artists, count, label, data)
+                add_box(ax, artists, index, label, data)
             elif data['type'] == 'line':
                 add_line(ax, color, label, data)
             elif data['type'] == 'bar':
-                add_bar(ax, count, color, label, data)
+                add_bar(ax, index, color, label, data)
             elif data['type'] == 'hist':
-                add_hist(ax, color, data)
+                add_hist(ax, color, data['x'])
             else:
                 print 'Error: no type \'' + data['type'] + '\''
 
-            # increment plot count
-            count += 1
+            # increment plot index
+            index += 1
 
         # legend
         for label in labels:
