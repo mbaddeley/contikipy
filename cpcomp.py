@@ -74,28 +74,51 @@ def search_dirs(rootdir, simlist, plottypes):
     return plotdata
 
 
+def calc_plot_pos(plot_index, x_max, x_len, gap=0, width=0.35):
+    """Calculate an array of x positions based on plot index."""
+    n = plot_index-1
+    start = width*(n) + gap*(n)
+    end = x_max + start
+    step = (end - start) / x_len
+    return np.arange(start, end, step)
+
+
+def calc_xtick_pos(plot_index, x_max, x_len, gap=0, width=0.35):
+    """Calculate the midpoint positions for xticks, based on plot index."""
+    n = plot_index-1
+    start = width*(n)/plot_index + gap*(n)/plot_index
+    end = x_max + start
+    step = (end - start) / x_len
+    return np.arange(start, end, step)
+
+
 # ----------------------------------------------------------------------------#
-def add_box(ax, artists, current_index, max_index, label, data):
+def add_box(ax, artists, index, label, data):
+    """Add data to box plot."""
     width = 0.35
     notch = False
     fliers = False
-    x = data['x']
-    y = data['y']
-    xmax = max_index * len(x) + current_index + len(y) - max_index
-    pos = np.arange(current_index, xmax, max_index + 1)
+    x_max = max(data['x'])
+    x_len = len(data['x'])
+    ind = calc_plot_pos(index, x_max, x_len, gap=0.1)
     bp = ax.boxplot(data['y'],
-                    positions=pos,
+                    positions=ind,
                     notch=notch,
                     widths=width,
                     showfliers=fliers,
-                    patch_artist=True)
-    cpplot.set_box_colors(bp, current_index-1)
+                    patch_artist=True,
+                    manage_xticks=False)
+    cpplot.set_box_colors(bp, index-1)
     artists.append(bp["boxes"][0])
+    # Re-calculate the xticks
+    ind = calc_xtick_pos(index, x_max, x_len, gap=0.1)
+    ax.set_xticks(ind)
+    ax.set_xticklabels(data['x'])
 
 
 # ----------------------------------------------------------------------------#
 def add_line(ax, color, label, data):
-    """Add data to bar."""
+    """Add data to bar plot."""
     lw = 2.0
     marker = 's'
     ax.plot(data['x'], data['y'],
@@ -103,28 +126,28 @@ def add_line(ax, color, label, data):
 
 
 # ----------------------------------------------------------------------------#
-def add_bar(ax, current_index, max_index, color, label, data):
-    """Add data to bar."""
-    gap = 0.5
+def add_bar(ax, index, color, label, data):
+    """Add data to bar plot."""
     width = 0.35
-    xmax = max(data['x'])
-    start = gap + width*(current_index-1)
-    end = (gap + width * max_index) * xmax
-    step = gap + width * max_index
-    ind = np.arange(start, end, step)
-    print ind
+    x_max = max(data['x'])
+    x_len = len(data['x'])
+    ind = calc_plot_pos(index, x_max, x_len)
     ax.bar(ind, data['y'], width, color=color, label=label)
+    # Re-calculate the xticks
+    ind = calc_xtick_pos(index, x_max, x_len)
+    ax.set_xticks(ind)
+    ax.set_xticklabels(data['x'])
 
 
 # ----------------------------------------------------------------------------#
 def add_hist(ax, color, data):
-    """Add data to histogram."""
+    """Add data to histogram plot."""
     norm = 1
     type = 'step'
     cumul = True
     stack = True
     fill = True
-    ax.hist(data['x'], data['y'],
+    ax.hist(data['x'], bins=data['y'],
             normed=norm, histtype=type,
             cumulative=cumul, stacked=stack, fill=fill,
             color=color)
@@ -138,6 +161,8 @@ def compare(dir, simlist, plottypes, **kwargs):
     print '* Generating plots: [' + ', '.join(plottypes) + ']'
 
     gap = 0.5  # gap for xticks
+    width = 0.35
+
     xmax = None  # work out xmax
 
     plotdata = search_dirs(dir, simlist, plottypes)
@@ -160,7 +185,9 @@ def compare(dir, simlist, plottypes, **kwargs):
         for sim in sims:
             data = sim['data']
             label = sim['label']
-            labels.append(label)  # save the label for the legend
+
+            # save the label for the legend
+            labels.append(label)
             # Set the color for this iteration color (cyclic)
             color = list(plt.rcParams['axes.prop_cycle'])[count-1]['color']
 
@@ -168,19 +195,13 @@ def compare(dir, simlist, plottypes, **kwargs):
             print ' ... ' + label + ' ' + data['type'] + ' plot',
             print '(' + str(count) + '/' + str(nsims) + ') color=' + color
 
-            # work out width (box + bar)
-            if 'width' in data:
-                width = data['width']
-            # work out maximum xtick value
-            xmax = nsims * len(data['x']) + count + len(data['x']) - nsims
-
             # Add the data to the figure
             if data['type'] == 'box':
-                add_box(ax, artists, count, nsims, label, data)
+                add_box(ax, artists, count, label, data)
             elif data['type'] == 'line':
                 add_line(ax, color, label, data)
             elif data['type'] == 'bar':
-                add_bar(ax, count, nsims, color, label, data)
+                add_bar(ax, count, color, label, data)
             elif data['type'] == 'hist':
                 add_hist(ax, color, data)
             else:
@@ -190,27 +211,9 @@ def compare(dir, simlist, plottypes, **kwargs):
             count += 1
 
         # We have gone over each simulation type. Set a few more params
-        if data['type'] == 'box':
-            plt.xlim(0, xmax)
-            # ax.set_ylim(top=15000)
-            xticks = np.arange(gap + (width*nsims),
-                               xmax,
-                               count)
-            ax.set_xticks(xticks)
-            ax.set_xticklabels(data['x'])
-        elif data['type'] == 'line':
+        if data['type'] == 'line':
             xticks = np.arange(min(data['x']), max(data['x'])+1, 1)
             ax.set_xticks(xticks)
-        elif data['type'] == 'bar':
-            # ax.set_ylim(top=15000)
-            start = gap + (width*(nsims-1))/2
-            end = (gap + width*nsims) * xmax + gap
-            step = gap + width*nsims
-            xticks = np.arange(start, end, step)
-            ax.set_xticks(xticks)
-            ax.set_xticklabels(data['x'])
-        # elif data['type'] == 'hist':
-            # ax.set_xticks(np.arange(0, max(data['x']), 5.0))
 
         # legend
         for label in labels:
