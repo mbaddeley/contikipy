@@ -121,8 +121,13 @@ def add_line(ax, color, label, data):
     """Add data to bar plot."""
     lw = 2.0
     marker = 's'
+    x_min = min(data['x'])
+    x_max = max(data['x'])
     ax.plot(data['x'], data['y'],
             color=color, marker=marker, lw=lw, label=label)
+    # Re-calculate the xticks
+    ind = np.arange(x_min, x_max + 1, 1)
+    ax.set_xticks(ind)
 
 
 # ----------------------------------------------------------------------------#
@@ -142,15 +147,22 @@ def add_bar(ax, index, color, label, data):
 # ----------------------------------------------------------------------------#
 def add_hist(ax, color, data):
     """Add data to histogram plot."""
-    norm = 1
+    # TODO check for outliers and remove
+    norm = 0
     type = 'step'
     cumul = True
     stack = True
     fill = True
-    ax.hist(data['x'], bins=data['y'],
-            normed=norm, histtype=type,
-            cumulative=cumul, stacked=stack, fill=fill,
-            color=color)
+    # x = filter(lambda x: x <= 16, x)
+    x = sorted(data['x'])
+    bins = x
+    bins = ax.hist(x, bins,
+                   normed=norm,
+                   histtype=type,
+                   cumulative=cumul,
+                   stacked=stack,
+                   fill=fill,
+                   color=color)
 
 
 # ----------------------------------------------------------------------------#
@@ -159,11 +171,6 @@ def compare(dir, simlist, plottypes, **kwargs):
     print '*** Analyzing (comparing) results in dir: ' + dir
     print '* Comparing simulations: [' + ', '.join(simlist) + ']'
     print '* Generating plots: [' + ', '.join(plottypes) + ']'
-
-    gap = 0.5  # gap for xticks
-    width = 0.35
-
-    xmax = None  # work out xmax
 
     plotdata = search_dirs(dir, simlist, plottypes)
     # iterate over all the plots we have data for
@@ -210,11 +217,6 @@ def compare(dir, simlist, plottypes, **kwargs):
             # increment plot count
             count += 1
 
-        # We have gone over each simulation type. Set a few more params
-        if data['type'] == 'line':
-            xticks = np.arange(min(data['x']), max(data['x'])+1, 1)
-            ax.set_xticks(xticks)
-
         # legend
         for label in labels:
             label = r'\textbf{' + label + '}'  # make labels bold
@@ -223,11 +225,7 @@ def compare(dir, simlist, plottypes, **kwargs):
             # ax.set_xticks([1, 2, 3])
             # ax.set_xticklabels(['180', '300', '600'])
         else:
-            if 'hops_prr' in plottype:
-                ax.legend(labels, loc='best')
-            elif 'hops_rdc' in plottype:
-                ax.legend(labels, loc='lower right')
-            elif 'join' in plottype:
+            if 'join' in plottype:
                 ax.legend(['RPL-DAG', r'$\mu$SDN-Controller'],
                           loc='lower right')
             else:
