@@ -48,20 +48,20 @@ def search_dirs(rootdir, simlist, plottypes):
     """Search simulation folders to collate data."""
     plotdata = {}  # dictionary of plot data
     # for each plot type
+    print '* Searching through sims: ' + str(simlist)
     for plot in plottypes:
         plotdata[plot] = []  # create a list to hold data structs
         print '> Looking for plots of type ... ' + plot
         # walk through directory structure
         for root, dirs, files in os.walk(rootdir):
             for dir in sorted(dirs):
-                print dir
-                print simlist
                 if dir in simlist:
                     found = False
-                    print ' ... Scanning \"' + root + '/' + dir + '/\"',
+                    pretext = ' - Scanning \"' + root + '/' + dir + '/\"'
                     for f in os.listdir(os.path.join(root, dir)):
                         if (plot + '.pkl') in f:
-                            print '- found pickle in ' + dir + '!'
+                            print pretext,
+                            print '- found pkl in ' + dir + '! (' + f + ')'
                             d = pickle.load(file(os.path.join(root, dir, f)))
                             id = contains_int(dir)
                             plotdata[plot].append({'id': id,
@@ -69,7 +69,7 @@ def search_dirs(rootdir, simlist, plottypes):
                                                    'data': d})
                             found = True
                     if not found:
-                        print '- None'
+                        print pretext + ' - None'
 
     return plotdata
 
@@ -153,12 +153,13 @@ def add_hist(ax, color, data, bins=30):
     #       unreadable. Using range() in mean time.
     norm = 1
     bins = 30
-    range = (0, 50)
-    type = 'bar'
+    range = None  # (0, 50)
+    type = 'step'
     cumul = True
-    stack = False
+    stack = True
     fill = False
-    x = sorted(data)
+    # x = sorted(data)
+    x = data
     if bins is None:
         bins = x
     (n, bins, patches) = ax.hist(x, bins=bins, range=range,
@@ -217,13 +218,14 @@ def compare(dir, simlist, plottypes, **kwargs):
             elif data['type'] == 'bar':
                 add_bar(ax, index, color, label, data)
             elif data['type'] == 'hist':
+                pprint(label)
                 add_hist(ax, color, data['x'])
             else:
                 print 'Error: no type \'' + data['type'] + '\''
 
             # increment plot index
             index += 1
-
+        pprint(labels)
         # legend
         for label in labels:
             label = r'\textbf{' + label + '}'  # make labels bold
@@ -232,11 +234,7 @@ def compare(dir, simlist, plottypes, **kwargs):
             # ax.set_xticks([1, 2, 3])
             # ax.set_xticklabels(['180', '300', '600'])
         else:
-            if 'join' in plottype:
-                ax.legend(['RPL-DAG', r'$\mu$SDN-Controller'],
-                          loc='lower right')
-            else:
-                ax.legend(labels, loc='best')
+            ax.legend(labels, loc='best')
         # boxplot_zoom(ax, lastdata,
         #              width=1.5, height=1.5,
         #              xlim=[0, 6.5], ylim=[0, 11000],
