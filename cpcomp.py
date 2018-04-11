@@ -74,6 +74,7 @@ def search_dirs(rootdir, simlist, plottypes):
     return plotdata
 
 
+# ----------------------------------------------------------------------------#
 def calc_plot_pos(plot_index, x_max, x_len, gap=0, width=0.35):
     """Calculate an array of x positions based on plot index."""
     n = plot_index-1
@@ -83,6 +84,7 @@ def calc_plot_pos(plot_index, x_max, x_len, gap=0, width=0.35):
     return np.arange(start, end, step)
 
 
+# ----------------------------------------------------------------------------#
 def calc_xtick_pos(plot_index, x_max, x_len, gap=0, width=0.35):
     """Calculate the midpoint positions for xticks, based on plot index."""
     n = plot_index-1
@@ -155,7 +157,7 @@ def add_hist(ax, color, data, bins=30):
     type = 'bar'
     cumul = True
     stack = False
-    fill = True
+    fill = False
     x = sorted(data)
     if bins is None:
         bins = x
