@@ -32,6 +32,8 @@ def main():
                     help='Absolute path to output folder')
     ap.add_argument('--wd', required=False, default=cfg['wd'],
                     help='(Relative) working directory for code + csc')
+    ap.add_argument('--fmt', required=False, default=cfg['fmt'],
+                    help='Cooja simulation file')
     ap.add_argument('--csc', required=False, default=cfg['csc'],
                     help='Cooja simulation file')
     ap.add_argument('--makeargs', required=False,
@@ -67,8 +69,9 @@ def main():
         print(info)
         print('=' * len(info))
         # HACK: replace remove list brackets
-        makeargs = makeargs.replace('[', '').replace(']', '')
-        print(makeargs)
+        if makeargs is not None:
+            makeargs = makeargs.replace('[', '').replace(']', '')
+            print(makeargs)
         # make a note of our intended sim directory
         outdir = args.out + "/" + simname + "/"
         # run a cooja simulation with these sim settings
@@ -87,7 +90,7 @@ def main():
                          simname)
         # generate results by parsing the cooja log
         if int(args.parse) and simname is not None:
-            parse(simlog, outdir, simname, 'cooja', plot_config)
+            parse(simlog, outdir, simname, args.fmt, plot_config)
 
     # analyze the generated results
     if int(args.comp) and analysis is not None:
@@ -103,15 +106,16 @@ def parse(log, dir, simname, fmt, plots):
     logtype = (l for l in cfg['logtypes'] if l['type'] == fmt).next()
     df_dict = {}
     for d in cfg['data']['dictionary']:
-        regex = logtype['fmt_re'] + logtype['log_re'] + d['regex']
+        regex = logtype['fmt_re'] + d['regex']
         df = lp.scrape_data(d['type'], log, dir, fmt, regex)
         if df is not None:
             df_dict.update({d['type']: df})
-    lp.analyze_data(df_dict)
-    print('**** Pickle the data...')
-    lp.pickle_data(dir, df_dict)
-    print('**** Generate the following plots: ' + ' '.join(plots))
-    lp.plot_data(simname, dir, df_dict, plots)
+    if bool(df_dict):
+        print('**** Pickle the data...')
+        lp.pickle_data(dir, df_dict)
+    if plots is not None:
+        print('**** Generate the following plots: [' + ' '.join(plots) + ']')
+        lp.plot_data(simname, dir, df_dict, plots)
 
 
 # ----------------------------------------------------------------------------#

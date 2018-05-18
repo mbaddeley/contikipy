@@ -3,6 +3,7 @@
 # ----------------------------------------------------------------------------
 path:    /home/mike/Repos/atomic
 wd:      /examples/atomic
+fmt:     cooja
 log:     /tools/cooja/build/COOJA.testlog
 out:     /home/mike/Results/ATOMIC
 csc:     atomic-30-node.csc
@@ -14,14 +15,13 @@ target:  sky
 # ----------------------------------------------------------------------------
 logtypes:
   - type:    cooja
-    fmt_re:  ^\s*(?P<time>\d+):\s+(?P<id>\d+):\s+
-    log_re:  (?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<op_type>\w+)
+    fmt_re:  ^\s*(?P<time>\d+):\s+(?P<id>\d+):\s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<op_type>\w+)
 
 data:
-  config:     [pow]
+  config:     [atomic]
   dictionary:
-    - type:   pow
-      regex:  (?:\s*h:(?P<type>\d+)|\s+np:(?P<n_phases>\d+)|\s+gon:(?P<gon>\d+)|\s+ron:(?P<ron>\d+)|\s+con:(?P<con>\d+)\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
+    - type:   atomic
+      regex:  (?:\s*h:(?P<hops>\d+)|\s+np:(?P<n_phases>\d+)|\s+gon:(?P<gon>\d+)|\s+ron:(?P<ron>\d+)|\s+con:(?P<con>\d+)\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
 # ----------------------------------------------------------------------------
 # Simulations
 # ----------------------------------------------------------------------------
@@ -29,9 +29,6 @@ simulations:
 # ----------------------------------------------------------------------------
   - desc:             ATM
     makeargs:
-      SDN:  0
     plot:
-      - associate_time
-      - collect_time
-      - configure_time
-      - react_time
+      - atomic_associate_time
+      - atomic_collect_time
