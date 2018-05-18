@@ -105,7 +105,7 @@ def parse(log, dir, simname, fmt, plots):
     print('**** Parse log and gererate data logs in: ' + dir)
     logtype = (l for l in cfg['logtypes'] if l['type'] == fmt).next()
     df_dict = {}
-    for d in cfg['data']['dictionary']:
+    for d in cfg['formatters']['dictionary']:
         regex = logtype['fmt_re'] + d['regex']
         df = lp.scrape_data(d['type'], log, dir, fmt, regex)
         if df is not None:

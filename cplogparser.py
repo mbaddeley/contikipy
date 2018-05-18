@@ -8,6 +8,7 @@ import os  # for makedir
 import re  # regex
 import sys
 import matplotlib.pyplot as plt  # general plotting
+import operator
 import numpy as np  # number crunching
 # import seaborn as sns  # fancy plotting
 import pandas as pd  # table manipulation
@@ -33,6 +34,9 @@ plt.style.use('seaborn-deep')
 pd.set_option('display.max_rows', 1000)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
+
+directory = 'NOT_SET'
+description = 'NOT_SET'
 
 
 # ----------------------------------------------------------------------------#
@@ -89,11 +93,17 @@ def pickle_data(dir, data):
 # ----------------------------------------------------------------------------#
 def plot_data(sim, dir, df_dict, plots):
     """Plot data according to required plot types."""
+    global description, directory
     # dictionary of the various plotters
     atomic_function_map = {
-        'atomic_associate_time':  atomic_associate_time,
-        'atomic_collect_time':  atomic_collect_time,
+        'atomic_energy_v_hops': atomic_energy_v_hops,
+        'atomic_op_times': atomic_op_times,
     }
+
+    # set plot descriptions
+    description = sim
+    directory = dir
+
     print('> Do plots [' + ' '.join(plots) + '] for simulation: ' + sim)
     for plot in plots:
         print('> Plot ' + plot + '...')
@@ -164,27 +174,38 @@ def csv_to_df(file):
 # ----------------------------------------------------------------------------#
 # General plotting
 # ----------------------------------------------------------------------------#
-def atomic_associate_time(df):
-    """Plot atomic associate data."""
-    df = df.loc[df['op_type'] == 'ASSC']
-    print(df)
+def atomic_op_times(df):
+    """Plot atomic op times."""
+    g = df.groupby('op_type')
+    data = pd.DataFrame()
 
-    return df
+    for k, v in g:
+        data[k] = pd.Series(v['con'].mean())
+
+    # rearrage cols
+    data = data[['NONE', 'CLCT', 'CONF', 'RACT', 'ASSC']]
+    # rename cols
+    data = data.rename(columns={'NONE': 'IND',
+                                'CLCT': 'COLLECT',
+                                'CONF': 'CONFIGURE',
+                                'RACT': 'REACT',
+                                'ASSC': 'ASSOCIATE'})
+    x = list(data.columns.values)
+    y = data.values.tolist()[0]
+
+    cpplot.plot_bar(df, 'atomic_op_times', directory, x, y,
+                    xlabel='Op Type', ylabel='Time(ms)')
 
 
 # ----------------------------------------------------------------------------#
-def atomic_collect_time(df):
-    """Plot atomic associate data."""
-    df = df.loc[df['op_type'] == 'CLCT']
-    print(df)
-
-    return df
-
-
-
-# ----------------------------------------------------------------------------#
-# Additional processing
-# ----------------------------------------------------------------------------#
-def prr(sent, dropped):
-    """Calculate the packet receive rate of a node."""
-    return (1 - dropped/sent) * 100
+def atomic_energy_v_hops(df):
+    """Plot atomic energy vs hops."""
+    g = df.groupby('hops')
+    data = {}
+    for k, v in g:
+        # ignore the timesync (0 hops)
+        if(k > 0):
+            data[k] = v.groupby('id').last()['all_rdc'].mean()
+    cpplot.plot_bar(df, 'atomic_energy_v_hops', directory,
+                    data.keys(), data.values(),
+                    xlabel='Hops', ylabel='Radio Duty Cycle (\\%)')

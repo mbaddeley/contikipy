@@ -11,24 +11,23 @@ target:  sky
 
 # ----------------------------------------------------------------------------
 # Results Options
-# packet regex ... https://regex101.com/r/0ihQFC/1
+# packet regex ... https://regex101.com/r/26KZoD/15/
 # ----------------------------------------------------------------------------
 logtypes:
   - type:    cooja
     fmt_re:  ^\s*(?P<time>\d+):\s+(?P<id>\d+):\s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<op_type>\w+)
 
-data:
-  config:     [atomic]
+formatters:
   dictionary:
-    - type:   atomic
-      regex:  (?:\s*h:(?P<hops>\d+)|\s+np:(?P<n_phases>\d+)|\s+gon:(?P<gon>\d+)|\s+ron:(?P<ron>\d+)|\s+con:(?P<con>\d+)\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
+    - type:  atomic
+      regex: (?:\s*h:(?P<hops>\d+)|\s+np:(?P<n_phases>\d+)|\s+gon:(?P<gon>\d+)|\s+ron:(?P<ron>\d+)|\s+con:(?P<con>\d+)\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
+
 # ----------------------------------------------------------------------------
 # Simulations
 # ----------------------------------------------------------------------------
 simulations:
-# ----------------------------------------------------------------------------
-  - desc:             ATM
+  - desc:    ATM
     makeargs:
     plot:
-      - atomic_associate_time
-      - atomic_collect_time
+      - atomic_energy_v_hops
+      - atomic_op_times
