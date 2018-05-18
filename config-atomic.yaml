@@ -15,13 +15,13 @@ target:  sky
 logtypes:
   - type:    cooja
     fmt_re:  ^\s*(?P<time>\d+):\s+(?P<id>\d+):\s+
-    log_re:  (?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+
+    log_re:  (?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<op_type>\w+)
 
 data:
   config:     [pow]
   dictionary:
     - type:   pow
-      regex:  (?P<op_type>\w+)|\s+h:(?P<hops>\d+)|\s+np:(?P<n_phases>\d+)|\s+p:(?P<pwr>\d+.\d+)|\s+gon:(?P<g_on>\d+)|\s+ron:(?P<ron>\d+)|\s+con:(?P<dur>\d+)|\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+)+ tx.*?$
+      regex:  (?:\s*h:(?P<type>\d+)|\s+np:(?P<n_phases>\d+)|\s+gon:(?P<gon>\d+)|\s+ron:(?P<ron>\d+)|\s+con:(?P<con>\d+)\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
 # ----------------------------------------------------------------------------
 # Simulations
 # ----------------------------------------------------------------------------

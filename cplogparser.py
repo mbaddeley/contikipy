@@ -15,13 +15,13 @@ from scipy.stats.mstats import mode
 
 import cpplotter as cpplot
 
-# from pprint import pprint
+# from pprint(import pprint
 
 # Matplotlib settings for graphs (need texlive-full, ghostscript and dvipng)
 plt.rc('font', family='sans-serif', weight='bold')
 plt.rc('text', usetex=True)
-# plt.rc('text.latex', preamble=r'\usepackage{cmbright}')
-plt.rc('text.latex', preamble='\usepackage{sfmath}')
+# plt.rc('text.latex', preamble=r'\\usepackage{cmbright}')
+plt.rc('text.latex', preamble='\\usepackage{sfmath}')
 plt.rc('xtick', labelsize=18)
 plt.rc('ytick', labelsize=18)
 plt.rc('axes', labelsize=18)
@@ -38,12 +38,12 @@ pd.set_option('display.width', 1000)
 # ----------------------------------------------------------------------------#
 def scrape_data(datatype, log, dir, fmt, regex):
     """Scrape the main log for data."""
-    # Print some information about what's being parsed
+    # print(some information about what's being parsed
     info = 'Data: {0} | Log: {1} ' \
            '| Log Format: {2}'.format(datatype, log, fmt)
-    print '-' * len(info)
-    print info
-    print '-' * len(info)
+    print('-' * len(info))
+    print(info)
+    print('-' * len(info))
 
     # dictionary of the various data df formatters
     read_function_map = {
@@ -58,11 +58,13 @@ def scrape_data(datatype, log, dir, fmt, regex):
         # check the simulation directory exists, and there is a log there
         open(log, 'rb')
         # do the parsing
-        print '*** Parsing log using ' + datatype + ' regex....'
+        print('*** Parsing log using ' + datatype + ' regex....')
         data_re = re.compile(regex)
+        print(data_re.pattern)
         data_log = parse_log(log, dir + "log_" + datatype + ".log", data_re)
         if (os.path.getsize(data_log.name) != 0):
             data_df = csv_to_df(data_log)
+            print(data_df)
             if datatype in read_function_map.keys():
                 # do some formatting on the df
                 data_df = read_function_map[datatype](data_df)
@@ -76,16 +78,16 @@ def scrape_data(datatype, log, dir, fmt, regex):
             else:
                 raise Exception('ERROR: Dataframe was None!')
         else:
-            print 'WARN: Log was empty'
+            print('WARN: Log was empty')
     except Exception as e:
-            print e
+            print(e)
             sys.exit(0)
 
 
 # ----------------------------------------------------------------------------#
 def analyze_data(df_dict):
     """Take the dfs generated from the main log and analyze."""
-    print '*** Do some additional processing on the dataframes...'
+    print('*** Do some additional processing on the dataframes...')
     # get general node data
     node_df = df_dict.get('node')
     if node_df is not None:
@@ -102,17 +104,17 @@ def analyze_data(df_dict):
             node_df = add_rdc_to_node_df(node_df, pow_df)
         df_dict['node'] = node_df
 
-    print '*** Node data summary...'
-    print df_dict['node']
+    print('*** Node data summary...')
+    print(df_dict['node'])
 
 
 # ----------------------------------------------------------------------------#
 def pickle_data(dir, data):
     """Save data by pickling it."""
-    print '*** Pickling DataFrames ...'
-    print data.keys()
+    print('*** Pickling DataFrames ...')
+    print(data.keys())
     for k, v in data.items():
-        print '> Saving ' + k
+        print('> Saving ' + k)
         if v is not None:
             v.to_pickle(dir + k + '_df.pkl')
 
@@ -137,7 +139,7 @@ def plot_data(sim, dir, data, plots):
 # ----------------------------------------------------------------------------#
 def format_app_data(df):
     """Format application data."""
-    print '> Read app log'
+    print('> Read app log')
     # sort the table by src/dest/seq so txrx pairs will be next to each other
     # this fixes NaN hop counts being filled incorrectly
     df = df.sort_values(['src', 'dest', 'app', 'seq']).reset_index(drop=True)
@@ -150,10 +152,8 @@ def format_app_data(df):
     # pivot the table so we combine tx and rx rows for the same (src/dest/seq)
     df = df.bfill().pivot_table(index=['src', 'dest', 'app', 'seq', 'hops'],
                                 columns=['status'],
-                                values='time') \
-                   .reset_index() \
-                   .rename(columns={'TX': 'txtime',
-                                    'RX': 'rxtime'})
+                                values='time')
+    df.reset_index().rename(columns={'TX': 'txtime', 'RX': 'rxtime'})
     # remove the columns' name
     df.columns.name = None
     # format column types
@@ -169,17 +169,17 @@ def format_app_data(df):
 # ----------------------------------------------------------------------------#
 def format_icmp_data(df):
     """Format icmp data."""
-    print '> Read icmp log'
+    print('> Read icmp log')
     # TODO: Possibly do some processing?
-    # print (df['type'] == 155).sum()
-    # print (df['type'] == 200).sum()
+    # print((df['type'] == 155).sum())
+    # print((df['type'] == 200).sum())
     return df
 
 
 # ----------------------------------------------------------------------------#
 def format_sdn_data(sdn_df):
     """Format sdn data."""
-    print '> Read sdn log'
+    print('> Read sdn log')
 
     # Rearrange columns
     sdn_df = sdn_df[['src', 'dest', 'typ', 'seq', 'time',
@@ -213,7 +213,7 @@ def format_sdn_data(sdn_df):
 # ----------------------------------------------------------------------------#
 def format_pow_data(df):
     """Format power data."""
-    print '> Read power log'
+    print('> Read power log')
     # get last row of each 'id' group and use the all_radio value
     df = df.groupby('id').last()
     # need to convert all our columns to numeric values from strings
@@ -225,7 +225,7 @@ def format_pow_data(df):
 # ----------------------------------------------------------------------------#
 def format_node_data(df):
     """Format node data."""
-    print '> Format node data'
+    print('> Format node data')
     df = df.groupby('id')['rank', 'degree'].agg(lambda x: min(x.mode()))
     return df
 
@@ -242,9 +242,11 @@ def parse_log(file_from, file_to, pattern):
         with open(file_to, 'wb') as t:
             for l in f:
                 # HACK: Fixes issue with '-' in pow
-                m = pattern.match(l.replace('.-', '.'))
+                # m = pattern.match(l.replace('.-', '.'))
+                m = pattern.match(l)
                 if m:
                     g = m.groupdict('')
+                    print(g.viewitems())
                     if write_header:
                         t.write(','.join(g.keys()))
                         t.write('\n')
@@ -279,7 +281,7 @@ def prr(sent, dropped):
 # ----------------------------------------------------------------------------#
 def add_prr_to_node_df(node_df, app_df):
     """Add prr for each node."""
-    print '> Add prr for each node'
+    print('> Add prr for each node')
     node_df['prr'] = app_df.groupby('src')['drpd'].apply(
                      lambda x: prr(len(x), x.sum()))
     return node_df
@@ -288,7 +290,7 @@ def add_prr_to_node_df(node_df, app_df):
 # ----------------------------------------------------------------------------#
 def add_rdc_to_node_df(node_df, pow_df):
     """Add rdc for each node."""
-    print '> Add rdc for each node'
+    print('> Add rdc for each node')
     node_df = node_df.join(pow_df['all_radio'].rename('rdc'))
     return node_df
 
@@ -296,7 +298,7 @@ def add_rdc_to_node_df(node_df, pow_df):
 # ----------------------------------------------------------------------------#
 def add_mean_lat_to_node_df(node_df, app_df):
     """Add mean lat for each node."""
-    print '> Add mean_lat for each node'
+    print('> Add mean_lat for each node')
     node_df['mean_lat'] = app_df.groupby('src')['lat'].apply(
                           lambda x: x.mean())
     return node_df
@@ -305,7 +307,7 @@ def add_mean_lat_to_node_df(node_df, app_df):
 # ----------------------------------------------------------------------------#
 def add_hops_to_node_df(node_df, app_df):
     """Add hops for each node."""
-    print '> Add hops for each node'
+    print('> Add hops for each node')
     # Add hops to node_df. N.B. cols with NaN are always converted to float
     hops = app_df[['src', 'hops']].groupby('src').agg(lambda x: mode(x)[0])
     node_df = node_df.join(hops['hops'].astype(int))
@@ -324,7 +326,7 @@ def add_hops_to_node_df(node_df, app_df):
 def plot(sim, plot_list, dir, node_df=None, app_df=None, sdn_df=None,
          icmp_df=None, join_df=None):
     """Process the data for all plottypes."""
-    print '*** Do plots for simulation: ' + sim
+    print('*** Do plots for simulation: ' + sim)
     for plot in plot_list:
         # General plots
         # hops vs rdc
@@ -337,7 +339,7 @@ def plot(sim, plot_list, dir, node_df=None, app_df=None, sdn_df=None,
             y = df['rdc'].tolist()
             cpplot.plot_bar(df, plot, dir, x, y,
                             xlabel='Hops',
-                            ylabel='Radio duty cycle (\%)')
+                            ylabel='Radio duty cycle (\\%)')
         # hops vs prr
         elif plot == 'hops_prr':
             df = node_df.groupby('hops')['prr'] \
@@ -345,7 +347,7 @@ def plot(sim, plot_list, dir, node_df=None, app_df=None, sdn_df=None,
                         .reset_index() \
                         .set_index('hops')
             cpplot.plot_bar(df, plot, dir, df.index, df.prr,
-                            xlabel='Hops', ylabel='PDR (\%)')
+                            xlabel='Hops', ylabel='PDR (\\%)')
         # hops mean latency
         elif plot == 'hops_lat_mean':
             df = app_df[['hops', 'lat']].reset_index(drop=True)
@@ -393,7 +395,7 @@ def plot(sim, plot_list, dir, node_df=None, app_df=None, sdn_df=None,
             # ticks are the column headers
             xticks = list(df.columns.values)
             cpplot.plot_box(plot, dir, xticks, data,
-                            xlabel='Flow \#', ylabel='End-to-end delay (ms)')
+                            xlabel='Flow \\#', ylabel='End-to-end delay (ms)')
 
         # SDN plots
         # histogram of join time

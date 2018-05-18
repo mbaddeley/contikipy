@@ -103,14 +103,10 @@ def parse(log, dir, simname, fmt, plots):
     logtype = (l for l in cfg['logtypes'] if l['type'] == fmt).next()
     df_dict = {}
     for d in cfg['data']['dictionary']:
-        if 'pow' in d['type']:
-            regex = logtype['fmt_re'] + d['regex']
-        else:
-            regex = logtype['fmt_re'] + logtype['log_re'] + d['regex']
+        regex = logtype['fmt_re'] + logtype['log_re'] + d['regex']
         df = lp.scrape_data(d['type'], log, dir, fmt, regex)
         if df is not None:
             df_dict.update({d['type']: df})
-    print(df_dict)
     lp.analyze_data(df_dict)
     print('**** Pickle the data...')
     lp.pickle_data(dir, df_dict)

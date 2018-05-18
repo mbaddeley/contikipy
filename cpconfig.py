@@ -1,4 +1,5 @@
 #!/usr/bin/env python2.7
+"""Module allows parsing of the yaml config."""
 from itertools import product
 
 import yaml
@@ -15,7 +16,7 @@ def TUPLES(config, key):
 def P_LIST(keys, *args):
     """Return product of arg lists as list of dicts."""
     for p in product(*args):
-        print args
+        print(args)
     return [dict(zip(keys, p)) for p in product(*args)]
 
 
