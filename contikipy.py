@@ -12,7 +12,7 @@ import cplogparser as lp
 import cpcomp
 
 # import yaml config
-cfg = yaml.load(open("config.yaml", 'r'))
+cfg = yaml.load(open("config-atomic.yaml", 'r'))
 
 
 # ----------------------------------------------------------------------------#
@@ -55,20 +55,20 @@ def main():
         analysis = None
 
     simlog = None
-    print '**** Run ' + str(len(simulations)) + ' simulations'
+    print('**** Run ' + str(len(simulations)) + ' simulations')
     for sim in simulations:
         # generate a simulation description
         simname = sim['desc']
         makeargs = sim['makeargs']
         plot_config = sim['plot']
-        # Print some information about this simulation
+        # print(some information about this simulation
         info = 'Running simulation: {0}'.format(simname)
-        print '=' * len(info)
-        print info
-        print '=' * len(info)
+        print('=' * len(info))
+        print(info)
+        print('=' * len(info))
         # HACK: replace remove list brackets
         makeargs = makeargs.replace('[', '').replace(']', '')
-        print makeargs
+        print(makeargs)
         # make a note of our intended sim directory
         outdir = args.out + "/" + simname + "/"
         # run a cooja simulation with these sim settings
@@ -77,7 +77,6 @@ def main():
                 csc = sim['csc']
             else:
                 csc = args.csc
-            print 'here'
             simlog = run(args.path,
                          args.target,
                          args.log,
@@ -100,7 +99,7 @@ def parse(log, dir, simname, fmt, plots):
     """Parse the main log for each datatype."""
     if log is None:
         log = dir + simname + ".log"
-    print '**** Parse log and gererate data logs in: ' + dir
+    print('**** Parse log and gererate data logs in: ' + dir)
     logtype = (l for l in cfg['logtypes'] if l['type'] == fmt).next()
     df_dict = {}
     for d in cfg['data']['dictionary']:
@@ -111,33 +110,34 @@ def parse(log, dir, simname, fmt, plots):
         df = lp.scrape_data(d['type'], log, dir, fmt, regex)
         if df is not None:
             df_dict.update({d['type']: df})
+    print(df_dict)
     lp.analyze_data(df_dict)
-    print '**** Pickle the data...'
+    print('**** Pickle the data...')
     lp.pickle_data(dir, df_dict)
-    print '**** Generate the following plots: ' + ' '.join(plots)
+    print('**** Generate the following plots: ' + ' '.join(plots))
     lp.plot_data(simname, dir, df_dict, plots)
 
 
 # ----------------------------------------------------------------------------#
 def run(contiki, target, log, wd, csc, outdir, args, simname):
     """Clean, make, and run cooja."""
-    print '**** Clean and make: ' + contiki + wd + "/" + csc
+    print('**** Clean and make: ' + contiki + wd + "/" + csc)
     contikilog = contiki + log
-    print '> Clean ' + contiki + wd
+    print('> Clean ' + contiki + wd)
     clean(contiki + wd, target)
-    # print '> Make ' + contiki + wd
-    # make(contiki + wd, args)
+    print('> Make ' + contiki + wd)
+    make(contiki + wd, args, target)
     # Run the scenario in cooja with -nogui
-    print '**** Create simulation directory'
+    print('**** Create simulation directory')
     # Create a new folder for this scenario
     if not os.path.exists(outdir):
         os.makedirs(outdir)
-    print '**** Running simulation ' + simname
+    print('**** Running simulation ' + simname)
     run_cooja(contiki, contiki + wd + '/' + csc, args)
-    print '**** Copy log into simulation directory'
+    print('**** Copy log into simulation directory')
     # Copy contiki ouput log file and prefix the simname
-    simlog = outdir + "/" + simname + '.log'
-    print simlog
+    simlog = outdir + simname + '.log'
+    print(simlog)
     shutil.copyfile(contikilog, simlog)
 
     return simlog
@@ -155,7 +155,7 @@ def run_cooja(contiki, sim, args):
     antbuild = '-file ' + contiki + '/tools/cooja/'
     antnogui = '-Dargs=' + sim
     cmd = args + ' ' + ant + ' ' + antbuild + ' ' + antnogui
-    print '> ' + cmd
+    print('> ' + cmd)
     subprocess.call(cmd, shell=True)
 
 
@@ -164,27 +164,21 @@ def clean(path, target):
     """Run contiki make clean."""
     # make clean in case we have new cmd line arguments
     subprocess.call('make clean TARGET=' + target + ' ' +
-                    ' -C ' + path + '/controller',
-                    shell=True)
-    subprocess.call('make clean TARGET=' + target + ' ' +
-                    ' -C ' + path + '/node',
+                    ' -C ' + path,
                     shell=True)
 
 
 # ----------------------------------------------------------------------------#
 def make(path, args, target):
     """Run contiki make."""
-    print '> args: ' + args
+    print('> args: ' + args)
     subprocess.call('make TARGET=' + target + ' ' + args +
-                    ' -C ' + path + '/controller', shell=True)
-    subprocess.call('make TARGET=' + target + ' ' + args +
-                    ' -C ' + path + '/node',
-                    shell=True)
+                    ' -C ' + path, shell=True)
 
 
 # ----------------------------------------------------------------------------#
 if __name__ == "__main__":
     # config = {}
     # execfile("mpy.conf", config)
-    # print config["bitrate"]
+    # print(config["bitrate"]
     main()

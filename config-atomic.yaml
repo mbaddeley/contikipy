@@ -1,0 +1,37 @@
+# ----------------------------------------------------------------------------
+# ContikiPy
+# ----------------------------------------------------------------------------
+path:    /home/mike/Repos/atomic
+wd:      /examples/atomic
+log:     /tools/cooja/build/COOJA.testlog
+out:     /home/mike/Results/ATOMIC
+csc:     atomic-30-node.csc
+target:  sky
+
+# ----------------------------------------------------------------------------
+# Results Options
+# packet regex ... https://regex101.com/r/0ihQFC/1
+# ----------------------------------------------------------------------------
+logtypes:
+  - type:    cooja
+    fmt_re:  ^\s*(?P<time>\d+):\s+(?P<id>\d+):\s+
+    log_re:  (?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+
+
+data:
+  config:     [pow]
+  dictionary:
+    - type:   pow
+      regex:  (?P<op_type>\w+)|\s+h:(?P<hops>\d+)|\s+np:(?P<n_phases>\d+)|\s+p:(?P<pwr>\d+.\d+)|\s+gon:(?P<g_on>\d+)|\s+ron:(?P<ron>\d+)|\s+con:(?P<dur>\d+)|\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+)+ tx.*?$
+# ----------------------------------------------------------------------------
+# Simulations
+# ----------------------------------------------------------------------------
+simulations:
+# ----------------------------------------------------------------------------
+  - desc:             ATM
+    makeargs:
+      SDN:  0
+    plot:
+      - associate_time
+      - collect_time
+      - configure_time
+      - react_time
