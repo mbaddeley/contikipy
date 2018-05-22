@@ -60,3 +60,4 @@ analysis:
     # which plots do we want to compare?
     plots:
       - atomic_energy_v_hops
+      - atomic_op_times

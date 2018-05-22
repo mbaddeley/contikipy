@@ -16,7 +16,6 @@ from pprint import pprint
 
 import cpplotter as cpplot
 
-
 # Pandas options
 pd.set_option('display.max_rows', 1000)
 pd.set_option('display.max_columns', 500)
@@ -141,17 +140,26 @@ def add_line(ax, color, label, data):
 def add_bar(ax, index, color, label, data):
     """Add data to bar plot."""
     width = 0.35
-    x_max = max(data['x'])
     x_len = len(data['x'])
+    # check for strings in x
+    if not any(isinstance(x, str) for x in data['x']):
+        x_max = max(data['x'])
+    else:
+        x_max = x_len  # if there's a string we use x_len for xticks
     ind = calc_plot_pos(index, x_max, x_len)
     ax.bar(ind, data['y'], width, color=color, label=label)
     # Re-calculate the xticks
     ind = calc_xtick_pos(index, x_max, x_len)
     ax.set_xticks(ind)
     # convert xlabels to ints if they are floats
-    xlabels = [str(int(x)) for x in data['x'] if isinstance(x, float)]
+    xlabels = [str(int(x)) if isinstance(x, float) else x for x in data['x']]
     # xlabels = [r'\textbf{' + x + '}' for x in xlabels]  # bold
-    ax.set_xticklabels(xlabels)
+    # make font smaller if data['x'] contains strings
+    if any(isinstance(x, str) for x in data['x']):
+        rc_params = {'fontsize': 12}
+    else:
+        rc_params = None
+    ax.set_xticklabels(xlabels, rc_params)
 
 
 # ----------------------------------------------------------------------------#
@@ -194,8 +202,6 @@ def compare_box(datasets, **kwargs):
         labels.append(data['label'])
         # Set the color for this iteration color (cyclic)
         color = list(plt.rcParams['axes.prop_cycle'])[index-1]['color']
-        # print(some info about this simulation
-        # pprint(data)
         # plot the box and add to the parent fig
         add_box(ax, artists, index, color, data['label'], data['data'])
         # increment plot index
@@ -258,7 +264,8 @@ def compare_bar(datasets, **kwargs):
     for data in datasets:
         X[data['id']] = data['data']['x']
         Y[data['id']] = data['data']['y']
-    X = pad_x(X)
+    if not any(isinstance(x, str) for x in data['data']['x']):
+        X = pad_x(X)
     Y = pad_y(Y)
     # plot the data
     for data in datasets:
@@ -267,8 +274,8 @@ def compare_bar(datasets, **kwargs):
         # Set the color for this iteration color (cyclic)
         color = list(plt.rcParams['axes.prop_cycle'])[index-1]['color']
         # plot the bar and add to the parent fig
-        data['data']['x'] = X[data['id']].tolist()
-        data['data']['y'] = Y[data['id']].tolist()
+        data['data']['x'] = X[data['id']]
+        data['data']['y'] = Y[data['id']]
         add_bar(ax, index, color, data['label'], data['data'])
         # increment plot index
         index += 1
