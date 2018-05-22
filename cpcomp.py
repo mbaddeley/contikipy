@@ -16,17 +16,6 @@ from pprint import pprint
 
 import cpplotter as cpplot
 
-# Matplotlib settings for graphs (need texlive-full, ghostscript and dvipng)
-from matplotlib import rc
-rc('text', usetex=True)
-rc('font', family='sans-serif', weight='bold')
-rc('xtick', labelsize=18)
-rc('ytick', labelsize=18)
-rc('axes', labelsize=18)
-rc('legend', fontsize=16)
-# plt.rc('text.latex', preamble='\\usepackage{sfmath}')
-
-plt.style.use('seaborn-deep')
 
 # Pandas options
 pd.set_option('display.max_rows', 1000)
@@ -149,7 +138,10 @@ def add_bar(ax, index, color, label, data):
     # Re-calculate the xticks
     ind = calc_xtick_pos(index, x_max, x_len)
     ax.set_xticks(ind)
-    ax.set_xticklabels(data['x'])
+    # convert xlabels to ints if they are floats
+    xlabels = [str(int(x)) for x in data['x'] if isinstance(x, float)]
+    # xlabels = [r'\textbf{' + x + '}' for x in xlabels]  # bold
+    ax.set_xticklabels(xlabels)
 
 
 # ----------------------------------------------------------------------------#
@@ -210,6 +202,39 @@ def compare_box(datasets, **kwargs):
 
 
 # ----------------------------------------------------------------------------#
+def pad_y(M):
+    """Append the minimal amount of zeroes at the end of each array."""
+    maxlen = max(len(r) for r in M.values())
+    Z = np.zeros((len(M.values()), maxlen))
+    i = 0
+    for k, v in M.iteritems():
+        Z[i, :len(v)] += v
+        M[k] = Z[i]
+        i = i + 1
+    return M
+
+
+# ----------------------------------------------------------------------------#
+def pad_x(M):
+    """Pad each array with incremental values."""
+    maxlen = max(len(r) for r in M.values())
+    len_x = 0
+    V = []
+    for k, v in M.iteritems():
+        if(len(v) > len_x):
+            len_x = len(v)
+            V = v
+    Z = np.zeros((len(M.values()), maxlen))
+    i = 0
+    for k, v in M.iteritems():
+        Z[i, :len(v)] += v
+        Z[i, len(v):maxlen] = V[len(v):maxlen]
+        M[k] = Z[i]
+        i = i + 1
+    return M
+
+
+# ----------------------------------------------------------------------------#
 def compare_bar(datasets, **kwargs):
     """Compare bar plots."""
     labels = []             # save the labels for the legend
@@ -217,19 +242,26 @@ def compare_bar(datasets, **kwargs):
     fig, ax = plt.subplots(1, 1, figsize=(8, 6))    # create a new figure
     index = 1   # start index
     # compare each dataset for this plot
+    X = {}
+    Y = {}
+    # pad the datasets with zeros up to the size of the largest x/y
+    for data in datasets:
+        X[data['id']] = data['data']['x']
+        Y[data['id']] = data['data']['y']
+    X = pad_x(X)
+    Y = pad_y(Y)
+    # plot the data
     for data in datasets:
         history.append(data['data'])
         labels.append(data['label'])
         # Set the color for this iteration color (cyclic)
         color = list(plt.rcParams['axes.prop_cycle'])[index-1]['color']
-        # print(some info about this simulation
-        # pprint(data)
         # plot the bar and add to the parent fig
+        data['data']['x'] = X[data['id']].tolist()
+        data['data']['y'] = Y[data['id']].tolist()
         add_bar(ax, index, color, data['label'], data['data'])
         # increment plot index
         index += 1
-
-    ax.legend(labels, loc='best')
 
     return fig, ax, labels
 
@@ -247,14 +279,12 @@ def compare_line(datasets, **kwargs):
         labels.append(data['label'])
         # Set the color for this iteration color (cyclic)
         color = list(plt.rcParams['axes.prop_cycle'])[index-1]['color']
-        # print(some info about this simulation
-        # pprint(data)
         # plot the line and add to the parent fig
         add_line(ax, color, data['label'], data['data'])
         # increment plot index
         index += 1
 
-    ax.legend(labels, loc='best')
+    return fig, ax, labels
 
 
 # ----------------------------------------------------------------------------#
@@ -270,8 +300,6 @@ def compare_hist(datasets, **kwargs):
         labels.append(data['label'])
         # Set the color for this iteration color (cyclic)
         color = list(plt.rcParams['axes.prop_cycle'])[index-1]['color']
-        # print(some info about this simulation
-        # pprint(data)
         # plot the line and add to the parent fig
         add_hist(ax, color, data['x'])
         # increment plot index
@@ -279,7 +307,8 @@ def compare_hist(datasets, **kwargs):
 
     # ax.legend(['RPL-DAG', r'$\mu$SDN-Controller'],
     #           loc='lower right')
-    ax.legend(labels, 'lower right')
+
+    return fig, ax, labels
 
 
 # ----------------------------------------------------------------------------#
@@ -303,26 +332,29 @@ def compare(dir, simlist, plottypes, **kwargs):
         # sort the datasets for each plot
         datasets = sorted(datasets, key=lambda d: d['id'], reverse=False)
 
-        try:
-            # check all the dataset types, xlabels and ylabels match
-            for data in datasets:
-                type = data['data']['type']
-                xlabel = data['data']['xlabel']
-                ylabel = data['data']['ylabel']
-            print('... (' + type.upper() + ')')
-            # call appropriate comparison function
-            fig, ax, labels = function_map[type](datasets)
-            # make labels bold
-            for label in labels:
-                label = r'\textbf{' + label + '}'
-            # save figure
-            cpplot.set_fig_and_save(fig, ax, None,
-                                    plot + '_' + str(simlist),  # filename
-                                    dir + '/',                  # directory
-                                    xlabel=xlabel,
-                                    ylabel=ylabel)
-            print('  ... OK')
-        except Exception as e:
-                print(e)
-                sys.exit(0)
+        # check all the dataset types, xlabels and ylabels match
+        for data in datasets:
+            type = data['data']['type']
+            xlabel = data['data']['xlabel']
+            ylabel = data['data']['ylabel']
+        print('... (' + type.upper() + ')')
+        # call appropriate comparison function
+        fig, ax, labels = function_map[type](datasets)
+
+        # make labels bold
+        # labels = [r'\textbf{' + label + '}' for label in labels]
+        # add escape for underscores
+        # labels = [label.replace("_", "\\_") for label in labels]
+        ax.legend(labels, loc='best')
+
+        # save figure
+        # xlabel = r'\textbf{' + xlabel + '}'
+        # ylabel = r'\textbf{' + ylabel + '}'
+        cpplot.set_fig_and_save(fig, ax, None,
+                                plot + '_' + str(simlist),  # filename
+                                dir + '/',                  # directory
+                                xlabel=xlabel,
+                                ylabel=ylabel)
+        print('  ... OK')
+
     print('> SUCCESS! Finshed comparing plots :D')

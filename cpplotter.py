@@ -12,13 +12,12 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
 
 # Matplotlib settings for graphs (need texlive-full, ghostscript and dvipng)
 plt.rc('font', family='sans-serif', weight='bold')
-plt.rc('text', usetex=True)
-# plt.rc('text.latex', preamble=r'\usepackage{cmbright}')
-plt.rc('text.latex', preamble='\\usepackage{sfmath}')
+# plt.rc('text', usetex=True)
+# plt.rc('text.latex', preamble='\\usepackage{sfmath}')
 plt.rc('xtick', labelsize=18)
 plt.rc('ytick', labelsize=18)
-plt.rc('axes', labelsize=18)
-plt.rc('legend', fontsize=16)
+plt.rc('axes', labelsize=18, labelweight='bold')
+plt.rc('legend', fontsize=14)
 
 plt.style.use('seaborn-deep')
 

@@ -7,7 +7,6 @@ from __future__ import division
 import os  # for makedir
 import re  # regex
 import sys
-import matplotlib.pyplot as plt  # general plotting
 # import numpy as np  # number crunching
 # import seaborn as sns  # fancy plotting
 import pandas as pd  # table manipulation
@@ -16,18 +15,6 @@ import pandas as pd  # table manipulation
 import cpplotter as cpplot
 
 # from pprint(import pprint
-
-# Matplotlib settings for graphs (need texlive-full, ghostscript and dvipng)
-plt.rc('font', family='sans-serif', weight='bold')
-plt.rc('text', usetex=True)
-# plt.rc('text.latex', preamble=r'\\usepackage{cmbright}')
-plt.rc('text.latex', preamble='\\usepackage{sfmath}')
-plt.rc('xtick', labelsize=18)
-plt.rc('ytick', labelsize=18)
-plt.rc('axes', labelsize=18)
-plt.rc('legend', fontsize=16)
-
-plt.style.use('seaborn-deep')
 
 # Pandas options
 pd.set_option('display.max_rows', 1000)
