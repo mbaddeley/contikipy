@@ -71,22 +71,32 @@ def search_dirs(rootdir, simlist, plottypes):
     return plotdata
 
 
-def calc_plot_pos(plot_index, x_max, x_len, gap=0, width=0.35):
+def calc_plot_pos(plot_index, x_max, x_len, gap=0.35, width=0.35):
     """Calculate an array of x positions based on plot index."""
     n = plot_index-1
-    start = width*(n) + gap*(n)
+    start = n*width
     end = x_max + start
-    step = (end - start) / x_len
-    return np.arange(start, end, step)
+    step = ((end - start)) / x_len
+    ind = np.arange(start, end, step).tolist()
+    i = 0
+    for x in ind:
+        ind[i] = ind[i] + i*gap
+        i = i+1
+    return ind
 
 
-def calc_xtick_pos(plot_index, x_max, x_len, gap=0, width=0.35):
+def calc_xtick_pos(plot_index, x_max, x_len, gap=0.35, width=0.35):
     """Calculate the midpoint positions for xticks, based on plot index."""
     n = plot_index-1
     start = width*(n)/plot_index + gap*(n)/plot_index
     end = x_max + start
     step = (end - start) / x_len
-    return np.arange(start, end, step)
+    ind = np.arange(start, end, step).tolist()
+    i = 0
+    for x in ind:
+        ind[i] = ind[i] + i*gap - gap/plot_index
+        i = i+1
+    return ind
 
 
 # ----------------------------------------------------------------------------#
@@ -108,7 +118,7 @@ def add_box(ax, artists, index, label, data):
     cpplot.set_box_colors(bp, index-1)
     artists.append(bp["boxes"][0])
     # Re-calculate the xticks
-    ind = calc_xtick_pos(index, x_max, x_len, gap=0.1)
+    ind = calc_xtick_pos(index, x_max, x_len, gap=0.5)
     ax.set_xticks(ind)
     ax.set_xticklabels(data['x'])
 
@@ -332,11 +342,14 @@ def compare(dir, simlist, plottypes, **kwargs):
         # sort the datasets for each plot
         datasets = sorted(datasets, key=lambda d: d['id'], reverse=False)
 
+        n_plots = 0
+
         # check all the dataset types, xlabels and ylabels match
         for data in datasets:
             type = data['data']['type']
             xlabel = data['data']['xlabel']
             ylabel = data['data']['ylabel']
+            n_plots = n_plots+1
         print('... (' + type.upper() + ')')
         # call appropriate comparison function
         fig, ax, labels = function_map[type](datasets)
@@ -346,10 +359,9 @@ def compare(dir, simlist, plottypes, **kwargs):
         # add escape for underscores
         # labels = [label.replace("_", "\\_") for label in labels]
         ax.legend(labels, loc='best')
+        # ax.legend(labels, loc='lower center', ncol=n_plots)
 
         # save figure
-        # xlabel = r'\textbf{' + xlabel + '}'
-        # ylabel = r'\textbf{' + ylabel + '}'
         cpplot.set_fig_and_save(fig, ax, None,
                                 plot + '_' + str(simlist),  # filename
                                 dir + '/',                  # directory
