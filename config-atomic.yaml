@@ -56,7 +56,7 @@ analysis:
     # which sims do we want to compare?
     - ATM_20
     - ATM_30
-    - ATM_40
+    # - ATM_40
     # which plots do we want to compare?
     plots:
       - atomic_energy_v_hops

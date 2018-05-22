@@ -2,28 +2,29 @@
 """This module generates compares results and plots them."""
 from __future__ import division
 
-import os  # for makedir
-import pickle
-import re  # regex
+import sys      # for exceptions
+import os       # for makedir
+import pickle   # for saving data
+import re       # for regex
 
 import matplotlib.pyplot as plt  # general plotting
-import numpy as np  # number crunching
-# import seaborn as sns  # fancy plotting
-import pandas as pd  # table manipulation
+import numpy as np               # number crunching
+# import seaborn as sns          # fancy plotting
+import pandas as pd              # table manipulation
 
-# from pprint import pprint
+from pprint import pprint
 
 import cpplotter as cpplot
 
 # Matplotlib settings for graphs (need texlive-full, ghostscript and dvipng)
-plt.rc('font', family='sans-serif', weight='bold')
-plt.rc('text', usetex=True)
-# plt.rc('text.latex', preamble=r'\usepackage{cmbright}')
-plt.rc('text.latex', preamble='\\usepackage{sfmath}')
-plt.rc('xtick', labelsize=18)
-plt.rc('ytick', labelsize=18)
-plt.rc('axes', labelsize=18)
-plt.rc('legend', fontsize=16)
+from matplotlib import rc
+rc('text', usetex=True)
+rc('font', family='sans-serif', weight='bold')
+rc('xtick', labelsize=18)
+rc('ytick', labelsize=18)
+rc('axes', labelsize=18)
+rc('legend', fontsize=16)
+# plt.rc('text.latex', preamble='\\usepackage{sfmath}')
 
 plt.style.use('seaborn-deep')
 
@@ -48,28 +49,35 @@ def search_dirs(rootdir, simlist, plottypes):
     """Search simulation folders to collate data."""
     plotdata = {}  # dictionary of plot data
     # for each plot type
-    for plot in plottypes:
-        plotdata[plot] = []  # create a list to hold data structs
-        print('> Looking for plots of type ... ' + plot)
-        # walk through directory structure
-        for root, dirs, files in os.walk(rootdir):
-            for dir in sorted(dirs):
-                print(dir)
-                print(simlist)
-                if dir in simlist:
-                    found = False
-                    print(' ... Scanning \"' + root + '/' + dir + '/\"',)
-                    for f in os.listdir(os.path.join(root, dir)):
-                        if (plot + '.pkl') in f:
-                            print('- found pickle in ' + dir + '!')
-                            d = pickle.load(open(os.path.join(root, dir, f)))
-                            id = contains_int(dir)
-                            plotdata[plot].append({'id': id,
-                                                   'label': dir,
-                                                   'data': d})
-                            found = True
-                    if not found:
-                        print('- None')
+    print('> Looking for plots in ' + str(simlist))
+    try:
+        for plot in plottypes:
+            plotdata[plot] = []  # create a list to hold data structs
+            print('> Plot type: ' + plot + ' ...')
+            # walk through directory structure
+            for root, dirs, files in os.walk(rootdir):
+                for dir in sorted(dirs):
+                    if dir in simlist:
+                        found = False
+                        print('  ... Scanning \"' + root + '/' + dir + '/\"')
+                        for f in os.listdir(os.path.join(root, dir)):
+                            if (plot + '.pkl') in f:
+                                print('  - found ' + plot + '.pkl in '
+                                      + dir + '!')
+                                d = pickle.load(open(os.path.join(root,
+                                                                  dir, f)))
+                                id = contains_int(dir)
+                                plotdata[plot].append({'id': id,
+                                                       'label': dir,
+                                                       'data': d})
+                                found = True
+                        if not found:
+                            print('- None')
+                            raise Exception('ERROR: Can\'t find ' + plot +
+                                            '.pkl!')
+    except Exception as e:
+            print(e)
+            sys.exit(0)
 
     return plotdata
 
@@ -170,80 +178,151 @@ def add_hist(ax, color, data, bins=30):
 
 
 # ----------------------------------------------------------------------------#
+def compare_box(datasets, **kwargs):
+    """Compare box plots."""
+    print('> Compare box plots')
+    labels = []             # save the labels for the legend
+    history = []            # save the data history
+    artists = []            # save the artists for the legend
+    fig, ax = plt.subplots(1, 1, figsize=(8, 6))    # create a new figure
+    index = 1   # start index
+    # compare each dataset for this plot
+    for data in datasets:
+        history.append(data['data'])
+        labels.append(data['label'])
+        # Set the color for this iteration color (cyclic)
+        color = list(plt.rcParams['axes.prop_cycle'])[index-1]['color']
+        # print(some info about this simulation
+        # pprint(data)
+        # plot the box and add to the parent fig
+        add_box(ax, artists, index, color, data['label'], data['data'])
+        # increment plot index
+        index += 1
+
+    ax.legend(artists, labels, loc='best')
+
+    # boxplot_zoom(ax, lastdata,
+    #              width=1.5, height=1.5,
+    #              xlim=[0, 6.5], ylim=[0, 11000],
+    #              bp_width=width, pos=[5])
+
+    return fig, ax, labels
+
+
+# ----------------------------------------------------------------------------#
+def compare_bar(datasets, **kwargs):
+    """Compare bar plots."""
+    labels = []             # save the labels for the legend
+    history = []            # save the data history
+    fig, ax = plt.subplots(1, 1, figsize=(8, 6))    # create a new figure
+    index = 1   # start index
+    # compare each dataset for this plot
+    for data in datasets:
+        history.append(data['data'])
+        labels.append(data['label'])
+        # Set the color for this iteration color (cyclic)
+        color = list(plt.rcParams['axes.prop_cycle'])[index-1]['color']
+        # print(some info about this simulation
+        # pprint(data)
+        # plot the bar and add to the parent fig
+        add_bar(ax, index, color, data['label'], data['data'])
+        # increment plot index
+        index += 1
+
+    ax.legend(labels, loc='best')
+
+    return fig, ax, labels
+
+
+# ----------------------------------------------------------------------------#
+def compare_line(datasets, **kwargs):
+    """Compare line plots."""
+    labels = []             # save the labels for the legend
+    history = []            # save the data history
+    fig, ax = plt.subplots(1, 1, figsize=(8, 6))    # create a new figure
+    index = 1   # start index
+    # compare each dataset for this plot
+    for data in datasets:
+        history.append(data['data'])
+        labels.append(data['label'])
+        # Set the color for this iteration color (cyclic)
+        color = list(plt.rcParams['axes.prop_cycle'])[index-1]['color']
+        # print(some info about this simulation
+        # pprint(data)
+        # plot the line and add to the parent fig
+        add_line(ax, color, data['label'], data['data'])
+        # increment plot index
+        index += 1
+
+    ax.legend(labels, loc='best')
+
+
+# ----------------------------------------------------------------------------#
+def compare_hist(datasets, **kwargs):
+    """Compare histograms."""
+    labels = []             # save the labels for the legend
+    history = []            # save the data history
+    fig, ax = plt.subplots(1, 1, figsize=(8, 6))    # create a new figure
+    index = 1   # start index
+    # compare each dataset for this plot
+    for data in datasets:
+        history.append(data['data'])
+        labels.append(data['label'])
+        # Set the color for this iteration color (cyclic)
+        color = list(plt.rcParams['axes.prop_cycle'])[index-1]['color']
+        # print(some info about this simulation
+        # pprint(data)
+        # plot the line and add to the parent fig
+        add_hist(ax, color, data['x'])
+        # increment plot index
+        index += 1
+
+    # ax.legend(['RPL-DAG', r'$\mu$SDN-Controller'],
+    #           loc='lower right')
+    ax.legend(labels, 'lower right')
+
+
+# ----------------------------------------------------------------------------#
 def compare(dir, simlist, plottypes, **kwargs):
     """Compare results between data sets for a list of plot types."""
-    print('*** Analyzing (comparing) results in dir: ' + dir)
-    print('* Comparing simulations: [' + ', '.join(simlist) + ']')
-    print('* Generating plots: [' + ', '.join(plottypes) + ']')
+    print('*** Compare plots in dir: ' + dir)
+    # print(' ... simulations: ' + str(simlist))
+    # print(' ... plots: ' + str(plottypes))
+
+    # dictionary of the various comparison functions
+    function_map = {
+        'bar':   compare_bar,
+        'box':   compare_box,
+        'line':  compare_line,
+        'hist':  compare_hist,
+    }
 
     plotdata = search_dirs(dir, simlist, plottypes)
-    # iterate over all the plots we have data for
+    for plot, datasets in plotdata.items():
+        print('> Compare ' + str(len(datasets)) + ' datasets for ' + plot),
+        # sort the datasets for each plot
+        datasets = sorted(datasets, key=lambda d: d['id'], reverse=False)
 
-    # pprint(plotdata.items())
-    # for each plot type where we have found sims to compare
-    for plottype, sims in plotdata.items():
-        index = 1               # reset sim index
-        max_index = len(sims)   # total number of sims
-        artists = []            # save the artists for the legend
-        labels = []             # save the labels for the legend
-        history = []            # save the data history
-        # create a new figure
-        fig, ax = plt.subplots(1, 1, figsize=(8, 6))
-        # sort the data
-        sims = sorted(sims, key=lambda d: d['id'], reverse=False)
-
-        print('> Compare ' + str(max_index),)
-        print(' plots of type \'' + plottype + '\'')
-        # for each sim which has this plot type
-        for sim in sims:
-            data = sim['data']
-            history.append(data)  # save the data
-            label = sim['label']
-            labels.append(label)  # save the label
-            # Set the color for this iteration color (cyclic)
-            color = list(plt.rcParams['axes.prop_cycle'])[index-1]['color']
-
-            # print(some info about this simulation
-            print(' ... ' + label + ' ' + data['type'] + ' plot',)
-            print('(' + str(index) + '/' + str(max_index) + ') color=' + color)
-
-            # Add the data to the figure
-            if data['type'] == 'box':
-                add_box(ax, artists, index, label, data)
-            elif data['type'] == 'line':
-                add_line(ax, color, label, data)
-            elif data['type'] == 'bar':
-                add_bar(ax, index, color, label, data)
-            elif data['type'] == 'hist':
-                add_hist(ax, color, data['x'])
-            else:
-                print('Error: no type \'' + data['type'] + '\'')
-
-            # increment plot index
-            index += 1
-
-        # legend
-        for label in labels:
-            label = r'\textbf{' + label + '}'  # make labels bold
-        if artists:
-            ax.legend(artists, labels, loc='best')
-            # ax.set_xticks([1, 2, 3])
-            # ax.set_xticklabels(['180', '300', '600'])
-        else:
-            if 'join' in plottype:
-                ax.legend(['RPL-DAG', r'$\mu$SDN-Controller'],
-                          loc='lower right')
-            else:
-                ax.legend(labels, loc='best')
-        # boxplot_zoom(ax, lastdata,
-        #              width=1.5, height=1.5,
-        #              xlim=[0, 6.5], ylim=[0, 11000],
-        #              bp_width=width, pos=[5])
-
-        # save figure
-        cpplot.set_fig_and_save(fig, ax, None,
-                                plottype + '_' + str(simlist),  # filename
-                                dir + '/',  # directory
-                                xlabel=data['xlabel'],
-                                ylabel=data['ylabel'])
-    print('*** Finished analysis!')
+        try:
+            # check all the dataset types, xlabels and ylabels match
+            for data in datasets:
+                type = data['data']['type']
+                xlabel = data['data']['xlabel']
+                ylabel = data['data']['ylabel']
+            print('... (' + type.upper() + ')')
+            # call appropriate comparison function
+            fig, ax, labels = function_map[type](datasets)
+            # make labels bold
+            for label in labels:
+                label = r'\textbf{' + label + '}'
+            # save figure
+            cpplot.set_fig_and_save(fig, ax, None,
+                                    plot + '_' + str(simlist),  # filename
+                                    dir + '/',                  # directory
+                                    xlabel=xlabel,
+                                    ylabel=ylabel)
+            print('  ... OK')
+        except Exception as e:
+                print(e)
+                sys.exit(0)
+    print('> SUCCESS! Finshed comparing plots :D')

@@ -14,7 +14,7 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
 plt.rc('font', family='sans-serif', weight='bold')
 plt.rc('text', usetex=True)
 # plt.rc('text.latex', preamble=r'\usepackage{cmbright}')
-plt.rc('text.latex', preamble='\usepackage{sfmath}')
+plt.rc('text.latex', preamble='\\usepackage{sfmath}')
 plt.rc('xtick', labelsize=18)
 plt.rc('ytick', labelsize=18)
 plt.rc('axes', labelsize=18)
@@ -31,7 +31,7 @@ pd.set_option('display.width', 1000)
 # ----------------------------------------------------------------------------#
 def is_string(obj):
     """Check if an object is a string."""
-    return all(isinstance(elem, basestring) for elem in obj)
+    return all(isinstance(elem, str) for elem in obj)
 
 
 # ----------------------------------------------------------------------------#
@@ -92,7 +92,6 @@ def set_fig_and_save(fig, ax, data, desc, dir, **kwargs):
     ylim = kwargs['ylim'] if 'ylim' in kwargs else None
     xlabel = kwargs['xlabel'] if 'xlabel' in kwargs else ''
     ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
-
     # set axis' labels
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
@@ -106,7 +105,7 @@ def set_fig_and_save(fig, ax, data, desc, dir, **kwargs):
     fig.set_tight_layout(False)
     # save  data for post analysis
     if data is not None:
-        pickle.dump(data, file(dir + desc + '.pkl', 'w'))
+        pickle.dump(data, open(dir + desc + '.pkl', 'w'))
 
     # save figure
     fig.savefig(dir + 'fig_' + desc + '.pdf')
@@ -120,7 +119,7 @@ def set_fig_and_save(fig, ax, data, desc, dir, **kwargs):
 # ----------------------------------------------------------------------------#
 def plot_hist(desc, dir, x, y, **kwargs):
     """Plot a histogram and save."""
-    print '> Plotting ' + desc + ' (hist)'
+    print('> Plotting ' + desc + ' (hist)')
     fig, ax = plt.subplots(figsize=(8, 6))
 
     # get kwargs
@@ -145,7 +144,7 @@ def plot_hist(desc, dir, x, y, **kwargs):
 # ----------------------------------------------------------------------------#
 def plot_bar(df, desc, dir, x, y, ylim=None, **kwargs):
     """Plot a barchart and save."""
-    print '> Plotting ' + desc + ' (bar)'
+    print('> Plotting ' + desc + ' (bar)')
     fig, ax = plt.subplots(figsize=(8, 6))
 
     # constants
@@ -184,7 +183,7 @@ def plot_bar(df, desc, dir, x, y, ylim=None, **kwargs):
 # ----------------------------------------------------------------------------#
 def plot_box(desc, dir, x, y, **kwargs):
     """Plot a boxplot and save."""
-    print '> Plotting ' + desc + ' (box)'
+    print('> Plotting ' + desc + ' (box)')
     # subfigures
     fig, ax = plt.subplots(figsize=(8, 6))
 
@@ -222,7 +221,7 @@ def plot_box(desc, dir, x, y, **kwargs):
 # ----------------------------------------------------------------------------#
 def plot_violin(df, desc, dir, x, xlabel, y, ylabel):
     """Plot a violin plot and save."""
-    print '> Plotting ' + desc + ' (violin)'
+    print('> Plotting ' + desc + ' (violin)')
     fig, ax = plt.subplots(figsize=(8, 6))
 
     xticks = [0, 1, 2, 3, 4, 5, 6]
@@ -247,7 +246,7 @@ def plot_violin(df, desc, dir, x, xlabel, y, ylabel):
 # ----------------------------------------------------------------------------#
 def plot_line(df, desc, dir, x, y, **kwargs):
     """Plot a line graph and save."""
-    print '> Plotting ' + desc + ' (line)'
+    print('> Plotting ' + desc + ' (line)')
 
     # constants
     color = list(plt.rcParams['axes.prop_cycle'])[0]['color']
