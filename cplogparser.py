@@ -8,7 +8,6 @@ import os  # for makedir
 import re  # regex
 import sys
 import matplotlib.pyplot as plt  # general plotting
-import operator
 import numpy as np  # number crunching
 # import seaborn as sns  # fancy plotting
 import pandas as pd  # table manipulation

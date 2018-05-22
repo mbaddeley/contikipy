@@ -11,7 +11,7 @@ import numpy as np  # number crunching
 # import seaborn as sns  # fancy plotting
 import pandas as pd  # table manipulation
 
-from pprint import pprint
+# from pprint import pprint
 
 import cpplotter as cpplot
 
@@ -19,7 +19,7 @@ import cpplotter as cpplot
 plt.rc('font', family='sans-serif', weight='bold')
 plt.rc('text', usetex=True)
 # plt.rc('text.latex', preamble=r'\usepackage{cmbright}')
-plt.rc('text.latex', preamble='\usepackage{sfmath}')
+plt.rc('text.latex', preamble='\\usepackage{sfmath}')
 plt.rc('xtick', labelsize=18)
 plt.rc('ytick', labelsize=18)
 plt.rc('axes', labelsize=18)
@@ -36,7 +36,7 @@ pd.set_option('display.width', 1000)
 # ----------------------------------------------------------------------------#
 def contains_int(string):
     """Return the first integer number found in a string."""
-    match = re.search('\d+', string)
+    match = re.search('\\d+', string)
     if match is None:
         return string
     else:
@@ -50,26 +50,26 @@ def search_dirs(rootdir, simlist, plottypes):
     # for each plot type
     for plot in plottypes:
         plotdata[plot] = []  # create a list to hold data structs
-        print '> Looking for plots of type ... ' + plot
+        print('> Looking for plots of type ... ' + plot)
         # walk through directory structure
         for root, dirs, files in os.walk(rootdir):
             for dir in sorted(dirs):
-                print dir
-                print simlist
+                print(dir)
+                print(simlist)
                 if dir in simlist:
                     found = False
-                    print ' ... Scanning \"' + root + '/' + dir + '/\"',
+                    print(' ... Scanning \"' + root + '/' + dir + '/\"',)
                     for f in os.listdir(os.path.join(root, dir)):
                         if (plot + '.pkl') in f:
-                            print '- found pickle in ' + dir + '!'
-                            d = pickle.load(file(os.path.join(root, dir, f)))
+                            print('- found pickle in ' + dir + '!')
+                            d = pickle.load(open(os.path.join(root, dir, f)))
                             id = contains_int(dir)
                             plotdata[plot].append({'id': id,
                                                    'label': dir,
                                                    'data': d})
                             found = True
                     if not found:
-                        print '- None'
+                        print('- None')
 
     return plotdata
 
@@ -172,9 +172,9 @@ def add_hist(ax, color, data, bins=30):
 # ----------------------------------------------------------------------------#
 def compare(dir, simlist, plottypes, **kwargs):
     """Compare results between data sets for a list of plot types."""
-    print '*** Analyzing (comparing) results in dir: ' + dir
-    print '* Comparing simulations: [' + ', '.join(simlist) + ']'
-    print '* Generating plots: [' + ', '.join(plottypes) + ']'
+    print('*** Analyzing (comparing) results in dir: ' + dir)
+    print('* Comparing simulations: [' + ', '.join(simlist) + ']')
+    print('* Generating plots: [' + ', '.join(plottypes) + ']')
 
     plotdata = search_dirs(dir, simlist, plottypes)
     # iterate over all the plots we have data for
@@ -192,8 +192,8 @@ def compare(dir, simlist, plottypes, **kwargs):
         # sort the data
         sims = sorted(sims, key=lambda d: d['id'], reverse=False)
 
-        print '> Compare ' + str(max_index),
-        print ' plots of type \'' + plottype + '\''
+        print('> Compare ' + str(max_index),)
+        print(' plots of type \'' + plottype + '\'')
         # for each sim which has this plot type
         for sim in sims:
             data = sim['data']
@@ -203,9 +203,9 @@ def compare(dir, simlist, plottypes, **kwargs):
             # Set the color for this iteration color (cyclic)
             color = list(plt.rcParams['axes.prop_cycle'])[index-1]['color']
 
-            # print some info about this simulation
-            print ' ... ' + label + ' ' + data['type'] + ' plot',
-            print '(' + str(index) + '/' + str(max_index) + ') color=' + color
+            # print(some info about this simulation
+            print(' ... ' + label + ' ' + data['type'] + ' plot',)
+            print('(' + str(index) + '/' + str(max_index) + ') color=' + color)
 
             # Add the data to the figure
             if data['type'] == 'box':
@@ -217,7 +217,7 @@ def compare(dir, simlist, plottypes, **kwargs):
             elif data['type'] == 'hist':
                 add_hist(ax, color, data['x'])
             else:
-                print 'Error: no type \'' + data['type'] + '\''
+                print('Error: no type \'' + data['type'] + '\'')
 
             # increment plot index
             index += 1
@@ -246,4 +246,4 @@ def compare(dir, simlist, plottypes, **kwargs):
                                 dir + '/',  # directory
                                 xlabel=data['xlabel'],
                                 ylabel=data['ylabel'])
-    print '*** Finished analysis!'
+    print('*** Finished analysis!')

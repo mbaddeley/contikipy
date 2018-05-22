@@ -83,7 +83,7 @@ class Config:
     if 'simulations' in cfg:
         for sim in cfg['simulations']:
             # format the makeargs as strings
-            if sim['makeargs'] is not None:
+            if 'makeargs' in sim and sim['makeargs'] is not None:
                 sim['makeargs'] = DICT_TO_STRING(sim['makeargs'])
             if 'multiflow' in cfg:
                 # get multiflow args and add them to makeargs

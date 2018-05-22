@@ -26,8 +26,37 @@ formatters:
 # Simulations
 # ----------------------------------------------------------------------------
 simulations:
-  - desc:    ATM
+  # 40 Node
+  - desc:     ATM_40
+    csc:      atomic-40-node.csc
     makeargs:
     plot:
       - atomic_energy_v_hops
       - atomic_op_times
+  # 30 Node
+  - desc:     ATM_30
+    csc:      atomic-30-node.csc
+    makeargs:
+    plot:
+      - atomic_energy_v_hops
+      - atomic_op_times
+  # 20 Node
+  - desc:    ATM_20
+    csc:     atomic-20-node.csc
+    makeargs:
+    plot:
+      - atomic_energy_v_hops
+      - atomic_op_times
+
+# ----------------------------------------------------------------------------
+# analysis (comparison) config
+# ----------------------------------------------------------------------------
+analysis:
+  - sims:
+    # which sims do we want to compare?
+    - ATM_20
+    - ATM_30
+    - ATM_40
+    # which plots do we want to compare?
+    plots:
+      - atomic_energy_v_hops

@@ -61,7 +61,10 @@ def main():
     for sim in simulations:
         # generate a simulation description
         simname = sim['desc']
-        makeargs = sim['makeargs']
+        if 'makeargs' in sim and sim['makeargs'] is not None:
+            makeargs = sim['makeargs']
+        else:
+            makeargs = None
         plot_config = sim['plot']
         # print(some information about this simulation
         info = 'Running simulation: {0}'.format(simname)
@@ -76,6 +79,7 @@ def main():
         outdir = args.out + "/" + simname + "/"
         # run a cooja simulation with these sim settings
         if int(args.runcooja):
+            # check for csc in the sim
             if 'csc' in sim:
                 csc = sim['csc']
             else:
@@ -126,7 +130,7 @@ def run(contiki, target, log, wd, csc, outdir, args, simname):
     print('> Clean ' + contiki + wd)
     clean(contiki + wd, target)
     print('> Make ' + contiki + wd)
-    make(contiki + wd, args, target)
+    make(contiki + wd, target, args)
     # Run the scenario in cooja with -nogui
     print('**** Create simulation directory')
     # Create a new folder for this scenario
@@ -144,8 +148,10 @@ def run(contiki, target, log, wd, csc, outdir, args, simname):
 
 
 # ----------------------------------------------------------------------------#
-def run_cooja(contiki, sim, args):
+def run_cooja(contiki, sim, args=None):
     """Run cooja nogui."""
+    if args is None:
+        args = ""
     # java = 'java -mx512m -jar'
     # cooja_jar = contiki + '/tools/cooja/dist/cooja.jar'
     # nogui = '-nogui=' + sim
@@ -169,8 +175,10 @@ def clean(path, target):
 
 
 # ----------------------------------------------------------------------------#
-def make(path, args, target):
+def make(path, target, args=None):
     """Run contiki make."""
+    if args is None:
+        args = ""
     print('> args: ' + args)
     subprocess.call('make TARGET=' + target + ' ' + args +
                     ' -C ' + path, shell=True)
