@@ -111,9 +111,9 @@ def set_fig_and_save(fig, ax, data, desc, dir, **kwargs):
 
 
 # ----------------------------------------------------------------------------#
-def plot_hist(desc, dir, x, y, **kwargs):
+def plot_hist(df, desc, dir, x, y, ylim=None, **kwargs):
     """Plot a histogram and save."""
-    print('> Plotting ' + desc + ' (hist)')
+    print('> Plotting ' + desc + ' (HIST)')
     fig, ax = plt.subplots(figsize=(8, 6))
 
     # get kwargs
@@ -138,7 +138,7 @@ def plot_hist(desc, dir, x, y, **kwargs):
 # ----------------------------------------------------------------------------#
 def plot_bar(df, desc, dir, x, y, ylim=None, **kwargs):
     """Plot a barchart and save."""
-    print('> Plotting ' + desc + ' (bar)')
+    print('> Plotting ' + desc + ' (BAR)')
     fig, ax = plt.subplots(figsize=(8, 6))
 
     # constants
@@ -177,7 +177,7 @@ def plot_bar(df, desc, dir, x, y, ylim=None, **kwargs):
 # ----------------------------------------------------------------------------#
 def plot_box(df, desc, dir, x, y, ylim=None, **kwargs):
     """Plot a boxplot and save."""
-    print('> Plotting ' + desc + ' (box)')
+    print('> Plotting ' + desc + ' (BOX)')
     # subfigures
     fig, ax = plt.subplots(figsize=(8, 6))
 
@@ -215,7 +215,7 @@ def plot_box(df, desc, dir, x, y, ylim=None, **kwargs):
 # ----------------------------------------------------------------------------#
 def plot_violin(df, desc, dir, x, xlabel, y, ylabel):
     """Plot a violin plot and save."""
-    print('> Plotting ' + desc + ' (violin)')
+    print('> Plotting ' + desc + ' (VIOLIN)')
     fig, ax = plt.subplots(figsize=(8, 6))
 
     xticks = [0, 1, 2, 3, 4, 5, 6]
@@ -240,7 +240,7 @@ def plot_violin(df, desc, dir, x, xlabel, y, ylabel):
 # ----------------------------------------------------------------------------#
 def plot_line(df, desc, dir, x, y, **kwargs):
     """Plot a line graph and save."""
-    print('> Plotting ' + desc + ' (line)')
+    print('> Plotting ' + desc + ' (LINE)')
 
     # constants
     color = list(plt.rcParams['axes.prop_cycle'])[0]['color']
@@ -279,7 +279,7 @@ def plot_line(df, desc, dir, x, y, **kwargs):
 
 
 # ----------------------------------------------------------------------------#
-def traffic_ratio(app_df, sdn_df, icmp_df, dir):
+def traffic_ratio(app_df, sdn_df, icmp_df, desc, dir, **kwargs):
     """Plot traffic ratio."""
     # FIXME: Make this generic
     if sdn_df is not None:
@@ -310,10 +310,10 @@ def traffic_ratio(app_df, sdn_df, icmp_df, dir):
                           index=['App', 'RPL'],
                           columns=['ratio'])
     df.index.name = 'type'
-    fig, ax = plot_bar(df, 'traffic_ratio', dir, x=df.index,
+    fig, ax = plot_bar(df, desc, dir, x=df.index,
                        y=df.ratio)
     data = {'x': df.index, 'y': df.ratio}
-    set_fig_and_save(fig, ax, data, 'traffic_ratio', dir,
+    set_fig_and_save(fig, ax, data, desc, dir,
                      xlabel='Traffic type',
                      ylabel='Ratio of total traffic')
 

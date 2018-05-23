@@ -26,6 +26,7 @@ pd.set_option('display.float_format', lambda x: '%.3f' % x)
 directory = 'NOT_SET'
 description = 'NOT_SET'
 
+
 # ----------------------------------------------------------------------------#
 # Helper functions
 # ----------------------------------------------------------------------------#
@@ -107,6 +108,8 @@ def plot_data(sim, dir, df_dict, plots):
         'usdn_energy_v_hops': usdn_energy_v_hops,
         'usdn_prr_v_hops': usdn_prr_v_hops,
         'usdn_latency_v_hops': usdn_latency_v_hops,
+        'usdn_join_time': usdn_join_time,
+        'usdn_traffic_ratio': usdn_traffic_ratio,
     }
 
     # required dictionaries for each plotter
@@ -116,6 +119,8 @@ def plot_data(sim, dir, df_dict, plots):
         'usdn_energy_v_hops': ['pow', 'app'],
         'usdn_prr_v_hops': ['app'],
         'usdn_latency_v_hops': ['app'],
+        'usdn_join_time': ['join'],
+        'usdn_traffic_ratio': ['app', 'icmp']
     }
 
     # set plot descriptions
@@ -124,7 +129,6 @@ def plot_data(sim, dir, df_dict, plots):
 
     print('> Do plots [' + ' '.join(plots) + '] for simulation: ' + sim)
     for plot in plots:
-        print('> Plot ' + plot + '...')
         try:
             if plot in atomic_function_map.keys():
                 dicts = {}
@@ -227,8 +231,6 @@ def format_sdn_icmp_data(df):
 def format_sdn_join_data(df):
     """Format node data."""
     print('> Read sdn join log')
-    # rearrage cols
-    df = df[['level', 'module', 'dag', 'id', 'time']]
     return df
 
 
@@ -390,3 +392,65 @@ def usdn_latency_v_hops(df_dict):
     y = np.column_stack(df.transpose().values.tolist())  # need a list
     cpplot.plot_box(df, 'usdn_latency_v_hops', directory, x, y,
                     xlabel='Hops', ylabel='End-to-end delay (ms)')
+
+
+# ----------------------------------------------------------------------------#
+def usdn_join_time(df_dict):
+    """Plot usdn controller and rpl-dag join times."""
+    try:
+        if 'join' in df_dict:
+            join_df = df_dict['join']
+        else:
+            raise Exception('ERROR: Correct df(s) not in dict!')
+    except Exception:
+            traceback.print_exc()
+            sys.exit(0)
+    df = join_df.copy()
+    df['time'] = join_df['time']/1000/1000
+    # merge 'node' col into 'id' col, where the value in id is 1
+    df.loc[df['id'] == 1, 'id'] = df['node']
+    # drop the node/module/level columns
+    df = df.drop('node', 1)
+    df = df.drop('module', 1)
+    df = df.drop('level', 1)
+    # merge dis,dao,controller
+    # df = df.set_index(['time', 'id']).stack().reset_index()
+    df = (df.set_index(['time', 'id'])
+          .stack()
+          .reorder_levels([2, 0, 1])
+          .reset_index(name='a')
+          .drop('a', 1)
+          .rename(columns={'level_0': 'type'}))
+    # pivot so we use the type column as our columns
+    df = df.pivot_table(index=['id'],
+                        columns=['type'],
+                        values='time').dropna(how='any')
+    x = df['controller'].tolist()
+    y = df.index.tolist()
+    cpplot.plot_hist(df, 'usdn_controller_join_time', directory, x, y,
+                     xlabel='Time (s)',
+                     ylabel='Propotion of Nodes Joined')
+    x = df['dag'].tolist()
+    y = df.index.tolist()
+    cpplot.plot_hist(df, 'usdn_dag_join_time', directory, x, y,
+                     xlabel='Time (s)',
+                     ylabel='Propotion of Nodes Joined')
+
+
+# ----------------------------------------------------------------------------#
+def usdn_traffic_ratio(df_dict):
+    """Plot traffic ratios."""
+    try:
+        if 'app' in df_dict and 'icmp' in df_dict:
+            app_df = df_dict['app']
+            icmp_df = df_dict['icmp']
+            if 'sdn' in df_dict:
+                sdn_df = df_dict['sdn']
+            else:
+                sdn_df = None
+        else:
+            raise Exception('ERROR: Correct df(s) not in dict!')
+    except Exception:
+            traceback.print_exc()
+            sys.exit(0)
+    cpplot.traffic_ratio(app_df, sdn_df, icmp_df, 'traffic_ratio', directory)
