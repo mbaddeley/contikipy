@@ -98,6 +98,7 @@ def main():
 
     # analyze the generated results
     if int(args.comp) and analysis is not None:
+        print('**** Compare plots in dir: ' + args.out)
         cpcomp.compare(args.out, analysis['sims'], analysis['plots'])
 
 

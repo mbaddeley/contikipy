@@ -321,7 +321,7 @@ def compare_hist(datasets, **kwargs):
         # Set the color for this iteration color (cyclic)
         color = list(plt.rcParams['axes.prop_cycle'])[index-1]['color']
         # plot the line and add to the parent fig
-        add_hist(ax, color, data['x'])
+        add_hist(ax, color, data['data']['x'])
         # increment plot index
         index += 1
 
@@ -335,7 +335,6 @@ def compare_hist(datasets, **kwargs):
 # ----------------------------------------------------------------------------#
 def compare(dir, simlist, plottypes, **kwargs):
     """Compare results between data sets for a list of plot types."""
-    print('*** Compare plots in dir: ' + dir)
     # print(' ... simulations: ' + str(simlist))
     # print(' ... plots: ' + str(plottypes))
 
@@ -361,7 +360,7 @@ def compare(dir, simlist, plottypes, **kwargs):
             xlabel = data['data']['xlabel']
             ylabel = data['data']['ylabel']
             n_plots = n_plots+1
-        print('... (' + type.upper() + ')')
+        print('(' + type.upper() + ') ...'),
         # call appropriate comparison function
         fig, ax, = function_map[type](datasets)
 
@@ -378,6 +377,6 @@ def compare(dir, simlist, plottypes, **kwargs):
                                 dir + '/',                  # directory
                                 xlabel=xlabel,
                                 ylabel=ylabel)
-        print('  ... OK')
+        print('OK')
 
     print('> SUCCESS! Finshed comparing plots :D')

@@ -88,10 +88,11 @@ simulations:
       SDN:          0
     multiflow:      1_flow
     plot:
-      - usdn_energy_v_hops            # Radio duty cycle vs hops
-      - usdn_prr_v_hops               # Packet receive ratio vs hops
-      - usdn_latency_v_hops          # Hops vs e2e latency
-      # - net_tr              # Network traffic ratio
+      - usdn_energy_v_hops        # Radio duty cycle vs hops
+      - usdn_prr_v_hops           # Packet receive ratio vs hops
+      - usdn_latency_v_hops       # Hops vs e2e latency
+      - usdn_join_time            # DAG join time
+      - usdn_traffic_ratio        # RPL traffic ratio
 
   - desc:           SDN
     makeargs:
@@ -100,14 +101,14 @@ simulations:
       FTREFRESH:    1
       FTSRETRY:     1
       FORCENSU:     1
-      NSUFREQ:      600     # NSU frequency actually helps over 0 frequency
+      NSUFREQ:      600           # NSU frequency actually helps over 0 frequency
     multiflow:      1_flow
     plot:
-      - usdn_energy_v_hops            # Radio duty cycle vs hops
-      - usdn_prr_v_hops               # Packet receive ratio vs hops
-      - usdn_latency_v_hops          # Hops vs e2e latency
-      # - sdn_join            # SDN controller join time
-      # - net_tr              # SDN traffic ratio
+      - usdn_energy_v_hops        # Radio duty cycle vs hops
+      - usdn_prr_v_hops           # Packet receive ratio vs hops
+      - usdn_latency_v_hops       # Hops vs e2e latency
+      - usdn_join_time            # SDN controller join time
+      - usdn_traffic_ratio        # SDN traffic ratio
 
 # ----------------------------------------------------------------------------
 # analysis (comparison) config
@@ -121,8 +122,7 @@ analysis:
       - usdn_energy_v_hops
       - usdn_prr_v_hops
       - usdn_latency_v_hops
-      # - hops_lat_e2e
-      # - join
+      - usdn_join_time
 
 # ----------------------------------------------------------------------------
   # - sims:
