@@ -10,11 +10,46 @@ import re       # for regex
 import matplotlib.pyplot as plt  # general plotting
 import numpy as np               # number crunching
 # import seaborn as sns          # fancy plotting
-import pandas as pd              # table manipulation
+# import pandas as pd              # table manipulation
 
 from pprint import pprint
 
 import cpplotter as cpplot
+
+
+# ----------------------------------------------------------------------------#
+# Helper functions
+# ----------------------------------------------------------------------------#
+def pad_y(M):
+    """Append the minimal amount of zeroes at the end of each array."""
+    maxlen = max(len(r) for r in M.values())
+    Z = np.zeros((len(M.values()), maxlen))
+    i = 0
+    for k, v in M.iteritems():
+        Z[i, :len(v)] += v
+        M[k] = Z[i]
+        i = i + 1
+    return M
+
+
+# ----------------------------------------------------------------------------#
+def pad_x(M):
+    """Pad each array with incremental values."""
+    maxlen = max(len(r) for r in M.values())
+    len_x = 0
+    V = []
+    for k, v in M.iteritems():
+        if(len(v) > len_x):
+            len_x = len(v)
+            V = v
+    Z = np.zeros((len(M.values()), maxlen))
+    i = 0
+    for k, v in M.iteritems():
+        Z[i, :len(v)] += v
+        Z[i, len(v):maxlen] = V[len(v):maxlen]
+        M[k] = Z[i]
+        i = i + 1
+    return M
 
 
 # ----------------------------------------------------------------------------#
@@ -27,6 +62,8 @@ def contains_int(string):
         return int(match.group())
 
 
+# ----------------------------------------------------------------------------#
+# Main functions
 # ----------------------------------------------------------------------------#
 def search_dirs(rootdir, simlist, plottypes):
     """Search simulation folders to collate data."""
@@ -94,14 +131,14 @@ def calc_xtick_pos(plot_index, x_max, x_len, gap=0.35, width=0.35):
 
 
 # ----------------------------------------------------------------------------#
-def add_box(ax, artists, index, label, data):
+def add_box(ax, artists, index, color, label, data):
     """Add data to box plot."""
     width = 0.35
     notch = False
     fliers = False
     x_max = max(data['x'])
     x_len = len(data['x'])
-    ind = calc_plot_pos(index, x_max, x_len, gap=0.1)
+    ind = calc_plot_pos(index, x_max, x_len)
     bp = ax.boxplot(data['y'],
                     positions=ind,
                     notch=notch,
@@ -112,7 +149,7 @@ def add_box(ax, artists, index, label, data):
     cpplot.set_box_colors(bp, index-1)
     artists.append(bp["boxes"][0])
     # Re-calculate the xticks
-    ind = calc_xtick_pos(index, x_max, x_len, gap=0.5)
+    ind = calc_xtick_pos(index, x_max, x_len)
     ax.set_xticks(ind)
     ax.set_xticklabels(data['x'])
 
@@ -185,7 +222,6 @@ def add_hist(ax, color, data, bins=30):
 # ----------------------------------------------------------------------------#
 def compare_box(datasets, **kwargs):
     """Compare box plots."""
-    print('> Compare box plots')
     labels = []             # save the labels for the legend
     history = []            # save the data history
     artists = []            # save the artists for the legend
@@ -202,47 +238,14 @@ def compare_box(datasets, **kwargs):
         # increment plot index
         index += 1
 
+    # add legend (need to do this here because of the artists)
     ax.legend(artists, labels, loc='best')
 
     # boxplot_zoom(ax, lastdata,
     #              width=1.5, height=1.5,
     #              xlim=[0, 6.5], ylim=[0, 11000],
     #              bp_width=width, pos=[5])
-
-    return fig, ax, labels
-
-
-# ----------------------------------------------------------------------------#
-def pad_y(M):
-    """Append the minimal amount of zeroes at the end of each array."""
-    maxlen = max(len(r) for r in M.values())
-    Z = np.zeros((len(M.values()), maxlen))
-    i = 0
-    for k, v in M.iteritems():
-        Z[i, :len(v)] += v
-        M[k] = Z[i]
-        i = i + 1
-    return M
-
-
-# ----------------------------------------------------------------------------#
-def pad_x(M):
-    """Pad each array with incremental values."""
-    maxlen = max(len(r) for r in M.values())
-    len_x = 0
-    V = []
-    for k, v in M.iteritems():
-        if(len(v) > len_x):
-            len_x = len(v)
-            V = v
-    Z = np.zeros((len(M.values()), maxlen))
-    i = 0
-    for k, v in M.iteritems():
-        Z[i, :len(v)] += v
-        Z[i, len(v):maxlen] = V[len(v):maxlen]
-        M[k] = Z[i]
-        i = i + 1
-    return M
+    return fig, ax
 
 
 # ----------------------------------------------------------------------------#
@@ -275,7 +278,10 @@ def compare_bar(datasets, **kwargs):
         # increment plot index
         index += 1
 
-    return fig, ax, labels
+    # add legend
+    ax.legend(labels, loc='best')
+    # ax.legend(labels, loc='lower center', ncol=n_plots)
+    return fig, ax
 
 
 # ----------------------------------------------------------------------------#
@@ -296,7 +302,9 @@ def compare_line(datasets, **kwargs):
         # increment plot index
         index += 1
 
-    return fig, ax, labels
+    # add legend
+    ax.legend(labels, loc='best')
+    return fig, ax
 
 
 # ----------------------------------------------------------------------------#
@@ -317,10 +325,11 @@ def compare_hist(datasets, **kwargs):
         # increment plot index
         index += 1
 
+    # add legend
+    ax.legend(labels, loc='best')
     # ax.legend(['RPL-DAG', r'$\mu$SDN-Controller'],
     #           loc='lower right')
-
-    return fig, ax, labels
+    return fig, ax
 
 
 # ----------------------------------------------------------------------------#
@@ -354,13 +363,13 @@ def compare(dir, simlist, plottypes, **kwargs):
             n_plots = n_plots+1
         print('... (' + type.upper() + ')')
         # call appropriate comparison function
-        fig, ax, labels = function_map[type](datasets)
+        fig, ax, = function_map[type](datasets)
 
         # make labels bold
         # labels = [r'\textbf{' + label + '}' for label in labels]
         # add escape for underscores
         # labels = [label.replace("_", "\\_") for label in labels]
-        ax.legend(labels, loc='best')
+        # ax.legend(labels, loc='best')
         # ax.legend(labels, loc='lower center', ncol=n_plots)
 
         # save figure

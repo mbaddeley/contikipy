@@ -175,7 +175,7 @@ def plot_bar(df, desc, dir, x, y, ylim=None, **kwargs):
 
 
 # ----------------------------------------------------------------------------#
-def plot_box(desc, dir, x, y, **kwargs):
+def plot_box(df, desc, dir, x, y, ylim=None, **kwargs):
     """Plot a boxplot and save."""
     print('> Plotting ' + desc + ' (box)')
     # subfigures

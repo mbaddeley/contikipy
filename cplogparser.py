@@ -26,7 +26,16 @@ pd.set_option('display.float_format', lambda x: '%.3f' % x)
 directory = 'NOT_SET'
 description = 'NOT_SET'
 
+# ----------------------------------------------------------------------------#
+# Helper functions
+# ----------------------------------------------------------------------------#
+def prr(sent, dropped):
+    """Calculate the packet receive rate of a node."""
+    return (1 - dropped/sent) * 100
 
+
+# ----------------------------------------------------------------------------#
+# Main functions
 # ----------------------------------------------------------------------------#
 def scrape_data(datatype, log, dir, fmt, regex):
     """Scrape the main log for data."""
@@ -96,6 +105,8 @@ def plot_data(sim, dir, df_dict, plots):
         'atomic_energy_v_hops': atomic_energy_v_hops,
         'atomic_op_times': atomic_op_times,
         'usdn_energy_v_hops': usdn_energy_v_hops,
+        'usdn_prr_v_hops': usdn_prr_v_hops,
+        'usdn_latency_v_hops': usdn_latency_v_hops,
     }
 
     # required dictionaries for each plotter
@@ -103,6 +114,8 @@ def plot_data(sim, dir, df_dict, plots):
         'atomic_energy_v_hops': ['atomic'],
         'atomic_op_times': ['atomic'],
         'usdn_energy_v_hops': ['pow', 'app'],
+        'usdn_prr_v_hops': ['app'],
+        'usdn_latency_v_hops': ['app'],
     }
 
     # set plot descriptions
@@ -326,3 +339,54 @@ def usdn_energy_v_hops(df_dict):
     cpplot.plot_bar(df, 'usdn_energy_v_hops', directory, x, y,
                     xlabel='Hops',
                     ylabel='Radio duty cycle (%)')
+
+
+# ----------------------------------------------------------------------------#
+def usdn_prr_v_hops(df_dict):
+    """Plot usdn energy vs hops."""
+    try:
+        if 'app' in df_dict:
+            app_df = df_dict['app']
+        else:
+            raise Exception('ERROR: Correct df(s) not in dict!')
+    except Exception:
+            traceback.print_exc()
+            sys.exit(0)
+
+    # Get hops for each node. N.B. cols with NaN are always converted to float
+    df = app_df[['src', 'hops']].groupby('src').agg(lambda x: mode(x)[0])
+    # Calculate PRR
+    df['prr'] = app_df.groupby('src')['drpd'] \
+                      .apply(lambda x: prr(len(x), x.sum()))
+
+    df = df.groupby('hops')['prr']    \
+           .apply(lambda x: x.mean()) \
+           .reset_index()             \
+           .set_index('hops')
+    x = df.index.tolist()
+    y = df['prr'].tolist()
+    cpplot.plot_bar(df, 'usdn_prr_v_hops', directory, x, y,
+                    xlabel='Hops', ylabel='PDR (%)')
+
+
+# ----------------------------------------------------------------------------#
+def usdn_latency_v_hops(df_dict):
+    """Plot usdn end-to-end latency vs hops."""
+    try:
+        if 'app' in df_dict:
+            app_df = df_dict['app']
+        else:
+            raise Exception('ERROR: Correct df(s) not in dict!')
+    except Exception:
+            traceback.print_exc()
+            sys.exit(0)
+
+    # pivot table to...
+    df = app_df.pivot_table(index=app_df.groupby('hops').cumcount(),
+                            columns=['hops'], values='lat')
+    df = df.dropna(how='all')  # drop rows with all NaN
+
+    x = list(df.columns.values)  # x ticks are the column headers
+    y = np.column_stack(df.transpose().values.tolist())  # need a list
+    cpplot.plot_box(df, 'usdn_latency_v_hops', directory, x, y,
+                    xlabel='Hops', ylabel='End-to-end delay (ms)')

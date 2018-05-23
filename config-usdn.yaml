@@ -89,9 +89,8 @@ simulations:
     multiflow:      1_flow
     plot:
       - usdn_energy_v_hops            # Radio duty cycle vs hops
-      # - hops_prr            # Packet receive ratio vs hops
-      # - hops_lat_mean       # Hops vs mean latency
-      # - hops_lat_e2e        # Hops vs end-to-end latency
+      - usdn_prr_v_hops               # Packet receive ratio vs hops
+      - usdn_latency_v_hops          # Hops vs e2e latency
       # - net_tr              # Network traffic ratio
 
   - desc:           SDN
@@ -105,83 +104,10 @@ simulations:
     multiflow:      1_flow
     plot:
       - usdn_energy_v_hops            # Radio duty cycle vs hops
-      # - hops_prr            # Packet receive ratio vs hops
-      # - hops_lat_mean       # Hops vs mean latency
-      # - hops_lat_e2e        # Hops vs end-to-end latency
+      - usdn_prr_v_hops               # Packet receive ratio vs hops
+      - usdn_latency_v_hops          # Hops vs e2e latency
       # - sdn_join            # SDN controller join time
       # - net_tr              # SDN traffic ratio
-
-# ----------------------------------------------------------------------------
-  # - desc:           SDN-NSU-10
-  #   makeargs:
-  #     MAC:          CSMA
-  #     SDN:          1
-  #     FTREFRESH:    1
-  #     FORCENSU:     1
-  #     NSUFREQ:      10  # NSU frequency actually helps over 0 frequency
-  #   multiflow:      1_flow_10s
-  #   plot:
-  #     - avg_lat
-  #
-  # - desc:           SDN-NSU-30
-  #   makeargs:
-  #     MAC:          CSMA
-  #     SDN:          1
-  #     FTREFRESH:    1
-  #     FORCENSU:     1
-  #     NSUFREQ:      30  # NSU frequency actually helps over 0 frequency
-  #   multiflow:      1_flow_10s
-  #   plot:
-  #     - avg_lat
-  #
-  # - desc:           SDN-NSU-60
-  #   makeargs:
-  #     MAC:          CSMA
-  #     SDN:          1
-  #     FTREFRESH:    1
-  #     FORCENSU:     1
-  #     NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
-  #   multiflow:      1_flow_10s
-  #   plot:
-  #     - avg_lat
-
-# ----------------------------------------------------------------------------
-  # - desc:           SDN-FT-180
-  #   makeargs:
-  #     MAC:          CSMA
-  #     SDN:          1
-  #     FTREFRESH:    0
-  #     FORCENSU:     1
-  #     NSUFREQ:      0
-  #     FTSFREQ:      180
-  #   multiflow:      1_flow_10s
-  #   plot:
-  #     - avg_lat
-  #
-  #
-  # - desc:           SDN-FT-300
-  #   makeargs:
-  #     MAC:          CSMA
-  #     SDN:          1
-  #     FTREFRESH:    0
-  #     FORCENSU:     1
-  #     NSUFREQ:      0
-  #     FTSFREQ:      300
-  #   multiflow:      1_flow_10s
-  #   plot:
-  #     - avg_lat
-  #
-  # - desc:           SDN-FT-600
-  #   makeargs:
-  #     MAC:          CSMA
-  #     SDN:          1
-  #     FTREFRESH:    0
-  #     FORCENSU:     1
-  #     NSUFREQ:      0
-  #     FTSFREQ:      600
-  #   multiflow:      1_flow_10s
-  #   plot:
-  #     - avg_lat
 
 # ----------------------------------------------------------------------------
 # analysis (comparison) config
@@ -193,8 +119,8 @@ analysis:
     - RPL
     plots:
       - usdn_energy_v_hops
-      # - hops_prr
-      # - hops_lat_mean
+      - usdn_prr_v_hops
+      - usdn_latency_v_hops
       # - hops_lat_e2e
       # - join
 
