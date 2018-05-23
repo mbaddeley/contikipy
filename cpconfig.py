@@ -5,7 +5,7 @@ from itertools import product
 import yaml
 
 # import yaml config
-cfg = yaml.load(open("config-atomic.yaml", 'r'))
+cfg = yaml.load(open("config-usdn.yaml", 'r'))
 
 
 def TUPLES(config, key):

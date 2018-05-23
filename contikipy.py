@@ -12,7 +12,7 @@ import cplogparser as lp
 import cpcomp
 
 # import yaml config
-cfg = yaml.load(open("config-atomic.yaml", 'r'))
+cfg = yaml.load(open("config-usdn.yaml", 'r'))
 
 
 # ----------------------------------------------------------------------------#

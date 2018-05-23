@@ -21,12 +21,6 @@ plt.rc('legend', fontsize=14)
 
 plt.style.use('seaborn-deep')
 
-# Pandas options
-pd.set_option('display.max_rows', 1000)
-pd.set_option('display.max_columns', 500)
-pd.set_option('display.width', 1000)
-
-
 # ----------------------------------------------------------------------------#
 def is_string(obj):
     """Check if an object is a string."""

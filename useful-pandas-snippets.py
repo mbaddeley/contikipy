@@ -144,4 +144,4 @@ df = pd.DataFrame(list(a_dictionary.items()), columns = ['column1', 'column2'])
 dupes = df[df.duplicated(['col1', 'col2', 'col3'], keep=False)]
 
 # Set up formatting so larger numbers aren't displayed in scientific notation (h/t @thecapacity)
-pd.set_option('display.float_format', lambda x: '%.3f' % x)
+# pd.set_option('display.float_format', lambda x: '%.3f' % x)
