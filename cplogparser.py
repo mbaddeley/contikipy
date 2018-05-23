@@ -10,7 +10,7 @@ import sys
 import numpy as np  # number crunching
 # import seaborn as sns  # fancy plotting
 import pandas as pd  # table manipulation
-# from scipy.stats.mstats import mode
+from scipy.stats.mstats import mode
 import traceback
 
 import cpplotter as cpplot
@@ -102,7 +102,7 @@ def plot_data(sim, dir, df_dict, plots):
     atomic_dict_map = {
         'atomic_energy_v_hops': ['atomic'],
         'atomic_op_times': ['atomic'],
-        'usdn_energy_v_hops': ['pow', 'node'],
+        'usdn_energy_v_hops': ['pow', 'app'],
     }
 
     # set plot descriptions
@@ -148,6 +148,9 @@ def format_sdn_pow_data(df):
     df = df.groupby('id').last()
     # need to convert all our columns to numeric values from strings
     df = df.apply(pd.to_numeric, errors='ignore')
+    # rearrage cols
+    df = df[['seqid', 'time',
+             'all_radio', 'radio', 'all_tx', 'tx', 'all_listen', 'listen']]
 
     return df
 
@@ -178,7 +181,6 @@ def format_sdn_app_data(df):
     df['drpd'] = df['rxtime'].apply(lambda x: True if np.isnan(x) else False)
     # calculate the latency/delay and add as a column
     df['lat'] = (df['rxtime'] - df['txtime'])/1000  # FIXME: /1000 = ns -> ms
-
     return df
 
 
@@ -293,23 +295,34 @@ def atomic_energy_v_hops(df):
             data[k] = v.groupby('id').last()['all_rdc'].mean()
     cpplot.plot_bar(df, 'atomic_energy_v_hops', directory,
                     data.keys(), data.values(),
-                    xlabel='Hops', ylabel='Radio Duty Cycle (\\%)')
+                    xlabel='Hops', ylabel='Radio Duty Cycle (%)')
 
 
 # ----------------------------------------------------------------------------#
 # uSDN plotting
 # ----------------------------------------------------------------------------#
-def usdn_energy_v_hops(df):
+def usdn_energy_v_hops(df_dict):
     """Plot usdn energy vs hops."""
-    print(df)
-    # df = df.groupby('hops')['rdc'] \
-    #        .apply(lambda x: x.mean()) \
-    #        .reset_index() \
-    #        .set_index('hops')
-    # x = df.index.tolist()
-    # y = df['rdc'].tolist()
-    # # print(x, y)
-    # print('here2')
-    # cpplot.plot_bar(df, 'usdn_energy_v_hops', directory, x, y,
-    #                 xlabel='Hops',
-    #                 ylabel='Radio duty cycle (\%)')
+    try:
+        if 'app' in df_dict and 'pow' in df_dict:
+            pow_df = df_dict['pow']
+            app_df = df_dict['app']
+        else:
+            raise Exception('ERROR: Correct df(s) not in dict!')
+    except Exception:
+            traceback.print_exc()
+            sys.exit(0)
+
+    # Add hops to node_df. N.B. cols with NaN are always converted to float
+    hops = app_df[['src', 'hops']].groupby('src').agg(lambda x: mode(x)[0])
+    pow_df = pow_df.join(hops['hops'].astype(int))
+
+    df = pow_df.groupby('hops')['all_radio']    \
+               .apply(lambda x: x.mean()) \
+               .reset_index()             \
+               .set_index('hops')
+    x = df.index.tolist()
+    y = df['all_radio'].tolist()
+    cpplot.plot_bar(df, 'usdn_energy_v_hops', directory, x, y,
+                    xlabel='Hops',
+                    ylabel='Radio duty cycle (%)')

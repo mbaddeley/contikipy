@@ -1,4 +1,6 @@
 #!/usr/bin/env python2.7
+"""Useful python snippets."""
+import pandas as pd
 
 # List unique values in a DataFrame column
 # h/t @makmanalp for the updated syntax!
@@ -25,13 +27,13 @@ del df['column']
 
 # Select from DataFrame using criteria from multiple columns
 # (use `|` instead of `&` to do an OR)
-newdf = df[(df['column_one']>2004) & (df['column_two']==9)]
+newdf = df[(df['column_one'] > 2004) & (df['column_two'] == 9)]
 
 # Rename several DataFrame columns
-df = df.rename(columns = {
-    'col1 old name':'col1 new name',
-    'col2 old name':'col2 new name',
-    'col3 old name':'col3 new name',
+df = df.rename(columns={
+    'col1 old name': 'col1 new name',
+    'col2 old name': 'col2 new name',
+    'col3 old name': 'col3 new name',
 })
 
 # Lower-case all DataFrame column names

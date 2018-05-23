@@ -21,6 +21,7 @@ plt.rc('legend', fontsize=14)
 
 plt.style.use('seaborn-deep')
 
+
 # ----------------------------------------------------------------------------#
 def is_string(obj):
     """Check if an object is a string."""

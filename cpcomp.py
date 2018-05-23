@@ -16,6 +16,7 @@ from pprint import pprint
 
 import cpplotter as cpplot
 
+
 # ----------------------------------------------------------------------------#
 def contains_int(string):
     """Return the first integer number found in a string."""
