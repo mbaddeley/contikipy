@@ -4,6 +4,8 @@ import argparse
 import os
 import shutil  # for copying files
 import subprocess
+import traceback
+import sys
 
 import yaml
 
@@ -12,7 +14,66 @@ import cplogparser as lp
 import cpcomp
 
 # import yaml config
-cfg = yaml.load(open("config-usdn.yaml", 'r'))
+cfg = yaml.load(open("config-atomic-v-usdn.yaml", 'r'))
+
+
+# ----------------------------------------------------------------------------#
+def run_cooja(args, sim, outdir, makeargs, simname):
+    """Run cooja."""
+    try:
+        # check for working directory in the sim
+        if 'contiki' in sim:
+            contiki = sim['contiki']
+        elif args.contiki is not None:
+            contiki = args.contiki
+        else:
+            raise Exception('ERROR: No path to contiki!')
+        if 'wd' in sim:
+            wd = sim['wd']
+        elif args.wd is not None:
+            wd = args.wd
+        else:
+            raise Exception('ERROR: No working directory!')
+        # check for csc in the sim
+        if 'csc' in sim:
+            csc = sim['csc']
+        elif args.csc is not None:
+            csc = args.csc
+        else:
+            raise Exception('ERROR: No csc file!')
+        simlog = run(contiki,
+                     args.target,
+                     args.log,
+                     wd,
+                     csc,
+                     outdir,
+                     makeargs,
+                     simname)
+        return simlog
+    except Exception:
+        traceback.print_exc()
+        sys.exit(0)
+
+
+# ----------------------------------------------------------------------------#
+def parse(log, dir, simname, fmt, plots):
+    """Parse the main log for each datatype."""
+    if log is None:
+        log = dir + simname + ".log"
+    print('**** Parse log and gererate data logs in: ' + dir)
+    logtype = (l for l in cfg['logtypes'] if l['type'] == fmt).next()
+    df_dict = {}
+    for d in cfg['formatters']['dictionary']:
+        regex = logtype['fmt_re'] + d['regex']
+        df = lp.scrape_data(d['type'], log, dir, fmt, regex)
+        if df is not None:
+            df_dict.update({d['type']: df})
+    if bool(df_dict):
+        print('**** Pickle the data...')
+        lp.pickle_data(dir, df_dict)
+    if plots is not None:
+        print('**** Generate the following plots: [' + ' '.join(plots) + ']')
+        lp.plot_data(simname, dir, df_dict, plots)
 
 
 # ----------------------------------------------------------------------------#
@@ -22,7 +83,7 @@ def main():
     ap = argparse.ArgumentParser(prog='ContikiPy',
                                  description='Cooja simulation runner and '
                                              'Contiki log parser')
-    ap.add_argument('--path', required=False, default=cfg['path'],
+    ap.add_argument('--contiki', required=False, default=cfg['contiki'],
                     help='Absolute path to contiki')
     ap.add_argument('--target', required=False, default=cfg['target'],
                     help='Contiki platform TARGET')
@@ -79,19 +140,7 @@ def main():
         outdir = args.out + "/" + simname + "/"
         # run a cooja simulation with these sim settings
         if int(args.runcooja):
-            # check for csc in the sim
-            if 'csc' in sim:
-                csc = sim['csc']
-            else:
-                csc = args.csc
-            simlog = run(args.path,
-                         args.target,
-                         args.log,
-                         args.wd,
-                         csc,
-                         outdir,
-                         makeargs,
-                         simname)
+            simlog = run_cooja(args, sim, outdir, makeargs, simname)
         # generate results by parsing the cooja log
         if int(args.parse) and simname is not None:
             parse(simlog, outdir, simname, args.fmt, plot_config)
@@ -103,76 +152,28 @@ def main():
 
 
 # ----------------------------------------------------------------------------#
-def parse(log, dir, simname, fmt, plots):
-    """Parse the main log for each datatype."""
-    if log is None:
-        log = dir + simname + ".log"
-    print('**** Parse log and gererate data logs in: ' + dir)
-    logtype = (l for l in cfg['logtypes'] if l['type'] == fmt).next()
-    df_dict = {}
-    for d in cfg['formatters']['dictionary']:
-        regex = logtype['fmt_re'] + d['regex']
-        df = lp.scrape_data(d['type'], log, dir, fmt, regex)
-        if df is not None:
-            df_dict.update({d['type']: df})
-    if bool(df_dict):
-        print('**** Pickle the data...')
-        lp.pickle_data(dir, df_dict)
-    if plots is not None:
-        print('**** Generate the following plots: [' + ' '.join(plots) + ']')
-        lp.plot_data(simname, dir, df_dict, plots)
-
-
-# ----------------------------------------------------------------------------#
-def run(contiki, target, log, wd, csc, outdir, args, simname):
-    """Clean, make, and run cooja."""
-    print('**** Clean and make: ' + contiki + wd + "/" + csc)
-    contikilog = contiki + log
-    print('> Clean ' + contiki + wd)
-    clean(contiki + wd, target)
-    print('> Make ' + contiki + wd)
-    make(contiki + wd, target, args)
-    # Run the scenario in cooja with -nogui
-    print('**** Create simulation directory')
-    # Create a new folder for this scenario
-    if not os.path.exists(outdir):
-        os.makedirs(outdir)
-    print('**** Running simulation ' + simname)
-    run_cooja(contiki, contiki + wd + '/' + csc, args)
-    print('**** Copy log into simulation directory')
-    # Copy contiki ouput log file and prefix the simname
-    simlog = outdir + simname + '.log'
-    print(simlog)
-    shutil.copyfile(contikilog, simlog)
-
-    return simlog
-
-
-# ----------------------------------------------------------------------------#
-def run_cooja(contiki, sim, args=None):
-    """Run cooja nogui."""
-    if args is None:
-        args = ""
-    # java = 'java -mx512m -jar'
-    # cooja_jar = contiki + '/tools/cooja/dist/cooja.jar'
-    # nogui = '-nogui=' + sim
-    # contiki = '-contiki=' + contiki
-    # cmd = args + ' ' + java + ' ' + cooja_jar + ' ' + nogui + ' ' + contiki
-    ant = 'ant run_nogui'
-    antbuild = '-file ' + contiki + '/tools/cooja/'
-    antnogui = '-Dargs=' + sim
-    cmd = args + ' ' + ant + ' ' + antbuild + ' ' + antnogui
-    print('> ' + cmd)
-    subprocess.call(cmd, shell=True)
+def walklevel(some_dir, level=0):
+    """Walk to a predefined level."""
+    some_dir = some_dir.rstrip(os.path.sep)
+    assert os.path.isdir(some_dir)
+    num_sep = some_dir.count(os.path.sep)
+    for root, dirs, files in os.walk(some_dir):
+        yield root, dirs, files
+        num_sep_this = root.count(os.path.sep)
+        if num_sep + level <= num_sep_this:
+            del dirs[:]
 
 
 # ----------------------------------------------------------------------------#
 def clean(path, target):
     """Run contiki make clean."""
     # make clean in case we have new cmd line arguments
-    subprocess.call('make clean TARGET=' + target + ' ' +
-                    ' -C ' + path,
-                    shell=True)
+    if target is None:
+        target_str = ""
+    else:
+        target_str = 'TARGET=' + target
+    print(target_str)
+    subprocess.call('make clean ' + target_str + ' -C ' + path, shell=True)
 
 
 # ----------------------------------------------------------------------------#
@@ -181,8 +182,49 @@ def make(path, target, args=None):
     if args is None:
         args = ""
     print('> args: ' + args)
-    subprocess.call('make TARGET=' + target + ' ' + args +
+    if target is None:
+        target_str = ""
+    else:
+        target_str = 'TARGET=' + target
+    subprocess.call('make ' + target_str + ' ' + args +
                     ' -C ' + path, shell=True)
+
+
+# ----------------------------------------------------------------------------#
+def run(contiki, target, log, wd, csc, outdir, args, simname):
+    """Clean, make, and run cooja."""
+    csc = wd + "/" + csc
+    print('**** Clean and make: ' + csc)
+    # Find makefiles in the working directory and clean + make
+    for root, dirs, files in walklevel(wd):
+        for dir in dirs:
+            dir = wd + '/' + dir
+            if 'Makefile' in os.listdir(dir):
+                print('> Clean ' + dir)
+                clean(dir, target)
+                print('> Make ' + dir)
+                make(dir, target, args)
+    # Run the scenario in cooja with -nogui
+    print('**** Create simulation directory')
+    # Create a new folder for this scenario
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
+    print('**** Running simulation ' + simname)
+    if args is None:
+        args = ""
+    ant = 'ant run_nogui'
+    antbuild = '-file ' + contiki + '/tools/cooja/'
+    antnogui = '-Dargs=' + csc
+    cmd = args + ' ' + ant + ' ' + antbuild + ' ' + antnogui
+    print('> ' + cmd)
+    subprocess.call(cmd, shell=True)
+    print('**** Copy contiki log into simulation directory')
+    # Copy contiki ouput log file and prefix the simname
+    simlog = outdir + simname + '.log'
+    contikilog = contiki + log
+    shutil.copyfile(contikilog, simlog)
+
+    return simlog
 
 
 # ----------------------------------------------------------------------------#

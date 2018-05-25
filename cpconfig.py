@@ -5,7 +5,7 @@ from itertools import product
 import yaml
 
 # import yaml config
-cfg = yaml.load(open("config-usdn.yaml", 'r'))
+cfg = yaml.load(open("config-atomic-v-usdn.yaml", 'r'))
 
 
 def TUPLES(config, key):
@@ -78,14 +78,13 @@ class Config:
             # the rest of the makeargs for this flow
             MFLOWS[index] = " ".join([MFLOWS[index],
                                       DICT_TO_STRING(config['flows'])])
-
     # format simulation makeargs
     if 'simulations' in cfg:
         for sim in cfg['simulations']:
             # format the makeargs as strings
             if 'makeargs' in sim and sim['makeargs'] is not None:
                 sim['makeargs'] = DICT_TO_STRING(sim['makeargs'])
-            if 'multiflow' in cfg:
+            if 'multiflow' in sim and 'multiflow' in cfg:
                 # get multiflow args and add them to makeargs
                 sim['makeargs'] = " ".join([sim['makeargs'],
                                             MFLOWS[sim['multiflow']]])

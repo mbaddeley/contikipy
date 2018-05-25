@@ -1,24 +1,30 @@
 # ----------------------------------------------------------------------------
 # ContikiPy
 # ----------------------------------------------------------------------------
-contiki: /home/mike/Repos/usdn
-wd:      /home/mike/Repos/usdn/examples/ipv6/sdn-udp
+contiki:
+wd:
 fmt:     cooja
 log:     /tools/cooja/build/COOJA.testlog
-out:     /home/mike/Results/CSMA
-csc:     usdn-30-node.csc
-target:  exp5438
+out:     /home/mike/Results/ATOMIC_test
+csc:
+target:
 
 # ----------------------------------------------------------------------------
 # Results Options
-# packet regex ... https://regex101.com/r/mE5wK0/1
+# packet regex ... https://regex101.com/r/26KZoD/15/
 # ----------------------------------------------------------------------------
 logtypes:
-  - type:     cooja
-    fmt_re:   '^\s*(?P<time>\d+):\s*(?P<id>\d+):'
+  - type:    cooja
+    fmt_re:  ^\s*(?P<time>\d+):\s+(?P<id>\d+):\s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<op_type>\w+)
 
 formatters:
   dictionary:
+    # atomic
+    - type:  atomic-energy
+      regex: (?:\s*h:(?P<hops>\d+)|\s+np:(?P<n_phases>\d+)|\s+gon:(?P<gon>\d+)|\s+ron:(?P<ron>\d+)|\s+con:(?P<con>\d+)\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
+    - type:  atomic-op
+      regex: (?:\s*h:(?P<hops>\d+)|\s+p:\((?P<c_phase>\d+)|\/(?P<n_phases>\d+)\) |.*:\((?P<c_time>\d+)|\/(?P<op_duration>\d+))+.*?$
+    # usdn
     - type:   pow
       regex:  .*P \d+.\d+ (?P<seqid>\d+).*\(radio (?P<all_radio>\d+\W{1,2}\d+).* (?P<radio>\d+[.,-]{1,2}\d+).* (?P<all_tx>\d+[.,-]{1,2}\d+).* (?P<tx>\d+\W{1,2}\d+).* (?P<all_listen>\d+[.,-]{1,2}\d+).* (?P<listen>\d+[.,-]{1,2}\d+)
     - type:   app
@@ -36,16 +42,6 @@ formatters:
 # Multiflow
 # ----------------------------------------------------------------------------
 multiflow:
-  - id:               1_flow_10s
-    NUM_APPS:         1
-    flows:
-      FLOWIDS:        1
-      TXNODES:        0
-      RXNODES:        1
-      DELAY:          120
-      BRMIN:          10
-      BRMAX:          10
-
   - id:               1_flow
     NUM_APPS:         1
     flows:
@@ -56,85 +52,44 @@ multiflow:
       BRMIN:          60
       BRMAX:          75
 
-  - id:               1_flow_p2p
-    NUM_APPS:         1
-    flows:
-      FLOWIDS:        1
-      TXNODES:        [18,19]
-      RXNODES:        [20,21]
-      DELAY:          [60,60]
-      BRMIN:          [60,60]
-      BRMAX:          [75,75]
-
-  - id:               2_flow_rr
-    NUM_APPS:         2
-    flows:
-      FLOWIDS:        [1,2]
-      TXNODES:        [3,3]
-      RXNODES:        [1,1]
-      DELAY:          [120,120]
-      BRMIN:          [0.23,10]
-      BRMAX:          [0.23,10]
 
 # ----------------------------------------------------------------------------
 # Simulations
 # ----------------------------------------------------------------------------
 simulations:
-# ----------------------------------------------------------------------------
-  - desc:           RPL
+  # 30 Node Atomic
+  - desc:           ATM_30
+    contiki:        /home/mike/Repos/atomic
+    wd:             /home/mike/Repos/atomic/examples/atomic
+    csc:            atomic-30-node.csc
     makeargs:
-      MAC:          CSMA
-      SDN:          0
-    multiflow:      1_flow
     plot:
-      - usdn_energy_v_hops        # Radio duty cycle vs hops
-      - usdn_prr_v_hops           # Packet receive ratio vs hops
-      - usdn_latency_v_hops       # Hops vs e2e latency
-      - usdn_join_time            # DAG join time
-      - usdn_traffic_ratio        # RPL traffic ratio
-
-  - desc:           SDN
+      - atomic_vs_usdn
+  # 30 Node Usdn
+  - desc:           uSDN_30
+    contiki:        /home/mike/Repos/usdn
+    wd:             /home/mike/Repos/usdn/examples/ipv6/sdn-udp
+    csc:            usdn-30-node.csc
     makeargs:
       MAC:          CSMA
       SDN:          1
       FTREFRESH:    1
       FTSRETRY:     1
       FORCENSU:     1
-      NSUFREQ:      600           # NSU frequency actually helps over 0 frequency
+      NSUFREQ:      600  # NSU frequency actually helps over 0 frequency
     multiflow:      1_flow
     plot:
-      - usdn_energy_v_hops        # Radio duty cycle vs hops
-      - usdn_prr_v_hops           # Packet receive ratio vs hops
-      - usdn_latency_v_hops       # Hops vs e2e latency
-      - usdn_join_time            # SDN controller join time
-      - usdn_traffic_ratio        # SDN traffic ratio
+      - atomic_vs_usdn
 
 # ----------------------------------------------------------------------------
 # analysis (comparison) config
 # ----------------------------------------------------------------------------
 analysis:
-# ----------------------------------------------------------------------------
   - sims:
-    - SDN
-    - RPL
+    # which sims do we want to compare?
+    - ATM_20
+    - uSDN_30
+    # - ATM_40
+    # which plots do we want to compare?
     plots:
-      - usdn_energy_v_hops
-      - usdn_prr_v_hops
-      - usdn_latency_v_hops
-      - usdn_join_time
-
-# ----------------------------------------------------------------------------
-  # - sims:
-  #   -  SDN-NSU-10
-  #   -  SDN-NSU-30
-  #   -  SDN-NSU-60
-  #   plots:
-  #   - avg_lat
-
-# ----------------------------------------------------------------------------
-  # - sims:
-  #   -  SDN-FT-180
-  #   -  SDN-FT-300
-  #   -  SDN-FT-600
-  #   plots:
-  #   - avg_lat
+      - atomic_vs_usdn

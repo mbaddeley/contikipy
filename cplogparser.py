@@ -50,7 +50,8 @@ def scrape_data(datatype, log, dir, fmt, regex):
     # dictionary of the various data df formatters
     read_function_map = {
         # atomic
-        "atomic":  format_atomic_data,
+        "atomic-energy":  format_atomic_energy_data,
+        "atomic-op":  format_atomic_op_data,
         # usdn
         "pow":  format_sdn_pow_data,
         "app":  format_sdn_app_data,
@@ -103,24 +104,32 @@ def plot_data(sim, dir, df_dict, plots):
 
     # required function for each plot type
     atomic_function_map = {
+        # atomic
         'atomic_energy_v_hops': atomic_energy_v_hops,
         'atomic_op_times': atomic_op_times,
+        # usdn
         'usdn_energy_v_hops': usdn_energy_v_hops,
         'usdn_prr_v_hops': usdn_prr_v_hops,
         'usdn_latency_v_hops': usdn_latency_v_hops,
         'usdn_join_time': usdn_join_time,
         'usdn_traffic_ratio': usdn_traffic_ratio,
+        # atomic vs usdn
+        'atomic_vs_usdn': atomic_vs_usdn,
     }
 
     # required dictionaries for each plotter
     atomic_dict_map = {
-        'atomic_energy_v_hops': ['atomic'],
-        'atomic_op_times': ['atomic'],
+        # atomic
+        'atomic_energy_v_hops': ['atomic-energy'],
+        'atomic_op_times': ['atomic-energy'],
+        # usdn
         'usdn_energy_v_hops': ['pow', 'app'],
         'usdn_prr_v_hops': ['app'],
         'usdn_latency_v_hops': ['app'],
         'usdn_join_time': ['join'],
-        'usdn_traffic_ratio': ['app', 'icmp']
+        'usdn_traffic_ratio': ['app', 'icmp'],
+        # atomic vs usdn
+        'atomic_vs_usdn': ['atomic-op', 'join'],
     }
 
     # set plot descriptions
@@ -145,7 +154,7 @@ def plot_data(sim, dir, df_dict, plots):
 # ----------------------------------------------------------------------------#
 # Read logs
 # ----------------------------------------------------------------------------#
-def format_atomic_data(df):
+def format_atomic_energy_data(df):
     """Format atomic data."""
     print('> Read atomic log')
     # set epoch to be the index
@@ -153,6 +162,18 @@ def format_atomic_data(df):
     # rearrage other cols (and drop level/time)
     df = df[['id', 'module', 'op_type', 'n_phases', 'hops',
              'gon', 'ron', 'con', 'all_rdc', 'rdc']]
+
+    return df
+
+# ----------------------------------------------------------------------------#
+def format_atomic_op_data(df):
+    """Format atomic data."""
+    print('> Read atomic log')
+    # set epoch to be the index
+    df.set_index('epoch', inplace=True)
+    # rearrage other cols (and drop level/time)
+    df = df[['id', 'module', 'op_type', 'c_phase', 'n_phases',
+             'c_time', 'op_duration']]
 
     return df
 
@@ -455,3 +476,46 @@ def usdn_traffic_ratio(df_dict):
             traceback.print_exc()
             sys.exit(0)
     cpplot.traffic_ratio(app_df, sdn_df, icmp_df, 'traffic_ratio', directory)
+
+
+# ----------------------------------------------------------------------------#
+def atomic_vs_usdn(df_dict):
+    """Plot atomic vs usdn."""
+    try:
+        if 'join' in df_dict:
+            join_df = df_dict['join']
+        else:
+            raise Exception('ERROR: Correct df(s) not in dict!')
+    except Exception:
+            traceback.print_exc()
+            sys.exit(0)
+
+    # get usdn controller join times
+    df = join_df.copy()
+    df['time'] = join_df['time']/1000/1000
+    # merge 'node' col into 'id' col, where the value in id is 1
+    if 'node' in df:
+        df.loc[df['id'] == 1, 'id'] = df['node']
+        df = df.drop('node', 1)
+    # drop the node/module/level columns
+    df = df.drop('module', 1)
+    df = df.drop('level', 1)
+    # merge dis,dao,controller
+    df = (df.set_index(['time', 'id'])
+          .stack()
+          .reorder_levels([2, 0, 1])
+          .reset_index(name='a')
+          .drop('a', 1)
+          .rename(columns={'level_0': 'type'}))
+    # pivot so we use the type column as our columns
+    df = df.pivot_table(index=['id'],
+                        columns=['type'],
+                        values='time').dropna(how='any')
+
+    x = df['controller'].tolist()
+    y = df.index.tolist()
+    cpplot.plot_hist(df, 'usdn_join_time', directory, x, y,
+                     xlabel='Time (s)',
+                     ylabel='Propotion of Nodes Joined')
+
+    # get atomic controller join times
