@@ -200,16 +200,16 @@ def add_hist(ax, color, data, bins=30):
     # FIXME: Currently an issue with outliers causing smaller plots to be
     #       unreadable. Using range() in mean time.
     norm = 1
-    bins = 30
     range = (0, 50)
     type = 'bar'
     cumul = True
-    stack = False
+    stack = True
     fill = True
     x = sorted(data)
+    bins = np.around(np.linspace(0, max(x), len(x)), 3)  # bin values to 3dp
     if bins is None:
         bins = x
-    (n, bins, patches) = ax.hist(x, bins=bins, range=range,
+    (n, bins, patches) = ax.hist(x, bins=bins,
                                  normed=norm,
                                  histtype=type,
                                  cumulative=cumul,

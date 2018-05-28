@@ -56,7 +56,7 @@ def run_cooja(args, sim, outdir, makeargs, simname):
 
 
 # ----------------------------------------------------------------------------#
-def parse(log, dir, simname, fmt, plots):
+def parse(log, dir, simname, fmt, regex_list, plots):
     """Parse the main log for each datatype."""
     if log is None:
         log = dir + simname + ".log"
@@ -64,10 +64,11 @@ def parse(log, dir, simname, fmt, plots):
     logtype = (l for l in cfg['logtypes'] if l['type'] == fmt).next()
     df_dict = {}
     for d in cfg['formatters']['dictionary']:
-        regex = logtype['fmt_re'] + d['regex']
-        df = lp.scrape_data(d['type'], log, dir, fmt, regex)
-        if df is not None:
-            df_dict.update({d['type']: df})
+        if d['type'] in regex_list:
+            regex = logtype['fmt_re'] + d['regex']
+            df = lp.scrape_data(d['type'], log, dir, fmt, regex)
+            if df is not None:
+                df_dict.update({d['type']: df})
     if bool(df_dict):
         print('**** Pickle the data...')
         lp.pickle_data(dir, df_dict)
@@ -143,7 +144,7 @@ def main():
             simlog = run_cooja(args, sim, outdir, makeargs, simname)
         # generate results by parsing the cooja log
         if int(args.parse) and simname is not None:
-            parse(simlog, outdir, simname, args.fmt, plot_config)
+            parse(simlog, outdir, simname, args.fmt, sim['regex'], plot_config)
 
     # analyze the generated results
     if int(args.comp) and analysis is not None:

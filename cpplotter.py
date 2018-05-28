@@ -119,10 +119,16 @@ def plot_hist(df, desc, dir, x, y, ylim=None, **kwargs):
     # get kwargs
     xlabel = kwargs['xlabel'] if 'xlabel' in kwargs else ''
     ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
+    if 'color' in kwargs:
+        color = kwargs['color']
+    else:
+        color = list(plt.rcParams['axes.prop_cycle'])[0]['color']
 
-    ax.hist(x, bins=y, normed=1, histtype='step', cumulative=True,
-            stacked=True, fill=True, label=desc)
-    # ax.set_xticks(np.arange(0, max(x), 5.0))
+    bins = np.around(np.linspace(0, max(x), len(x)), 3)  # bin values to 3dp
+    ax.hist(x, bins, normed=1, histtype='step', cumulative=True,
+            stacked=True, fill=True, label=desc, color=color)
+    # ax.set_xticks([bins[0], bins[len(x)-1]])
+    ax.set_xticks(np.linspace(bins[0], bins[len(bins)-1], 5))
     # ax.legend_.remove()
 
     data = {'x': x, 'y': y,

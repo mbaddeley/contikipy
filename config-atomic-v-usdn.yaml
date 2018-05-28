@@ -15,15 +15,15 @@ target:
 # ----------------------------------------------------------------------------
 logtypes:
   - type:    cooja
-    fmt_re:  ^\s*(?P<time>\d+):\s+(?P<id>\d+):\s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<op_type>\w+)
+    fmt_re:  '^\s*(?P<time>\d+):\s+(?P<id>\d+):'
 
 formatters:
   dictionary:
     # atomic
     - type:  atomic-energy
-      regex: (?:\s*h:(?P<hops>\d+)|\s+np:(?P<n_phases>\d+)|\s+gon:(?P<gon>\d+)|\s+ron:(?P<ron>\d+)|\s+con:(?P<con>\d+)\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
+      regex: \s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<op_type>\w+)(?:\s*h:(?P<hops>\d+)|\s+np:(?P<n_phases>\d+)|\s+gon:(?P<gon>\d+)|\s+ron:(?P<ron>\d+)|\s+con:(?P<con>\d+)\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
     - type:  atomic-op
-      regex: (?:\s*h:(?P<hops>\d+)|\s+p:\((?P<c_phase>\d+)|\/(?P<n_phases>\d+)\) |.*:\((?P<c_time>\d+)|\/(?P<op_duration>\d+))+.*?$
+      regex: \s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<op_type>\w+)(?:\s*h:(?P<hops>\d+)|\s+p:\(\s*(?P<c_phase>\d+)|\/(?P<n_phases>\d+)\) |.*:\(\s*(?P<c_time>\d+)|\/(?P<op_duration>\d+))+.*?$
     # usdn
     - type:   pow
       regex:  .*P \d+.\d+ (?P<seqid>\d+).*\(radio (?P<all_radio>\d+\W{1,2}\d+).* (?P<radio>\d+[.,-]{1,2}\d+).* (?P<all_tx>\d+[.,-]{1,2}\d+).* (?P<tx>\d+\W{1,2}\d+).* (?P<all_listen>\d+[.,-]{1,2}\d+).* (?P<listen>\d+[.,-]{1,2}\d+)
@@ -63,8 +63,11 @@ simulations:
     wd:             /home/mike/Repos/atomic/examples/atomic
     csc:            atomic-30-node.csc
     makeargs:
+    regex:
+      - 'atomic-energy'
+      - 'atomic-op'
     plot:
-      - atomic_vs_usdn
+      - atomic_vs_usdn_join_times
   # 30 Node Usdn
   - desc:           uSDN_30
     contiki:        /home/mike/Repos/usdn
@@ -78,8 +81,10 @@ simulations:
       FORCENSU:     1
       NSUFREQ:      600  # NSU frequency actually helps over 0 frequency
     multiflow:      1_flow
+    regex:
+      - 'join'
     plot:
-      - atomic_vs_usdn
+      - atomic_vs_usdn_join_times
 
 # ----------------------------------------------------------------------------
 # analysis (comparison) config
@@ -87,9 +92,8 @@ simulations:
 analysis:
   - sims:
     # which sims do we want to compare?
-    - ATM_20
+    - ATM_30
     - uSDN_30
-    # - ATM_40
     # which plots do we want to compare?
     plots:
-      - atomic_vs_usdn
+      - atomic_vs_usdn_join_times

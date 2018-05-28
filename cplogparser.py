@@ -7,6 +7,7 @@ from __future__ import division
 import os  # for makedir
 import re  # regex
 import sys
+import matplotlib.pyplot as plt  # general plotting
 import numpy as np  # number crunching
 # import seaborn as sns  # fancy plotting
 import pandas as pd  # table manipulation
@@ -18,7 +19,7 @@ import cpplotter as cpplot
 from pprint import pprint
 
 # Pandas options
-pd.set_option('display.max_rows', 10)
+pd.set_option('display.max_rows', 30)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 pd.set_option('display.float_format', lambda x: '%.3f' % x)
@@ -83,6 +84,7 @@ def scrape_data(datatype, log, dir, fmt, regex):
         else:
             print('WARN: Log was empty')
     except Exception as e:
+            traceback.print_exc()
             print(e)
             sys.exit(0)
 
@@ -114,7 +116,7 @@ def plot_data(sim, dir, df_dict, plots):
         'usdn_join_time': usdn_join_time,
         'usdn_traffic_ratio': usdn_traffic_ratio,
         # atomic vs usdn
-        'atomic_vs_usdn': atomic_vs_usdn,
+        'atomic_vs_usdn_join_times': atomic_vs_usdn_join_times,
     }
 
     # required dictionaries for each plotter
@@ -129,7 +131,7 @@ def plot_data(sim, dir, df_dict, plots):
         'usdn_join_time': ['join'],
         'usdn_traffic_ratio': ['app', 'icmp'],
         # atomic vs usdn
-        'atomic_vs_usdn': ['atomic-op', 'join'],
+        'atomic_vs_usdn_join_times': ['atomic-op', 'join'],
     }
 
     # set plot descriptions
@@ -141,7 +143,8 @@ def plot_data(sim, dir, df_dict, plots):
         try:
             if plot in atomic_function_map.keys():
                 dicts = {}
-                dicts = {k: df_dict[k] for k in atomic_dict_map[plot]}
+                dicts = {k: df_dict[k] for k in atomic_dict_map[plot]
+                         if k in df_dict.keys()}
                 atomic_function_map[plot](dicts)
             else:
                 raise Exception('ERROR: No plot function!')
@@ -162,8 +165,11 @@ def format_atomic_energy_data(df):
     # rearrage other cols (and drop level/time)
     df = df[['id', 'module', 'op_type', 'n_phases', 'hops',
              'gon', 'ron', 'con', 'all_rdc', 'rdc']]
+    # dump anything that isn't an PW log
+    df = df[df['module'] == 'PW']
 
     return df
+
 
 # ----------------------------------------------------------------------------#
 def format_atomic_op_data(df):
@@ -174,6 +180,11 @@ def format_atomic_op_data(df):
     # rearrage other cols (and drop level/time)
     df = df[['id', 'module', 'op_type', 'c_phase', 'n_phases',
              'c_time', 'op_duration']]
+    # dump anything that isn't an OP log
+    df = df[df['module'] == 'OP']
+    # convert phase cols to ints
+    df['c_phase'] = df['c_phase'].astype(int)
+    df['n_phases'] = df['n_phases'].astype(int)
 
     return df
 
@@ -454,6 +465,7 @@ def usdn_join_time(df_dict):
     else:
         x = df['dag'].tolist()
     y = df.index.tolist()
+    print(df)
     cpplot.plot_hist(df, 'usdn_join_time', directory, x, y,
                      xlabel='Time (s)',
                      ylabel='Propotion of Nodes Joined')
@@ -479,43 +491,46 @@ def usdn_traffic_ratio(df_dict):
 
 
 # ----------------------------------------------------------------------------#
-def atomic_vs_usdn(df_dict):
+def atomic_vs_usdn_join_times(df_dict):
     """Plot atomic vs usdn."""
+    # check we have the correct dicts
     try:
         if 'join' in df_dict:
-            join_df = df_dict['join']
+            df = df_dict['join'].copy()
+            type = 'usdn'
+        elif 'atomic-op' in df_dict:
+            df = df_dict['atomic-op'].copy()
+            type = 'atomic'
         else:
             raise Exception('ERROR: Correct df(s) not in dict!')
     except Exception:
             traceback.print_exc()
             sys.exit(0)
+    if type is 'usdn':
+        # get rows where node has joined controller
+        df = df[df['controller'] == 1]
+        # drop unecessary cols
+        df['node'] = df['node'].astype(int)
+        df = df[['node', 'time']].set_index('node').sort_index()
+        # # convert time to ms
+        df['time'] = df['time']/1000/1000
+        df['time'] = df['time'].astype(int)
+        xlabel = 'Time (s)'
+        color = list(plt.rcParams['axes.prop_cycle'])[0]['color']
+    if type is 'atomic':
+        df = df[df['op_type'] == 'ASSC']
+        df = df[['id', 'c_time']]
+        df = df.rename(columns={'c_time': 'time'})
+        df['time'] = df['time'].astype(int)/1000
+        df = df.set_index('id').sort_index()
+        df = df.iloc[1:]
+        xlabel = 'Time (s)'
+        color = list(plt.rcParams['axes.prop_cycle'])[1]['color']
 
-    # get usdn controller join times
-    df = join_df.copy()
-    df['time'] = join_df['time']/1000/1000
-    # merge 'node' col into 'id' col, where the value in id is 1
-    if 'node' in df:
-        df.loc[df['id'] == 1, 'id'] = df['node']
-        df = df.drop('node', 1)
-    # drop the node/module/level columns
-    df = df.drop('module', 1)
-    df = df.drop('level', 1)
-    # merge dis,dao,controller
-    df = (df.set_index(['time', 'id'])
-          .stack()
-          .reorder_levels([2, 0, 1])
-          .reset_index(name='a')
-          .drop('a', 1)
-          .rename(columns={'level_0': 'type'}))
-    # pivot so we use the type column as our columns
-    df = df.pivot_table(index=['id'],
-                        columns=['type'],
-                        values='time').dropna(how='any')
-
-    x = df['controller'].tolist()
+    # plot the join times vs hops
+    x = df['time'].tolist()
     y = df.index.tolist()
-    cpplot.plot_hist(df, 'usdn_join_time', directory, x, y,
-                     xlabel='Time (s)',
-                     ylabel='Propotion of Nodes Joined')
-
-    # get atomic controller join times
+    cpplot.plot_hist(df, 'atomic_vs_usdn_join_times', directory, x, y,
+                     xlabel=xlabel,
+                     ylabel='Propotion of Nodes Joined',
+                     color=color)
