@@ -19,7 +19,7 @@ import cpplotter as cpplot
 from pprint import pprint
 
 # Pandas options
-pd.set_option('display.max_rows', 30)
+pd.set_option('display.max_rows', 10)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 pd.set_option('display.float_format', lambda x: '%.3f' % x)
@@ -117,6 +117,8 @@ def plot_data(sim, dir, df_dict, plots):
         'usdn_traffic_ratio': usdn_traffic_ratio,
         # atomic vs usdn
         'atomic_vs_usdn_join_times': atomic_vs_usdn_join_times,
+        'atomic_vs_usdn_react_times': atomic_vs_usdn_react_times,
+        'atomic_vs_usdn_collect_times': atomic_vs_usdn_collect_times,
     }
 
     # required dictionaries for each plotter
@@ -132,6 +134,8 @@ def plot_data(sim, dir, df_dict, plots):
         'usdn_traffic_ratio': ['app', 'icmp'],
         # atomic vs usdn
         'atomic_vs_usdn_join_times': ['atomic-op', 'join'],
+        'atomic_vs_usdn_react_times': ['atomic-op', 'sdn'],
+        'atomic_vs_usdn_collect_times': ['atomic-op', 'sdn'],
     }
 
     # set plot descriptions
@@ -178,7 +182,7 @@ def format_atomic_op_data(df):
     # set epoch to be the index
     df.set_index('epoch', inplace=True)
     # rearrage other cols (and drop level/time)
-    df = df[['id', 'module', 'op_type', 'c_phase', 'n_phases',
+    df = df[['id', 'module', 'op_type', 'hops', 'c_phase', 'n_phases',
              'c_time', 'op_duration']]
     # dump anything that isn't an OP log
     df = df[df['module'] == 'OP']
@@ -238,6 +242,32 @@ def format_sdn_sdn_data(df):
     """Format sdn data."""
     print('> Read sdn sdn log')
 
+    # Rearrange columns
+    sdn_df = df[['src', 'dest', 'typ', 'seq', 'time',
+                 'status', 'id', 'hops']]
+    # Fixes settingwithcopywarning
+    df = sdn_df.copy()
+    # Fill in empty hop values for tx packets
+    df['hops'] = sdn_df.groupby(['src', 'dest']).ffill().bfill()['hops']
+    # Pivot table. Lose the 'mac' and 'id' column.
+    df = df.pivot_table(index=['src', 'dest', 'typ', 'seq', 'hops'],
+                        columns=['status'],
+                        aggfunc={'time': np.sum},
+                        values=['time'])
+    # Get rid of the multiindex and rename the columns
+    # TODO: not very elegant but it does the job
+    df.columns = df.columns.droplevel()
+    df = df.reset_index()
+    df.columns = ['src', 'dest', 'typ', 'seq',
+                  'hops', 'in_t', 'out_t']
+    # convert floats to ints
+    df['hops'] = df['hops'].astype(int)
+    df['dest'] = df['dest'].astype(int)
+    df['seq'] = df['seq'].astype(int)
+    # add a 'dropped' column
+    df['drpd'] = df['in_t'].apply(lambda x: True if np.isnan(x) else False)
+    # calculate the latency/delay and add as a column
+    df['lat'] = (df['in_t'] - df['out_t'])/1000  # ms
     return df
 
 
@@ -419,7 +449,6 @@ def usdn_latency_v_hops(df_dict):
     df = app_df.pivot_table(index=app_df.groupby('hops').cumcount(),
                             columns=['hops'], values='lat')
     df = df.dropna(how='all')  # drop rows with all NaN
-
     x = list(df.columns.values)  # x ticks are the column headers
     y = np.column_stack(df.transpose().values.tolist())  # need a list
     cpplot.plot_box(df, 'usdn_latency_v_hops', directory, x, y,
@@ -465,7 +494,6 @@ def usdn_join_time(df_dict):
     else:
         x = df['dag'].tolist()
     y = df.index.tolist()
-    print(df)
     cpplot.plot_hist(df, 'usdn_join_time', directory, x, y,
                      xlabel='Time (s)',
                      ylabel='Propotion of Nodes Joined')
@@ -492,7 +520,7 @@ def usdn_traffic_ratio(df_dict):
 
 # ----------------------------------------------------------------------------#
 def atomic_vs_usdn_join_times(df_dict):
-    """Plot atomic vs usdn."""
+    """Plot atomic vs usdn join times."""
     # check we have the correct dicts
     try:
         if 'join' in df_dict:
@@ -534,3 +562,104 @@ def atomic_vs_usdn_join_times(df_dict):
                      xlabel=xlabel,
                      ylabel='Propotion of Nodes Joined',
                      color=color)
+
+
+# ----------------------------------------------------------------------------#
+def atomic_vs_usdn_react_times(df_dict):
+    """Plot atomic vs usdn react times."""
+    try:
+        # check we have the correct dicts
+        if 'sdn' in df_dict:
+            df = df_dict['sdn'].copy()
+            type = 'usdn'
+        elif 'atomic-op' in df_dict:
+            df = df_dict['atomic-op'].copy()
+            type = 'atomic'
+        else:
+            raise Exception('ERROR: Correct df(s) not in dict!')
+        # parse the df
+        if type is 'usdn':
+            ftq_df = df.loc[(df['typ'] == 'FTQ') & (df['drpd'] == 0)]
+            ftq_df = ftq_df.drop('in_t', 1).rename(columns={'out_t': 'time'})
+            fts_df = df.loc[(df['typ'] == 'FTS') & (df['drpd'] == 0)]
+            fts_df = fts_df.drop('out_t', 1).rename(columns={'in_t': 'time'})
+            df = pd.concat([ftq_df, fts_df])
+            df = df.loc[((df['typ'] == 'FTQ') | (df['typ'] == 'FTS'))
+                        & (df['drpd'] == 0)]
+            df['id'] = np.where(df['typ'] == 'FTQ', df['src'], df['dest'])
+            df = df.sort_values(['id', 'typ']).drop(['src', 'dest'], 1)
+            df = df.set_index('id')
+            hops = df.groupby('id').apply(lambda x: x.iloc[0]['hops'])
+            df = df.pivot_table(index=['id'],
+                                columns=['typ'],
+                                values=['time'])
+            df['id'] = df.index
+            df.columns = df.columns.droplevel(0)
+            df = df.reset_index().set_index('id')
+            print(df)
+            df['react_time'] = (df['FTS'] - df['FTQ'])/1000
+            df['hops'] = hops
+            df = df.pivot_table(index=df.groupby('hops').cumcount(),
+                                columns=['hops'],
+                                values='react_time',
+                                fill_value=0)
+        elif type is 'atomic':
+            df = df[df['op_type'] == 'RACT']
+            df['react_time'] = df['c_time']
+            df = df[df['hops'] != 0]
+            df = df.pivot_table(index=df.groupby('hops').cumcount(),
+                                columns=['hops'],
+                                values='react_time',
+                                fill_value=0)
+        else:
+            raise Exception('ERROR: Unknown types!')
+
+        x = list(df.columns.values)  # x ticks are the column headers
+        y = np.column_stack(df.transpose().values.tolist())  # need a list
+        print(df)
+        cpplot.plot_box(df, 'atomic_vs_usdn_react_times', directory, x, y,
+                        xlabel='Hops', ylabel='End-to-end delay (ms)')
+
+    except Exception:
+            traceback.print_exc()
+            sys.exit(0)
+
+
+# ----------------------------------------------------------------------------#
+def atomic_vs_usdn_collect_times(df_dict):
+    """Plot atomic vs usdn react times."""
+    try:
+        # check we have the correct dicts
+        if 'sdn' in df_dict:
+            df = df_dict['sdn'].copy()
+            type = 'usdn'
+        elif 'atomic-op' in df_dict:
+            df = df_dict['atomic-op'].copy()
+            type = 'atomic'
+        else:
+            raise Exception('ERROR: Correct df(s) not in dict!')
+        # parse the df
+        if type is 'usdn':
+            df = df[(df['typ'] == 'NSU') & (df['drpd'] == 0)]
+            df = df.rename(columns={'lat': 'collect_time'})
+        elif type is 'atomic':
+            df = df[df['op_type'] == 'CLCT']
+            print(df)
+            df['collect_time'] = df['c_time']
+            df = df[df['hops'] != 0]
+            print(max(df['collect_time']))
+        else:
+            raise Exception('ERROR: Unknown types!')
+
+        df = df.pivot_table(index=df.groupby('hops').cumcount(),
+                            columns=['hops'],
+                            values='collect_time')
+        x = list(df.columns.values)  # x ticks are the column headers
+        y = np.column_stack(df.transpose().values.tolist())  # need a list
+        print(df)
+        cpplot.plot_box(df, 'atomic_vs_usdn_collect_times', directory, x, y,
+                        xlabel='Hops', ylabel='End-to-end delay (ms)')
+
+    except Exception:
+            traceback.print_exc()
+            sys.exit(0)

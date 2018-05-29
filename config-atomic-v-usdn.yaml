@@ -67,7 +67,9 @@ simulations:
       - 'atomic-energy'
       - 'atomic-op'
     plot:
-      - atomic_vs_usdn_join_times
+      # - atomic_vs_usdn_join_times
+      # - atomic_vs_usdn_react_times
+      - atomic_vs_usdn_collect_times
   # 30 Node Usdn
   - desc:           uSDN_30
     contiki:        /home/mike/Repos/usdn
@@ -83,8 +85,12 @@ simulations:
     multiflow:      1_flow
     regex:
       - 'join'
+      - 'app'
+      - 'sdn'
     plot:
-      - atomic_vs_usdn_join_times
+      # - atomic_vs_usdn_join_times
+      # - atomic_vs_usdn_react_times
+      - atomic_vs_usdn_collect_times
 
 # ----------------------------------------------------------------------------
 # analysis (comparison) config
