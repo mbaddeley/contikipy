@@ -9,12 +9,12 @@ import sys
 
 import yaml
 
-import cpconfig as config
+import cpconfig
 import cplogparser as lp
 import cpcomp
 
 # import yaml config
-cfg = yaml.load(open("config-atomic-v-usdn.yaml", 'r'))
+cfg = None
 
 
 # ----------------------------------------------------------------------------#
@@ -24,20 +24,20 @@ def run_cooja(args, sim, outdir, makeargs, simname):
         # check for working directory in the sim
         if 'contiki' in sim:
             contiki = sim['contiki']
-        elif args.contiki is not None:
+        elif 'contiki' in args and args.contiki:
             contiki = args.contiki
         else:
             raise Exception('ERROR: No path to contiki!')
         if 'wd' in sim:
             wd = sim['wd']
-        elif args.wd is not None:
+        elif 'wd' in args and args.wd:
             wd = args.wd
         else:
             raise Exception('ERROR: No working directory!')
         # check for csc in the sim
         if 'csc' in sim:
             csc = sim['csc']
-        elif args.csc is not None:
+        elif 'csc' in args and args.csc:
             csc = args.csc
         else:
             raise Exception('ERROR: No csc file!')
@@ -84,39 +84,47 @@ def main():
     ap = argparse.ArgumentParser(prog='ContikiPy',
                                  description='Cooja simulation runner and '
                                              'Contiki log parser')
-    ap.add_argument('--contiki', required=False, default=cfg['contiki'],
-                    help='Absolute path to contiki')
-    ap.add_argument('--target', required=False, default=cfg['target'],
-                    help='Contiki platform TARGET')
-    ap.add_argument('--log', required=False, default=cfg['log'],
-                    help='Relative path to contiki log')
-    ap.add_argument('--out', required=False, default=cfg['out'],
-                    help='Absolute path to output folder')
-    ap.add_argument('--wd', required=False, default=cfg['wd'],
-                    help='(Relative) working directory for code + csc')
-    ap.add_argument('--fmt', required=False, default=cfg['fmt'],
-                    help='Cooja simulation file')
-    ap.add_argument('--csc', required=False, default=cfg['csc'],
-                    help='Cooja simulation file')
-    ap.add_argument('--makeargs', required=False,
-                    help='Makefile arguments')
+    ap.add_argument('--conf', required=True,
+                    help='YAML config file to use')
     ap.add_argument('--runcooja', required=False, default=0,
                     help='Run the simulation')
     ap.add_argument('--parse', required=False, default=0,
                     help='Run the log parser')
     ap.add_argument('--comp', required=False, default=0,
-                    help='Run the analyzer (compare sims)')
+                    help='Compare plots')
+    ap.add_argument('--contiki', required=False, default=0,
+                    help='Absolute path to contiki folder')
+    ap.add_argument('--out', required=False,
+                    help='Absolute path to output folder')
+    ap.add_argument('--log', required=False,
+                    help='Relative path to contiki log')
+    ap.add_argument('--wd', required=False,
+                    help='(Relative) working directory for code + csc')
+    ap.add_argument('--csc', required=False,
+                    help='Cooja simulation file')
+    ap.add_argument('--target', required=False,
+                    help='Contiki platform TARGET')
+    ap.add_argument('--makeargs', required=False,
+                    help='Makefile arguments')
     args = ap.parse_args()
+    cfg = yaml.load(open(args.conf, 'r'))
+
+    args.contiki = cfg['contiki'] if not args.contiki else args.contiki
+    args.out = cfg['out'] if not args.out else args.out
+    args.log = cfg['log'] if not args.log else args.log
+    args.wd = cfg['wd'] if not args.wd else args.wd
+    args.csc = cfg['csc'] if not args.csc else args.csc
+    args.target = cfg['target'] if not args.target else args.target
 
     if not args.makeargs:
         # get simulations configuration
-        conf = config.Config()
+        conf = cpconfig.Config(cfg)
         simulations = conf.simconfig()
-        # get analysis configuration
-        analysis = conf.analysisconfig()
+        # get compare configuration
+        compare = conf.compareconfig()
     else:
         simulations = [{'simname': '', 'makeargs': str(args.makeargs)}]
-        analysis = None
+        compare = None
 
     simlog = None
     print('**** Run ' + str(len(simulations)) + ' simulations')
@@ -144,12 +152,12 @@ def main():
             simlog = run_cooja(args, sim, outdir, makeargs, simname)
         # generate results by parsing the cooja log
         if int(args.parse) and simname is not None:
-            parse(simlog, outdir, simname, args.fmt, sim['regex'], plot_config)
+            parse(simlog, outdir, simname, cfg['fmt'], sim['regex'], plot_config)
 
     # analyze the generated results
-    if int(args.comp) and analysis is not None:
+    if int(args.comp) and compare is not None:
         print('**** Compare plots in dir: ' + args.out)
-        cpcomp.compare(args.out, analysis['sims'], analysis['plots'])
+        cpcomp.compare(args.out, compare['sims'], compare['plots'])
 
 
 # ----------------------------------------------------------------------------#

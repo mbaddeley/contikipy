@@ -29,7 +29,7 @@ def is_string(obj):
 
 
 # ----------------------------------------------------------------------------#
-# Results analysis
+# Results compare
 # ----------------------------------------------------------------------------#
 def set_box_colors(bp, index):
     """Set the boxplot colors."""
@@ -97,7 +97,7 @@ def set_fig_and_save(fig, ax, data, desc, dir, **kwargs):
     ax.get_yaxis().tick_left()
     # tight layout
     fig.set_tight_layout(False)
-    # save  data for post analysis
+    # save  data for post compare
     if data is not None:
         pickle.dump(data, open(dir + desc + '.pkl', 'w'))
 

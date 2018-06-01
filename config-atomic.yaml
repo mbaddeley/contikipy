@@ -49,9 +49,9 @@ simulations:
       - atomic_op_times
 
 # ----------------------------------------------------------------------------
-# analysis (comparison) config
+# compare (comparison) config
 # ----------------------------------------------------------------------------
-analysis:
+compare:
   - sims:
     # which sims do we want to compare?
     - ATM_20

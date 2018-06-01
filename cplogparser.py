@@ -596,7 +596,6 @@ def atomic_vs_usdn_react_times(df_dict):
             df['id'] = df.index
             df.columns = df.columns.droplevel(0)
             df = df.reset_index().set_index('id')
-            print(df)
             df['react_time'] = (df['FTS'] - df['FTQ'])/1000
             df['hops'] = hops
             df = df.pivot_table(index=df.groupby('hops').cumcount(),
@@ -616,7 +615,6 @@ def atomic_vs_usdn_react_times(df_dict):
 
         x = list(df.columns.values)  # x ticks are the column headers
         y = np.column_stack(df.transpose().values.tolist())  # need a list
-        print(df)
         cpplot.plot_box(df, 'atomic_vs_usdn_react_times', directory, x, y,
                         xlabel='Hops', ylabel='End-to-end delay (ms)')
 
@@ -644,10 +642,8 @@ def atomic_vs_usdn_collect_times(df_dict):
             df = df.rename(columns={'lat': 'collect_time'})
         elif type is 'atomic':
             df = df[df['op_type'] == 'CLCT']
-            print(df)
             df['collect_time'] = df['c_time']
             df = df[df['hops'] != 0]
-            print(max(df['collect_time']))
         else:
             raise Exception('ERROR: Unknown types!')
 
@@ -656,7 +652,6 @@ def atomic_vs_usdn_collect_times(df_dict):
                             values='collect_time')
         x = list(df.columns.values)  # x ticks are the column headers
         y = np.column_stack(df.transpose().values.tolist())  # need a list
-        print(df)
         cpplot.plot_box(df, 'atomic_vs_usdn_collect_times', directory, x, y,
                         xlabel='Hops', ylabel='End-to-end delay (ms)')
 

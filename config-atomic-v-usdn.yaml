@@ -67,8 +67,8 @@ simulations:
       - 'atomic-energy'
       - 'atomic-op'
     plot:
-      # - atomic_vs_usdn_join_times
-      # - atomic_vs_usdn_react_times
+      - atomic_vs_usdn_join_times
+      - atomic_vs_usdn_react_times
       - atomic_vs_usdn_collect_times
   # 30 Node Usdn
   - desc:           uSDN_30
@@ -76,26 +76,27 @@ simulations:
     wd:             /home/mike/Repos/usdn/examples/ipv6/sdn-udp
     csc:            usdn-30-node.csc
     makeargs:
-      MAC:          CSMA
+      MAC:          CONTIKIMAC
       SDN:          1
-      FTREFRESH:    1
+      FTREFRESH:    0
       FTSRETRY:     1
-      FORCENSU:     1
-      NSUFREQ:      600  # NSU frequency actually helps over 0 frequency
+      FORCENSU:     0
+      FTLIFETIME:   600
+      NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
     multiflow:      1_flow
     regex:
       - 'join'
       - 'app'
       - 'sdn'
     plot:
-      # - atomic_vs_usdn_join_times
-      # - atomic_vs_usdn_react_times
+      - atomic_vs_usdn_join_times
+      - atomic_vs_usdn_react_times
       - atomic_vs_usdn_collect_times
 
 # ----------------------------------------------------------------------------
-# analysis (comparison) config
+# compare (comparison) config
 # ----------------------------------------------------------------------------
-analysis:
+compare:
   - sims:
     # which sims do we want to compare?
     - ATM_30
