@@ -58,13 +58,14 @@ def run_cooja(args, sim, outdir, makeargs, simname):
 # ----------------------------------------------------------------------------#
 def parse(log, dir, simname, fmt, regex_list, plots):
     """Parse the main log for each datatype."""
+    global cfg
     if log is None:
         log = dir + simname + ".log"
     print('**** Parse log and gererate data logs in: ' + dir)
     logtype = (l for l in cfg['logtypes'] if l['type'] == fmt).next()
     df_dict = {}
     for d in cfg['formatters']['dictionary']:
-        if d['type'] in regex_list:
+        if regex_list is None or d['type'] in regex_list:
             regex = logtype['fmt_re'] + d['regex']
             df = lp.scrape_data(d['type'], log, dir, fmt, regex)
             if df is not None:
@@ -80,6 +81,7 @@ def parse(log, dir, simname, fmt, regex_list, plots):
 # ----------------------------------------------------------------------------#
 def main():
     """Take in command line arguments and parses log accordingly."""
+    global cfg
     # fetch arguments
     ap = argparse.ArgumentParser(prog='ContikiPy',
                                  description='Cooja simulation runner and '
@@ -129,15 +131,19 @@ def main():
     simlog = None
     print('**** Run ' + str(len(simulations)) + ' simulations')
     for sim in simulations:
-        # generate a simulation description
-        simname = sim['desc']
+        # get simulation description
+        description = sim['desc']
+        # get makeargs
         if 'makeargs' in sim and sim['makeargs'] is not None:
             makeargs = sim['makeargs']
         else:
             makeargs = None
+        # get regex
+        regex = sim['regex'] if 'regex' in sim else None
+
         plot_config = sim['plot']
         # print(some information about this simulation
-        info = 'Running simulation: {0}'.format(simname)
+        info = 'Running simulation: {0}'.format(description)
         print('=' * len(info))
         print(info)
         print('=' * len(info))
@@ -146,13 +152,13 @@ def main():
             makeargs = makeargs.replace('[', '').replace(']', '')
             print(makeargs)
         # make a note of our intended sim directory
-        outdir = args.out + "/" + simname + "/"
+        outdir = args.out + "/" + description + "/"
         # run a cooja simulation with these sim settings
         if int(args.runcooja):
-            simlog = run_cooja(args, sim, outdir, makeargs, simname)
+            simlog = run_cooja(args, sim, outdir, makeargs, description)
         # generate results by parsing the cooja log
-        if int(args.parse) and simname is not None:
-            parse(simlog, outdir, simname, cfg['fmt'], sim['regex'], plot_config)
+        if int(args.parse) and description is not None:
+            parse(simlog, outdir, description, cfg['fmt'], regex, plot_config)
 
     # analyze the generated results
     if int(args.comp) and compare is not None:
