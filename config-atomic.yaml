@@ -5,7 +5,7 @@ contiki: /home/mike/Repos/atomic
 wd:      /home/mike/Repos/atomic/examples/atomic
 fmt:     cooja
 log:     /tools/cooja/build/COOJA.testlog
-out:     /home/mike/Results/ATOMIC_test
+out:     /home/mike/Results/ATOMIC
 csc:     atomic-30-node.csc
 target:  sky
 

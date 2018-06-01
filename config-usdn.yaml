@@ -5,7 +5,7 @@ contiki: /home/mike/Repos/usdn
 wd:      /home/mike/Repos/usdn/examples/ipv6/sdn-udp
 fmt:     cooja
 log:     /tools/cooja/build/COOJA.testlog
-out:     /home/mike/Results/CSMA
+out:     /home/mike/Results/USDN
 csc:     usdn-30-node.csc
 target:  exp5438
 
@@ -156,42 +156,54 @@ simulations:
       - usdn_traffic_ratio        # SDN traffic ratio
 
 # ----------------------------------------------------------------------------
-  # - desc:           SDN-FT-180
-  #   makeargs:
-  #     MAC:          CSMA
-  #     SDN:          1
-  #     FTREFRESH:    0
-  #     FORCENSU:     1
-  #     NSUFREQ:      0
-  #     FTLIFETIME:   180
-  #   multiflow:      1_flow_10s
-  #   plot:
-  #     - avg_lat
-  #
-  #
-  # - desc:           SDN-FT-300
-  #   makeargs:
-  #     MAC:          CSMA
-  #     SDN:          1
-  #     FTREFRESH:    0
-  #     FORCENSU:     1
-  #     NSUFREQ:      0
-  #     FTLIFETIME:   300
-  #   multiflow:      1_flow_10s
-  #   plot:
-  #     - avg_lat
-  #
-  # - desc:           SDN-FT-600
-  #   makeargs:
-  #     MAC:          CSMA
-  #     SDN:          1
-  #     FTREFRESH:    0
-  #     FORCENSU:     1
-  #     NSUFREQ:      0
-  #     FTLIFETIME:   600
-  #   multiflow:      1_flow_10s
-  #   plot:
-  #     - avg_lat
+  - desc:           SDN-FT-180
+    makeargs:
+      MAC:          CSMA
+      SDN:          1
+      FTREFRESH:    0
+      FORCENSU:     1
+      NSUFREQ:      0
+      FTLIFETIME:   180
+    multiflow:      1_flow_10s
+    plot:
+      - usdn_energy_v_hops        # Radio duty cycle vs hops
+      - usdn_prr_v_hops           # Packet receive ratio vs hops
+      - usdn_latency_v_hops       # Hops vs e2e latency
+      - usdn_join_time            # SDN controller join time
+      - usdn_traffic_ratio        # SDN traffic ratio
+
+
+  - desc:           SDN-FT-300
+    makeargs:
+      MAC:          CSMA
+      SDN:          1
+      FTREFRESH:    0
+      FORCENSU:     1
+      NSUFREQ:      0
+      FTLIFETIME:   300
+    multiflow:      1_flow_10s
+    plot:
+      - usdn_energy_v_hops        # Radio duty cycle vs hops
+      - usdn_prr_v_hops           # Packet receive ratio vs hops
+      - usdn_latency_v_hops       # Hops vs e2e latency
+      - usdn_join_time            # SDN controller join time
+      - usdn_traffic_ratio        # SDN traffic ratio
+
+  - desc:           SDN-FT-600
+    makeargs:
+      MAC:          CSMA
+      SDN:          1
+      FTREFRESH:    0
+      FORCENSU:     1
+      NSUFREQ:      0
+      FTLIFETIME:   600
+    multiflow:      1_flow_10s
+    plot:
+      - usdn_energy_v_hops        # Radio duty cycle vs hops
+      - usdn_prr_v_hops           # Packet receive ratio vs hops
+      - usdn_latency_v_hops       # Hops vs e2e latency
+      - usdn_join_time            # SDN controller join time
+      - usdn_traffic_ratio        # SDN traffic ratio
 
 # ----------------------------------------------------------------------------
 # compare (comparison) config
@@ -224,4 +236,7 @@ compare:
   #   -  SDN-FT-300
   #   -  SDN-FT-600
   #   plots:
-  #   - avg_lat
+  #   - usdn_energy_v_hops
+  #   - usdn_prr_v_hops
+  #   - usdn_latency_v_hops
+  #   - usdn_join_time
