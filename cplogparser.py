@@ -338,8 +338,16 @@ def csv_to_df(file):
 # ----------------------------------------------------------------------------#
 # Atomic plotting
 # ----------------------------------------------------------------------------#
-def atomic_op_times(df):
+def atomic_op_times(df_dict):
     """Plot atomic op times."""
+    try:
+        if 'atomic-energy' in df_dict:
+            df = df_dict['atomic-energy']
+        else:
+            raise Exception('ERROR: Correct df(s) not in dict!')
+    except Exception:
+            traceback.print_exc()
+            sys.exit(0)
     g = df.groupby('op_type')
     data = pd.DataFrame()
 
@@ -362,8 +370,16 @@ def atomic_op_times(df):
 
 
 # ----------------------------------------------------------------------------#
-def atomic_energy_v_hops(df):
+def atomic_energy_v_hops(df_dict):
     """Plot atomic energy vs hops."""
+    try:
+        if 'atomic-energy' in df_dict:
+            df = df_dict['atomic-energy']
+        else:
+            raise Exception('ERROR: Correct df(s) not in dict!')
+    except Exception:
+            traceback.print_exc()
+            sys.exit(0)
     g = df.groupby('hops')
     data = {}
     for k, v in g:
