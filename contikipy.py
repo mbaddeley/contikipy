@@ -147,10 +147,12 @@ def main():
         print('=' * len(info))
         print(info)
         print('=' * len(info))
-        # HACK: replace remove list brackets
+
         if makeargs is not None:
+            # HACK: replace remove list brackets
             makeargs = makeargs.replace('[', '').replace(']', '')
             print(makeargs)
+
         # make a note of our intended sim directory
         outdir = args.out + "/" + description + "/"
         # run a cooja simulation with these sim settings
@@ -217,8 +219,13 @@ def run(contiki, target, log, wd, csc, outdir, args, simname):
             if 'Makefile' in os.listdir(dir):
                 print('> Clean ' + dir)
                 clean(dir, target)
-                print('> Make ' + dir)
+                print('> Make ' + args)
                 make(dir, target, args)
+
+        print('> Clean ' + root)
+        clean(root, target)
+        print('> Make ' + root)
+        make(root, target, args)
     # Run the scenario in cooja with -nogui
     print('**** Create simulation directory')
     # Create a new folder for this scenario
@@ -230,7 +237,7 @@ def run(contiki, target, log, wd, csc, outdir, args, simname):
     ant = 'ant run_nogui'
     antbuild = '-file ' + contiki + '/tools/cooja/'
     antnogui = '-Dargs=' + csc
-    cmd = args + ' ' + ant + ' ' + antbuild + ' ' + antnogui
+    cmd = ant + ' ' + antbuild + ' ' + antnogui
     print('> ' + cmd)
     subprocess.call(cmd, shell=True)
     print('**** Copy contiki log into simulation directory')

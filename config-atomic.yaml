@@ -5,7 +5,7 @@ contiki: /home/mike/Repos/atomic
 wd:      /home/mike/Repos/atomic/examples/atomic
 fmt:     cooja
 log:     /tools/cooja/build/COOJA.testlog
-out:     /home/mike/Results/ATOMIC
+out:     /home/mike/Results/ATOMIC-test
 csc:     atomic-30-node.csc
 target:  sky
 
@@ -33,23 +33,36 @@ simulations:
   - desc:     ATM_40
     csc:      atomic-40-node.csc
     makeargs:
+      ATM_CONF_MAX_NODES:         40
+      ATM_CONF_COLLECT_ALL_NODES: 1
+      ATM_CONF_COLLECT_FREQ:      5
+      ATM_CONF_REACT_FREQ:        0
+      ATM_CONF_CONFIGURE_FREQ:    0
     plot:
       - atomic_energy_v_hops
       - atomic_op_times
   # 30 Node
-  - desc:     ATM_30
-    csc:      atomic-30-node.csc
-    makeargs:
-    plot:
-      - atomic_energy_v_hops
-      - atomic_op_times
-  # 20 Node
-  - desc:    ATM_20
-    csc:     atomic-20-node.csc
-    makeargs:
-    plot:
-      - atomic_energy_v_hops
-      - atomic_op_times
+  # - desc:     ATM_30
+  #   csc:      atomic-30-node.csc
+  #   makeargs:
+  #     ATM_CONF_MAX_NODES:       30
+  #     ATM_CONF_COLLECT_FREQ:    5
+  #     ATM_CONF_REACT_FREQ:      0
+  #     ATM_CONF_CONFIGURE_FREQ:  0
+  #   plot:
+  #     - atomic_energy_v_hops
+  #     - atomic_op_times
+  # # 20 Node
+  # - desc:    ATM_20
+  #   csc:     atomic-20-node.csc
+  #   makeargs:
+  #     ATM_CONF_MAX_NODES:       20
+  #     ATM_CONF_COLLECT_FREQ:    5
+  #     ATM_CONF_REACT_FREQ:      0
+  #     ATM_CONF_CONFIGURE_FREQ:  0
+  #   plot:
+  #     - atomic_energy_v_hops
+  #     - atomic_op_times
 
 # ----------------------------------------------------------------------------
 # compare (comparison) config
