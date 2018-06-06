@@ -360,7 +360,7 @@ def compare(dir, simlist, plottypes, **kwargs):
             xlabel = data['data']['xlabel']
             ylabel = data['data']['ylabel']
             n_plots = n_plots+1
-        print('(' + type.upper() + ') ...'),
+        print('(' + str(type).upper() + ') ...'),
         # call appropriate comparison function
         fig, ax, = function_map[type](datasets)
 
