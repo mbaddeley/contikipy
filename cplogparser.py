@@ -654,12 +654,14 @@ def atomic_vs_usdn_collect_times(df_dict):
             raise Exception('ERROR: Correct df(s) not in dict!')
         # parse the df
         if type is 'usdn':
+            print df
             df = df[(df['typ'] == 'NSU') & (df['drpd'] == 0)]
             df = df.rename(columns={'lat': 'collect_time'})
         elif type is 'atomic':
             df = df[df['op_type'] == 'CLCT']
             df['collect_time'] = df['c_time']
             df = df[df['hops'] != 0]
+            print df
         else:
             raise Exception('ERROR: Unknown types!')
 
