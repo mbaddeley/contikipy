@@ -155,14 +155,24 @@ def add_box(ax, artists, index, color, label, data):
 
 
 # ----------------------------------------------------------------------------#
-def add_line(ax, color, label, data):
+def add_line(ax, color, label, data, **kwargs):
     """Add data to bar plot."""
     lw = 2.0
     marker = 's'
     x_min = min(data['x'])
     x_max = max(data['x'])
-    ax.plot(data['x'], data['y'],
-            color=color, marker=marker, lw=lw, label=label)
+
+    # get kwargs
+    errors = kwargs['errors'] if 'errors' in kwargs else None
+
+    if errors is not None:
+        ax.errorbar(data['x'], data['y'], 2,
+                    color=color, marker=marker, lw=lw, label=label,
+                    capsize=3)
+    else:
+        ax.plot(data['x'], data['y'],
+                color=color, marker=marker, lw=lw, label=label)
+
     # Re-calculate the xticks
     ind = np.arange(x_min, x_max + 1, 1)
     ax.set_xticks(ind)

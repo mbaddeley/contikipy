@@ -56,7 +56,7 @@ def run_cooja(args, sim, outdir, makeargs, simname):
 
 
 # ----------------------------------------------------------------------------#
-def parse(log, dir, simname, fmt, regex_list, plots):
+def parse(log, dir, simname, simtype, fmt, regex_list, plots):
     """Parse the main log for each datatype."""
     global cfg
     if log is None:
@@ -75,7 +75,7 @@ def parse(log, dir, simname, fmt, regex_list, plots):
         lp.pickle_data(dir, df_dict)
     if plots is not None:
         print('**** Generate the following plots: [' + ' '.join(plots) + ']')
-        lp.plot_data(simname, dir, df_dict, plots)
+        lp.plot_data(simname, simtype, dir, df_dict, plots)
 
 
 # ----------------------------------------------------------------------------#
@@ -132,7 +132,9 @@ def main():
     print('**** Run ' + str(len(simulations)) + ' simulations')
     for sim in simulations:
         # get simulation description
-        description = sim['desc']
+        sim_desc = sim['desc']
+        # get simulation type
+        sim_type = sim['type']
         # get makeargs
         if 'makeargs' in sim and sim['makeargs'] is not None:
             makeargs = sim['makeargs']
@@ -143,7 +145,7 @@ def main():
 
         plot_config = sim['plot']
         # print(some information about this simulation
-        info = 'Running simulation: {0}'.format(description)
+        info = 'Running simulation: {0}'.format(sim_desc)
         print('=' * len(info))
         print(info)
         print('=' * len(info))
@@ -154,13 +156,14 @@ def main():
             print(makeargs)
 
         # make a note of our intended sim directory
-        outdir = args.out + "/" + description + "/"
+        sim_dir = args.out + "/" + sim_desc + "/"
         # run a cooja simulation with these sim settings
         if int(args.runcooja):
-            simlog = run_cooja(args, sim, outdir, makeargs, description)
+            simlog = run_cooja(args, sim, sim_dir, makeargs, sim_desc)
         # generate results by parsing the cooja log
-        if int(args.parse) and description is not None:
-            parse(simlog, outdir, description, cfg['fmt'], regex, plot_config)
+        if int(args.parse) and sim_desc is not None:
+            parse(simlog, sim_dir, sim_desc, sim_type,
+                  cfg['fmt'], regex, plot_config)
 
     # analyze the generated results
     if int(args.comp) and compare is not None:

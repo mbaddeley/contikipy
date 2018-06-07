@@ -5,7 +5,7 @@ contiki:
 wd:
 fmt:     cooja
 log:     /tools/cooja/build/COOJA.testlog
-out:     /home/mike/Results/ATOMIC_test
+out:     /home/mike/Results/ATOMIC_vs_USDN_collect
 csc:
 target:
 
@@ -32,7 +32,7 @@ formatters:
     - type:   sdn
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<status>(OUT|BUF|IN))\s+(?P<typ>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>[1-5])|\s+m:(?P<mac>\d+))+.*?$
     - type:   node
-      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*h:(?P<rank>\d+), n:(?P<degree>\d+)
+      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*h:(?P<hops>\d+), n:(?P<degree>\d+)
     - type:   icmp
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?:\s+type:(?P<type>\d+)|\s+code:(?P<code>\d+))+.*?$
     - type:   join
@@ -59,24 +59,24 @@ multiflow:
 simulations:
   # 30 Node Atomic
   - desc:           Atomic-SDN
+    type:           atomic
     contiki:        /home/mike/Repos/atomic
     wd:             /home/mike/Repos/atomic/examples/atomic
     csc:            atomic-30-node.csc
     makeargs:
       ATM_CONF_MAX_NODES:         30
       ATM_CONF_COLLECT_ALL_NODES: 0
-      ATM_CONF_COLLECT_FREQ:      60
-      ATM_CONF_REACT_FREQ:        0
+      ATM_CONF_COLLECT_FREQ:      0
+      ATM_CONF_REACT_FREQ:        60
       ATM_CONF_CONFIGURE_FREQ:    0
     regex:
       - 'atomic-energy'
       - 'atomic-op'
     plot:
-      # - atomic_vs_usdn_join_times
-      # - atomic_vs_usdn_react_times
       - atomic_vs_usdn_collect_times
   # 30 Node Usdn
   - desc:           uSDN
+    type:           usdn
     contiki:        /home/mike/Repos/usdn
     wd:             /home/mike/Repos/usdn/examples/ipv6/sdn-udp
     csc:            usdn-30-node.csc
@@ -86,16 +86,15 @@ simulations:
       FTREFRESH:    1
       FTSRETRY:     0
       FORCENSU:     1
-      FTLIFETIME:   600
-      NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
+      FTLIFETIME:   60
+      NSUFREQ:      600  # NSU frequency actually helps over 0 frequency
+      MAKE_WITH_MULTIFLOW: 1
     multiflow:      1_flow
     regex:
-      - 'join'
+      - 'node'
       - 'app'
       - 'sdn'
     plot:
-      # - atomic_vs_usdn_join_times
-      # - atomic_vs_usdn_react_times
       - atomic_vs_usdn_collect_times
 
 # ----------------------------------------------------------------------------
