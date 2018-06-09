@@ -61,6 +61,15 @@ def parse(log, dir, simname, simtype, fmt, regex_list, plots):
     global cfg
     if log is None:
         log = dir + simname + ".log"
+    # print(some information about what's being parsed
+    simstr = '- Simulation: ' + simname
+    dirstr = '- Directory: ' + dir
+    plotstr = '- Plots {0}'.format(plots)
+    info = simstr + '\n' + dirstr + '\n' + plotstr
+    info_len = len(max([simstr, dirstr, plotstr], key=len))
+    print('-' * info_len)
+    print(info)
+    print('-' * info_len)
     print('**** Parse log and gererate data logs in: ' + dir)
     logtype = (l for l in cfg['logtypes'] if l['type'] == fmt).next()
     df_dict = {}

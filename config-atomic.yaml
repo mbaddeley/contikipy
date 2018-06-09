@@ -40,7 +40,7 @@ simulations:
       ATM_CONF_CONFIGURE_FREQ:    0
     plot:
       - atomic_energy_v_hops
-      - atomic_op_times
+      - atomic_op
   # 30 Node
   # - desc:     ATM_30
   #   csc:      atomic-30-node.csc
@@ -51,7 +51,7 @@ simulations:
   #     ATM_CONF_CONFIGURE_FREQ:  0
   #   plot:
   #     - atomic_energy_v_hops
-  #     - atomic_op_times
+  #     - atomic_op
   # # 20 Node
   # - desc:    ATM_20
   #   csc:     atomic-20-node.csc
@@ -62,7 +62,7 @@ simulations:
   #     ATM_CONF_CONFIGURE_FREQ:  0
   #   plot:
   #     - atomic_energy_v_hops
-  #     - atomic_op_times
+  #     - atomic_op
 
 # ----------------------------------------------------------------------------
 # compare (comparison) config
@@ -76,4 +76,4 @@ compare:
     # which plots do we want to compare?
     plots:
       - atomic_energy_v_hops
-      - atomic_op_times
+      - atomic_op

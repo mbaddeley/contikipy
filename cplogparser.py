@@ -42,12 +42,6 @@ def prr(sent, dropped):
 # ----------------------------------------------------------------------------#
 def scrape_data(datatype, log, dir, fmt, regex):
     """Scrape the main log for data."""
-    # print(some information about what's being parsed
-    info = 'Data: {0} | Log: {1} ' \
-           '| Log Format: {2}'.format(datatype, log, fmt)
-    print('-' * len(info))
-    print(info)
-    print('-' * len(info))
 
     # dictionary of the various data df formatters
     read_function_map = {
@@ -109,7 +103,7 @@ def plot_data(desc, type, dir, df_dict, plots):
     atomic_function_map = {
         # atomic
         'atomic_energy_v_hops': atomic_energy_v_hops,
-        'atomic_op_times': atomic_op_times,
+        'atomic_op': atomic_op,
         # usdn
         'usdn_energy_v_hops': usdn_energy_v_hops,
         'usdn_prr_v_hops': usdn_prr_v_hops,
@@ -117,16 +111,17 @@ def plot_data(desc, type, dir, df_dict, plots):
         'usdn_join_time': usdn_join_time,
         'usdn_traffic_ratio': usdn_traffic_ratio,
         # atomic vs usdn
-        'atomic_vs_usdn_join_times': atomic_vs_usdn_join_times,
-        'atomic_vs_usdn_react_times': atomic_vs_usdn_react_times,
-        'atomic_vs_usdn_collect_times': atomic_vs_usdn_collect_times
+        'atomic_vs_usdn_join': atomic_vs_usdn_join,
+        'atomic_vs_usdn_react': atomic_vs_usdn_react,
+        'atomic_vs_usdn_configure': atomic_vs_usdn_configure,
+        'atomic_vs_usdn_collect': atomic_vs_usdn_collect,
     }
 
     # required dictionaries for each plotter
     atomic_dict_map = {
         # atomic
         'atomic_energy_v_hops': ['atomic-energy'],
-        'atomic_op_times': ['atomic-energy'],
+        'atomic_op': ['atomic-energy'],
         # usdn
         'usdn_energy_v_hops': ['pow', 'app'],
         'usdn_prr_v_hops': ['app'],
@@ -134,11 +129,13 @@ def plot_data(desc, type, dir, df_dict, plots):
         'usdn_join_time': ['join'],
         'usdn_traffic_ratio': ['app', 'icmp'],
         # atomic vs usdn
-        'atomic_vs_usdn_join_times': {'atomic': ['atomic-op'],
+        'atomic_vs_usdn_join': {'atomic': ['atomic-op'],
                                       'usdn': ['join', 'node']},
-        'atomic_vs_usdn_react_times': {'atomic': ['atomic-op'],
+        'atomic_vs_usdn_react': {'atomic': ['atomic-op'],
                                        'usdn': ['sdn', 'node']},
-        'atomic_vs_usdn_collect_times': {'atomic': ['atomic-op'],
+        'atomic_vs_usdn_configure': {'atomic': ['atomic-op'],
+                                     'usdn': ['sdn', 'node']},
+        'atomic_vs_usdn_collect': {'atomic': ['atomic-op'],
                                          'usdn': ['sdn', 'node']}
     }
 
@@ -151,7 +148,6 @@ def plot_data(desc, type, dir, df_dict, plots):
         try:
             if plot in atomic_function_map.keys():
                 dfs = {}
-                print(plot)
                 df_list = atomic_dict_map[plot][sim_type]
                 dfs = {k: df_dict[k] for k in df_list if k in df_dict.keys()}
                 if all(k in dfs for k in df_list):
@@ -340,7 +336,7 @@ def csv_to_df(file):
 # ----------------------------------------------------------------------------#
 # Atomic plotting
 # ----------------------------------------------------------------------------#
-def atomic_op_times(df_dict):
+def atomic_op(df_dict):
     """Plot atomic op times."""
     try:
         if 'atomic-energy' in df_dict:
@@ -367,7 +363,7 @@ def atomic_op_times(df_dict):
     x = list(data.columns.values)
     y = data.values.tolist()[0]
 
-    cpplot.plot_bar(df, 'atomic_op_times', sim_dir, x, y,
+    cpplot.plot_bar(df, 'atomic_op', sim_dir, x, y,
                     xlabel='Op Type', ylabel='Time(ms)')
 
 
@@ -537,7 +533,7 @@ def usdn_traffic_ratio(df_dict):
 
 
 # ----------------------------------------------------------------------------#
-def atomic_vs_usdn_join_times(df_dict):
+def atomic_vs_usdn_join(df_dict):
     """Plot atomic vs usdn join times."""
     # check we have the correct dicts
     try:
@@ -577,14 +573,14 @@ def atomic_vs_usdn_join_times(df_dict):
     # plot the join times vs hops
     x = df['time'].tolist()
     y = df.index.tolist()
-    cpplot.plot_hist(df, 'atomic_vs_usdn_join_times', sim_dir, x, y,
+    cpplot.plot_hist(df, 'atomic_vs_usdn_join', sim_dir, x, y,
                      xlabel=xlabel,
                      ylabel='Propotion of Nodes Joined',
                      color=color)
 
 
 # ----------------------------------------------------------------------------#
-def atomic_vs_usdn_react_times(df_dict):
+def atomic_vs_usdn_react(df_dict):
     """Plot atomic vs usdn react times."""
     # parse the df
     if 'usdn' in sim_type:
@@ -617,6 +613,7 @@ def atomic_vs_usdn_react_times(df_dict):
     elif 'atomic' in sim_type:
         df = df_dict['atomic-op'].copy()
         df = df[df['op_type'] == 'RACT']
+        print(df)
         df['react_time'] = df['c_time'].astype(int)
         df = df[df['react_time'] != 0]
         df = df[df['hops'] != 0]
@@ -626,21 +623,58 @@ def atomic_vs_usdn_react_times(df_dict):
     df = df.pivot_table(index=df.groupby('hops').cumcount(),
                         columns=['hops'],
                         values='react_time')
-    # print(df)
 
     x = list(df.columns.values)  # x ticks are the column headers
     #  BOX
     # y = np.column_stack(df.transpose().values.tolist())  # need a list
-    # cpplot.plot_box(df, 'atomic_vs_usdn_react_times', sim_dir, x, y,
+    # cpplot.plot_box(df, 'atomic_vs_usdn_react', sim_dir, x, y,
     #                 xlabel='Hops', ylabel='End-to-end delay (ms)')
     #  LINE
     y = df.mean()
-    cpplot.plot_line(df, 'atomic_vs_usdn_react_times', sim_dir, x, y,
+    cpplot.plot_line(df, 'atomic_vs_usdn_react', sim_dir, x, y,
                      xlabel='Hops', ylabel='End-to-end delay (ms)')
 
 
 # ----------------------------------------------------------------------------#
-def atomic_vs_usdn_collect_times(df_dict):
+def atomic_vs_usdn_configure(df_dict):
+    """Plot atomic vs usdn react times."""
+    # parse the df
+    if 'usdn' in sim_type:
+        # get dfs
+        df_node = df_dict['node'].copy().reset_index()
+        df_sdn = df_dict['sdn'].copy()
+        # take only NSU and drop any dropped packets
+        df = df_sdn[(df_sdn['typ'] == 'FTS') & (df_sdn['drpd'] == 0)]
+        df = df.rename(columns={'lat': 'conf_time'})
+        df = df.merge(df_node, left_on='dest', right_on='id')  # merge hops col
+        print(df)
+        df = df[df['hops'] != 0]
+    elif 'atomic' in sim_type:
+        df = df_dict['atomic-op'].copy()
+        df = df[df['op_type'] == 'CONF']
+        df['conf_time'] = df['c_time'].astype(int)
+        df = df[df['conf_time'] != 0]
+        df = df[df['hops'] != 0]
+    else:
+        raise Exception('ERROR: Unknown sim type!')
+
+    df = df.pivot_table(index=df.groupby('hops').cumcount(),
+                        columns=['hops'],
+                        values='conf_time')
+
+    x = list(df.columns.values)  # x ticks are the column headers
+    #  BOX
+    # y = np.column_stack(df.transpose().values.tolist())  # need a list
+    # cpplot.plot_box(df, 'atomic_vs_usdn_react', sim_dir, x, y,
+    #                 xlabel='Hops', ylabel='End-to-end delay (ms)')
+    #  LINE
+    y = df.mean()
+    cpplot.plot_line(df, 'atomic_vs_usdn_configure', sim_dir, x, y,
+                     xlabel='Hops', ylabel='End-to-end delay (ms)')
+
+
+# ----------------------------------------------------------------------------#
+def atomic_vs_usdn_collect(df_dict):
     """Plot atomic vs usdn collect times."""
     if 'usdn' in sim_type:
         # copy dfs
@@ -651,6 +685,7 @@ def atomic_vs_usdn_collect_times(df_dict):
         df = df.rename(columns={'lat': 'collect_time'})
         df = df[df['src'] != 1]
         df = df.merge(df_node, left_on='src', right_on='id')  # merge hops col
+        df = df[df['hops'] != 0]
     elif 'atomic' in sim_type:
         df = df_dict['atomic-op'].copy()
         df = df[df['op_type'] == 'CLCT']
@@ -665,8 +700,8 @@ def atomic_vs_usdn_collect_times(df_dict):
                         values='collect_time')
     x = list(df.columns.values)  # x ticks are the column headers
     # y = np.column_stack(df.transpose().values.tolist())  # need a list
-    # cpplot.plot_box(df, 'atomic_vs_usdn_collect_times', sim_dir, x, y,
+    # cpplot.plot_box(df, 'atomic_vs_usdn_collect', sim_dir, x, y,
     #                 xlabel='Hops', ylabel='End-to-end delay (ms)')
     y = df.mean()
-    cpplot.plot_line(df, 'atomic_vs_usdn_collect_times', sim_dir, x, y,
+    cpplot.plot_line(df, 'atomic_vs_usdn_collect', sim_dir, x, y,
                      xlabel='Hops', ylabel='End-to-end delay (ms)')

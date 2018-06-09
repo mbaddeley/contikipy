@@ -5,7 +5,7 @@ contiki:
 wd:
 fmt:     cooja
 log:     /tools/cooja/build/COOJA.testlog
-out:     /home/mike/Results/ATOMIC_vs_USDN_collect
+out:     /home/mike/Results/ATOMIC_vs_USDN_configure
 csc:
 target:
 
@@ -66,14 +66,15 @@ simulations:
     makeargs:
       ATM_CONF_MAX_NODES:         30
       ATM_CONF_COLLECT_ALL_NODES: 0
+      ATM_CONF_REACT_ALL_NODES:   0
       ATM_CONF_COLLECT_FREQ:      0
-      ATM_CONF_REACT_FREQ:        60
-      ATM_CONF_CONFIGURE_FREQ:    0
+      ATM_CONF_REACT_FREQ:        0
+      ATM_CONF_CONFIGURE_FREQ:    60
     regex:
       - 'atomic-energy'
       - 'atomic-op'
     plot:
-      - atomic_vs_usdn_collect_times
+      - atomic_vs_usdn_configure
   # 30 Node Usdn
   - desc:           uSDN
     type:           usdn
@@ -83,19 +84,18 @@ simulations:
     makeargs:
       MAC:          CSMA
       SDN:          1
-      FTREFRESH:    1
+      FTREFRESH:    0
       FTSRETRY:     0
       FORCENSU:     1
       FTLIFETIME:   60
-      NSUFREQ:      600  # NSU frequency actually helps over 0 frequency
+      NSUFREQ:      300  # NSU frequency actually helps over 0 frequency
       MAKE_WITH_MULTIFLOW: 1
     multiflow:      1_flow
     regex:
       - 'node'
-      - 'app'
       - 'sdn'
     plot:
-      - atomic_vs_usdn_collect_times
+      - atomic_vs_usdn_configure
 
 # ----------------------------------------------------------------------------
 # compare (comparison) config
@@ -107,4 +107,4 @@ compare:
     - uSDN
     # which plots do we want to compare?
     plots:
-      - atomic_vs_usdn_collect_times
+      - atomic_vs_usdn_configure
