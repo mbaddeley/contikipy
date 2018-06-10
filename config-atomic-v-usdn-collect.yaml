@@ -82,7 +82,7 @@ simulations:
     wd:             /home/mike/Repos/usdn/examples/ipv6/sdn-udp
     csc:            usdn-20-node.csc
     makeargs:
-      MAC:          CSMA
+      MAC:          CONTIKIMAC
       SDN:          1
       FTREFRESH:    1
       FTSRETRY:     0
@@ -104,7 +104,7 @@ simulations:
     wd:             /home/mike/Repos/usdn/examples/ipv6/sdn-udp
     csc:            usdn-30-node.csc
     makeargs:
-      MAC:          CSMA
+      MAC:          CONTIKIMAC
       SDN:          1
       FTREFRESH:    1
       FTSRETRY:     0
@@ -126,7 +126,7 @@ simulations:
     wd:             /home/mike/Repos/usdn/examples/ipv6/sdn-udp
     csc:            usdn-40-node.csc
     makeargs:
-      MAC:          CSMA
+      MAC:          CONTIKIMAC
       SDN:          1
       FTREFRESH:    1
       FTSRETRY:     0

@@ -130,13 +130,13 @@ def plot_data(desc, type, dir, df_dict, plots):
         'usdn_traffic_ratio': ['app', 'icmp'],
         # atomic vs usdn
         'atomic_vs_usdn_join': {'atomic': ['atomic-op'],
-                                      'usdn': ['join', 'node']},
+                                'usdn': ['join', 'node']},
         'atomic_vs_usdn_react': {'atomic': ['atomic-op'],
-                                       'usdn': ['sdn', 'node']},
+                                 'usdn': ['sdn', 'node']},
         'atomic_vs_usdn_configure': {'atomic': ['atomic-op'],
                                      'usdn': ['sdn', 'node']},
         'atomic_vs_usdn_collect': {'atomic': ['atomic-op'],
-                                         'usdn': ['sdn', 'node']}
+                                   'usdn': ['sdn', 'node']}
     }
 
     sim_desc = desc
@@ -613,10 +613,10 @@ def atomic_vs_usdn_react(df_dict):
     elif 'atomic' in sim_type:
         df = df_dict['atomic-op'].copy()
         df = df[df['op_type'] == 'RACT']
-        print(df)
         df['react_time'] = df['c_time'].astype(int)
         df = df[df['react_time'] != 0]
         df = df[df['hops'] != 0]
+        print(df)
     else:
         raise Exception('ERROR: Unknown sim type!')
 
