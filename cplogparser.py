@@ -610,6 +610,7 @@ def atomic_vs_usdn_react(df_dict):
         df.columns = df.columns.droplevel(0)
         df.columns = ['hops', 'FTQ', 'FTS', 'react_time']
         df['hops'] = df['hops'].astype(int)
+        df = df[(df['hops'] > 0) & (df['hops'] <= 5)]
     elif 'atomic' in sim_type:
         df = df_dict['atomic-op'].copy()
         df = df[df['op_type'] == 'RACT']
@@ -647,8 +648,7 @@ def atomic_vs_usdn_configure(df_dict):
         df = df_sdn[(df_sdn['typ'] == 'FTS') & (df_sdn['drpd'] == 0)]
         df = df.rename(columns={'lat': 'conf_time'})
         df = df.merge(df_node, left_on='dest', right_on='id')  # merge hops col
-        print(df)
-        df = df[df['hops'] != 0]
+        df = df[(df['hops'] > 0) & (df['hops'] <= 5)]
     elif 'atomic' in sim_type:
         df = df_dict['atomic-op'].copy()
         df = df[df['op_type'] == 'CONF']
@@ -685,7 +685,7 @@ def atomic_vs_usdn_collect(df_dict):
         df = df.rename(columns={'lat': 'collect_time'})
         df = df[df['src'] != 1]
         df = df.merge(df_node, left_on='src', right_on='id')  # merge hops col
-        df = df[df['hops'] != 0]
+        df = df[(df['hops'] > 0) & (df['hops'] <= 5)]
     elif 'atomic' in sim_type:
         df = df_dict['atomic-op'].copy()
         df = df[df['op_type'] == 'CLCT']
