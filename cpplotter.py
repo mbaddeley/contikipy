@@ -96,13 +96,13 @@ def set_fig_and_save(fig, ax, data, desc, dir, **kwargs):
     ax.get_xaxis().tick_bottom()
     ax.get_yaxis().tick_left()
     # tight layout
-    fig.set_tight_layout(False)
+    fig.set_tight_layout(True)
     # save  data for post compare
     if data is not None:
         pickle.dump(data, open(dir + desc + '.pkl', 'w'))
 
     # save figure
-    fig.savefig(dir + 'fig_' + desc + '.pdf')
+    fig.savefig(dir + 'fig_' + desc + '.pdf', bbox_inches="tight")
 
     # close all open figs
     plt.close('all')

@@ -215,6 +215,7 @@ def make(path, target, args=None):
         target_str = ""
     else:
         target_str = 'TARGET=' + target
+    print("-------------> " + target_str + " " + args)
     subprocess.call('make ' + target_str + ' ' + args +
                     ' -C ' + path, shell=True)
 

@@ -5,7 +5,7 @@ contiki:
 wd:
 fmt:     cooja
 log:     /tools/cooja/build/COOJA.testlog
-out:     /home/mike/Results/ATOMIC_vs_USDN_collect
+out:     /home/mike/Results/ATOMIC_vs_USDN_configure_pdr
 csc:
 target:
 
@@ -67,14 +67,15 @@ simulations:
       ATM_CONF_MAX_NODES:         30
       ATM_CONF_COLLECT_ALL_NODES: 0
       ATM_CONF_REACT_ALL_NODES:   0
-      ATM_CONF_COLLECT_FREQ:      60
+      ATM_CONF_COLLECT_FREQ:      0
       ATM_CONF_REACT_FREQ:        0
-      ATM_CONF_CONFIGURE_FREQ:    0
+      ATM_CONF_CONFIGURE_FREQ:    60
     regex:
       - 'atomic-energy'
       - 'atomic-op'
     plot:
-      - atomic_vs_usdn_collect_lat
+      - atomic_vs_usdn_configure_lat
+      - atomic_vs_usdn_configure
   # 30 Node uSDN CSMA
   - desc:           uSDN-CSMA
     type:           usdn
@@ -84,18 +85,20 @@ simulations:
     makeargs:
       MAC:          CSMA
       SDN:          1
-      FTREFRESH:    1
+      FTREFRESH:    0
       FTSRETRY:     0
       FORCENSU:     1
-      FTLIFETIME:   0xFFFF
-      NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
-      MULTIFLOW:    0
+      FTLIFETIME:   60
+      NSUFREQ:      300  # NSU frequency actually helps over 0 frequency
+      MULTIFLOW:    1
+    multiflow:      1_flow
     regex:
       - 'node'
-      - 'app'
       - 'sdn'
+      - 'pow'
     plot:
-      - atomic_vs_usdn_collect_lat
+      - atomic_vs_usdn_configure_lat
+      - atomic_vs_usdn_configure
   # 30 Node uSDN CONTIKIMAC
   - desc:           uSDN-CONTIKIMAC
     type:           usdn
@@ -105,19 +108,20 @@ simulations:
     makeargs:
       MAC:          CONTIKIMAC
       SDN:          1
-      FTREFRESH:    1
+      FTREFRESH:    0
       FTSRETRY:     0
       FORCENSU:     1
-      FTLIFETIME:   0xFFFF
-      NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
-      MULTIFLOW:    0
-    # multiflow:      1_flow # causes issues with unknown #defines!!!
+      FTLIFETIME:   60
+      NSUFREQ:      300  # NSU frequency actually helps over 0 frequency
+      MULTIFLOW: 1
+    multiflow:      1_flow
     regex:
       - 'node'
-      - 'app'
       - 'sdn'
+      - 'pow'
     plot:
-      - atomic_vs_usdn_collect_lat
+      - atomic_vs_usdn_configure_lat
+      - atomic_vs_usdn_configure
 
 # ----------------------------------------------------------------------------
 # compare (comparison) config
@@ -130,4 +134,6 @@ compare:
     - uSDN-CONTIKIMAC
     # which plots do we want to compare?
     plots:
-      - atomic_vs_usdn_collect_lat
+      - atomic_vs_usdn_configure_lat
+      - atomic_vs_usdn_configure_pdr
+      - atomic_vs_usdn_configure_energy

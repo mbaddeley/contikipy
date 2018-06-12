@@ -5,7 +5,7 @@ contiki:
 wd:
 fmt:     cooja
 log:     /tools/cooja/build/COOJA.testlog
-out:     /home/mike/Results/ATOMIC_vs_USDN_collect
+out:     /home/mike/Results/ATOMIC_vs_USDN_collect_pdr
 csc:
 target:
 
@@ -65,7 +65,7 @@ simulations:
     csc:            atomic-30-node.csc
     makeargs:
       ATM_CONF_MAX_NODES:         30
-      ATM_CONF_COLLECT_ALL_NODES: 0
+      ATM_CONF_COLLECT_ALL_NODES: 1
       ATM_CONF_REACT_ALL_NODES:   0
       ATM_CONF_COLLECT_FREQ:      60
       ATM_CONF_REACT_FREQ:        0
@@ -75,6 +75,7 @@ simulations:
       - 'atomic-op'
     plot:
       - atomic_vs_usdn_collect_lat
+      - atomic_vs_usdn_collect
   # 30 Node uSDN CSMA
   - desc:           uSDN-CSMA
     type:           usdn
@@ -92,10 +93,11 @@ simulations:
       MULTIFLOW:    0
     regex:
       - 'node'
-      - 'app'
       - 'sdn'
+      - 'pow'
     plot:
       - atomic_vs_usdn_collect_lat
+      - atomic_vs_usdn_collect
   # 30 Node uSDN CONTIKIMAC
   - desc:           uSDN-CONTIKIMAC
     type:           usdn
@@ -114,10 +116,11 @@ simulations:
     # multiflow:      1_flow # causes issues with unknown #defines!!!
     regex:
       - 'node'
-      - 'app'
       - 'sdn'
+      - 'pow'
     plot:
       - atomic_vs_usdn_collect_lat
+      - atomic_vs_usdn_collect
 
 # ----------------------------------------------------------------------------
 # compare (comparison) config
@@ -131,3 +134,5 @@ compare:
     # which plots do we want to compare?
     plots:
       - atomic_vs_usdn_collect_lat
+      - atomic_vs_usdn_collect_pdr
+      - atomic_vs_usdn_collect_energy

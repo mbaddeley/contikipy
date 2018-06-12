@@ -88,7 +88,7 @@ simulations:
   #   multiflow:      1_flow
   #   plot:
   #     - usdn_energy_v_hops        # Radio duty cycle vs hops
-  #     - usdn_prr_v_hops           # Packet receive ratio vs hops
+  #     - usdn_pdr_v_hops           # Packet receive ratio vs hops
   #     - usdn_latency_v_hops       # Hops vs e2e latency
   #     - usdn_join_time            # DAG join time
   #     - usdn_traffic_ratio        # RPL traffic ratio
@@ -104,7 +104,7 @@ simulations:
     multiflow:      1_flow
     plot:
       - usdn_energy_v_hops        # Radio duty cycle vs hops
-      - usdn_prr_v_hops           # Packet receive ratio vs hops
+      - usdn_pdr_v_hops           # Packet receive ratio vs hops
       - usdn_latency_v_hops       # Hops vs e2e latency
       - usdn_join_time            # SDN controller join time
       - usdn_traffic_ratio        # SDN traffic ratio
@@ -120,7 +120,7 @@ simulations:
   #   multiflow:      1_flow_10s
   #   plot:
   #     - usdn_energy_v_hops        # Radio duty cycle vs hops
-  #     - usdn_prr_v_hops           # Packet receive ratio vs hops
+  #     - usdn_pdr_v_hops           # Packet receive ratio vs hops
   #     - usdn_latency_v_hops       # Hops vs e2e latency
   #     - usdn_join_time            # SDN controller join time
   #     - usdn_traffic_ratio        # SDN traffic ratio
@@ -135,7 +135,7 @@ simulations:
   #   multiflow:      1_flow_10s
   #   plot:
   #     - usdn_energy_v_hops        # Radio duty cycle vs hops
-  #     - usdn_prr_v_hops           # Packet receive ratio vs hops
+  #     - usdn_pdr_v_hops           # Packet receive ratio vs hops
   #     - usdn_latency_v_hops       # Hops vs e2e latency
   #     - usdn_join_time            # SDN controller join time
   #     - usdn_traffic_ratio        # SDN traffic ratio
@@ -150,7 +150,7 @@ simulations:
   #   multiflow:      1_flow_10s
   #   plot:
   #     - usdn_energy_v_hops        # Radio duty cycle vs hops
-  #     - usdn_prr_v_hops           # Packet receive ratio vs hops
+  #     - usdn_pdr_v_hops           # Packet receive ratio vs hops
   #     - usdn_latency_v_hops       # Hops vs e2e latency
   #     - usdn_join_time            # SDN controller join time
   #     - usdn_traffic_ratio        # SDN traffic ratio
@@ -167,7 +167,7 @@ simulations:
   #   multiflow:      1_flow_10s
   #   plot:
   #     - usdn_energy_v_hops        # Radio duty cycle vs hops
-  #     - usdn_prr_v_hops           # Packet receive ratio vs hops
+  #     - usdn_pdr_v_hops           # Packet receive ratio vs hops
   #     - usdn_latency_v_hops       # Hops vs e2e latency
   #     - usdn_join_time            # SDN controller join time
   #     - usdn_traffic_ratio        # SDN traffic ratio
@@ -184,7 +184,7 @@ simulations:
   #   multiflow:      1_flow_10s
   #   plot:
   #     - usdn_energy_v_hops        # Radio duty cycle vs hops
-  #     - usdn_prr_v_hops           # Packet receive ratio vs hops
+  #     - usdn_pdr_v_hops           # Packet receive ratio vs hops
   #     - usdn_latency_v_hops       # Hops vs e2e latency
   #     - usdn_join_time            # SDN controller join time
   #     - usdn_traffic_ratio        # SDN traffic ratio
@@ -200,7 +200,7 @@ simulations:
   #   multiflow:      1_flow_10s
   #   plot:
   #     - usdn_energy_v_hops        # Radio duty cycle vs hops
-  #     - usdn_prr_v_hops           # Packet receive ratio vs hops
+  #     - usdn_pdr_v_hops           # Packet receive ratio vs hops
   #     - usdn_latency_v_hops       # Hops vs e2e latency
   #     - usdn_join_time            # SDN controller join time
   #     - usdn_traffic_ratio        # SDN traffic ratio
@@ -215,7 +215,7 @@ compare:
   #   - RPL
   #   plots:
   #     - usdn_energy_v_hops
-  #     - usdn_prr_v_hops
+  #     - usdn_pdr_v_hops
   #     - usdn_latency_v_hops
   #     - usdn_join_time
 
@@ -226,7 +226,7 @@ compare:
     -  SDN-NSU-60
     plots:
     - usdn_energy_v_hops
-    - usdn_prr_v_hops
+    - usdn_pdr_v_hops
     - usdn_latency_v_hops
     - usdn_join_time
 
@@ -237,6 +237,6 @@ compare:
   #   -  SDN-FT-600
   #   plots:
   #   - usdn_energy_v_hops
-  #   - usdn_prr_v_hops
+  #   - usdn_pdr_v_hops
   #   - usdn_latency_v_hops
   #   - usdn_join_time

@@ -5,7 +5,7 @@ contiki:
 wd:
 fmt:     cooja
 log:     /tools/cooja/build/COOJA.testlog
-out:     /home/mike/Results/ATOMIC_vs_USDN_collect
+out:     /home/mike/Results/ATOMIC_vs_USDN_100
 csc:
 target:
 
@@ -62,62 +62,18 @@ simulations:
     type:           atomic
     contiki:        /home/mike/Repos/atomic
     wd:             /home/mike/Repos/atomic/examples/atomic
-    csc:            atomic-30-node.csc
+    csc:            atomic-100-node.csc
     makeargs:
-      ATM_CONF_MAX_NODES:         30
-      ATM_CONF_COLLECT_ALL_NODES: 0
-      ATM_CONF_REACT_ALL_NODES:   0
-      ATM_CONF_COLLECT_FREQ:      60
-      ATM_CONF_REACT_FREQ:        0
-      ATM_CONF_CONFIGURE_FREQ:    0
+      ATM_CONF_MAX_NODES:         100
+      ATM_CONF_COLLECT_ALL_NODES: 1
+      ATM_CONF_REACT_ALL_NODES:   1
+      ATM_CONF_OP_FREQ:           60
     regex:
       - 'atomic-energy'
       - 'atomic-op'
     plot:
-      - atomic_vs_usdn_collect_lat
-  # 30 Node uSDN CSMA
-  - desc:           uSDN-CSMA
-    type:           usdn
-    contiki:        /home/mike/Repos/usdn
-    wd:             /home/mike/Repos/usdn/examples/ipv6/sdn-udp
-    csc:            usdn-30-node.csc
-    makeargs:
-      MAC:          CSMA
-      SDN:          1
-      FTREFRESH:    1
-      FTSRETRY:     0
-      FORCENSU:     1
-      FTLIFETIME:   0xFFFF
-      NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
-      MULTIFLOW:    0
-    regex:
-      - 'node'
-      - 'app'
-      - 'sdn'
-    plot:
-      - atomic_vs_usdn_collect_lat
-  # 30 Node uSDN CONTIKIMAC
-  - desc:           uSDN-CONTIKIMAC
-    type:           usdn
-    contiki:        /home/mike/Repos/usdn
-    wd:             /home/mike/Repos/usdn/examples/ipv6/sdn-udp
-    csc:            usdn-30-node.csc
-    makeargs:
-      MAC:          CONTIKIMAC
-      SDN:          1
-      FTREFRESH:    1
-      FTSRETRY:     0
-      FORCENSU:     1
-      FTLIFETIME:   0xFFFF
-      NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
-      MULTIFLOW:    0
-    # multiflow:      1_flow # causes issues with unknown #defines!!!
-    regex:
-      - 'node'
-      - 'app'
-      - 'sdn'
-    plot:
-      - atomic_vs_usdn_collect_lat
+      - atomic_op_times
+      # - atomic-energy-vs-hops
 
 # ----------------------------------------------------------------------------
 # compare (comparison) config
@@ -126,8 +82,6 @@ compare:
   - sims:
     # which sims do we want to compare?
     - Atomic-SDN
-    - uSDN-CSMA
-    - uSDN-CONTIKIMAC
     # which plots do we want to compare?
     plots:
-      - atomic_vs_usdn_collect_lat
+      - atomic_op_times

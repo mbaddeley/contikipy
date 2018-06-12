@@ -157,7 +157,7 @@ def add_box(ax, artists, index, color, label, data):
 # ----------------------------------------------------------------------------#
 def add_line(ax, color, label, data, **kwargs):
     """Add data to bar plot."""
-    lw = 2.0
+    lw = 3.0
     marker = 's'
     x_min = min(data['x'])
     x_max = max(data['x'])
@@ -290,6 +290,7 @@ def compare_bar(datasets, **kwargs):
 
     # add legend
     ax.legend(labels, loc='best')
+    # ax.legend(labels, loc='best', bbox_to_anchor=(1, 1))
     # ax.legend(labels, loc='lower center', ncol=n_plots)
     return fig, ax
 
@@ -314,6 +315,7 @@ def compare_line(datasets, **kwargs):
 
     # add legend
     ax.legend(labels, loc='best')
+    # ax.legend(labels, loc='best', bbox_to_anchor=(1, 1))
     return fig, ax
 
 

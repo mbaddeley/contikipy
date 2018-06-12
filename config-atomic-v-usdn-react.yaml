@@ -62,7 +62,7 @@ simulations:
     type:           atomic
     contiki:        /home/mike/Repos/atomic
     wd:             /home/mike/Repos/atomic/examples/atomic
-    csc:            atomic-30-node.csc
+    csc:            atomic-30-node-2.csc
     makeargs:
       ATM_CONF_MAX_NODES:         30
       ATM_CONF_COLLECT_ALL_NODES: 0
@@ -74,10 +74,9 @@ simulations:
       - 'atomic-energy'
       - 'atomic-op'
     plot:
-      # - atomic_vs_usdn_collect
-      - atomic_vs_usdn_react
-  # 30 Node Usdn
-  - desc:           uSDN-CSMA/CA
+      - atomic_vs_usdn_react_lat
+  # 30 Node uSDN CSMA
+  - desc:           uSDN-CSMA
     type:           usdn
     contiki:        /home/mike/Repos/usdn
     wd:             /home/mike/Repos/usdn/examples/ipv6/sdn-udp
@@ -90,48 +89,46 @@ simulations:
       FORCENSU:     1
       FTLIFETIME:   60
       NSUFREQ:      300  # NSU frequency actually helps over 0 frequency
-      MAKE_WITH_MULTIFLOW: 1
+      MULTIFLOW:    1
     multiflow:      1_flow
     regex:
       - 'node'
-      - 'app'
       - 'sdn'
     plot:
-      # - atomic_vs_usdn_collect
-      - atomic_vs_usdn_react
-    # 30 Node Usdn
-    - desc:           uSDN-CONTIKIMAC
-      type:           usdn
-      contiki:        /home/mike/Repos/usdn
-      wd:             /home/mike/Repos/usdn/examples/ipv6/sdn-udp
-      csc:            usdn-30-node.csc
-      makeargs:
-        MAC:          CONTIKIMAC
-        SDN:          1
-        FTREFRESH:    0
-        FTSRETRY:     0
-        FORCENSU:     1
-        FTLIFETIME:   60
-        NSUFREQ:      300  # NSU frequency actually helps over 0 frequency
-        MAKE_WITH_MULTIFLOW: 1
-      multiflow:      1_flow
-      regex:
-        - 'node'
-        - 'app'
-        - 'sdn'
-      plot:
-        # - atomic_vs_usdn_collect
-        - atomic_vs_usdn_react
+      - atomic_vs_usdn_react_lat
+  # 30 Node uSDN CONTIKIMAC
+  - desc:           uSDN-CONTIKIMAC
+    type:           usdn
+    contiki:        /home/mike/Repos/usdn
+    wd:             /home/mike/Repos/usdn/examples/ipv6/sdn-udp
+    csc:            usdn-30-node.csc
+    makeargs:
+      MAC:          CONTIKIMAC
+      SDN:          1
+      FTREFRESH:    0
+      FTSRETRY:     0
+      FORCENSU:     1
+      FTLIFETIME:   60
+      NSUFREQ:      300  # NSU frequency actually helps over 0 frequency
+      MULTIFLOW:    1
+    multiflow:      1_flow
+    regex:
+      - 'node'
+      - 'sdn'
+    plot:
+      # - atomic_vs_usdn_collect_lat
+      - atomic_vs_usdn_react_lat
 
 # ----------------------------------------------------------------------------
 # compare (comparison) config
 # ----------------------------------------------------------------------------
 compare:
+  # which sims do we want to compare?
   - sims:
-    # which sims do we want to compare?
-    - Atomic-SDN
-    - uSDN
+      - Atomic-SDN
+      - uSDN-CSMA
+      - uSDN-CONTIKIMAC
     # which plots do we want to compare?
     plots:
-      # - atomic_vs_usdn_collect
-      - atomic_vs_usdn_react
+      # - atomic_vs_usdn_collect_lat
+      - atomic_vs_usdn_react_lat
