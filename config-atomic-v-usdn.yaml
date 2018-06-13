@@ -5,7 +5,7 @@ contiki:
 wd:
 fmt:     cooja
 log:     /tools/cooja/build/COOJA.testlog
-out:     /home/mike/Results/ATOMIC_vs_USDN_collect_pdr
+out:     /home/mike/Results/ATOMIC_vs_USDN_collect
 csc:
 target:
 
@@ -58,14 +58,14 @@ multiflow:
 # ----------------------------------------------------------------------------
 simulations:
   # 30 Node Atomic
-  - desc:           Atomic-SDN
+  - desc:           Atomic-SDN-2
     type:           atomic
     contiki:        /home/mike/Repos/atomic
     wd:             /home/mike/Repos/atomic/examples/atomic
     csc:            atomic-30-node.csc
     makeargs:
       ATM_CONF_MAX_NODES:         30
-      ATM_CONF_COLLECT_ALL_NODES: 1
+      ATM_CONF_COLLECT_ALL_NODES: 0
       ATM_CONF_REACT_ALL_NODES:   0
       ATM_CONF_COLLECT_FREQ:      60
       ATM_CONF_REACT_FREQ:        0
@@ -74,8 +74,8 @@ simulations:
       - 'atomic-energy'
       - 'atomic-op'
     plot:
-      - atomic_vs_usdn_collect_lat
-      - atomic_vs_usdn_collect
+      - atomic_vs_usdn_lat
+      - atomic_vs_usdn
   # 30 Node uSDN CSMA
   - desc:           uSDN-CSMA
     type:           usdn
@@ -96,8 +96,8 @@ simulations:
       - 'sdn'
       - 'pow'
     plot:
-      - atomic_vs_usdn_collect_lat
-      - atomic_vs_usdn_collect
+      - atomic_vs_usdn_lat
+      - atomic_vs_usdn
   # 30 Node uSDN CONTIKIMAC
   - desc:           uSDN-CONTIKIMAC
     type:           usdn
@@ -119,8 +119,8 @@ simulations:
       - 'sdn'
       - 'pow'
     plot:
-      - atomic_vs_usdn_collect_lat
-      - atomic_vs_usdn_collect
+      - atomic_vs_usdn_lat
+      - atomic_vs_usdn
 
 # ----------------------------------------------------------------------------
 # compare (comparison) config
@@ -128,11 +128,12 @@ simulations:
 compare:
   - sims:
     # which sims do we want to compare?
-    - Atomic-SDN
+    - Atomic-SDN-2
+    # - Atomic-SDN-2
     - uSDN-CSMA
     - uSDN-CONTIKIMAC
     # which plots do we want to compare?
     plots:
-      - atomic_vs_usdn_collect_lat
+      - atomic_vs_usdn_lat
       - atomic_vs_usdn_collect_pdr
       - atomic_vs_usdn_collect_energy

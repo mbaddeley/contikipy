@@ -111,12 +111,8 @@ def plot_data(desc, type, dir, df_dict, plots):
         'usdn_traffic_ratio': usdn_traffic_ratio,
         # atomic vs usdn
         'atomic_vs_usdn_join': atomic_vs_usdn_join,
-        'atomic_vs_usdn_react_lat': atomic_vs_usdn_react_lat,
-        'atomic_vs_usdn_react': atomic_vs_usdn_react,
-        'atomic_vs_usdn_configure_lat': atomic_vs_usdn_configure_lat,
-        'atomic_vs_usdn_configure': atomic_vs_usdn_configure,
-        'atomic_vs_usdn_collect_lat': atomic_vs_usdn_collect_lat,
-        'atomic_vs_usdn_collect': atomic_vs_usdn_collect,
+        'atomic_vs_usdn_lat': atomic_vs_usdn_lat,
+        'atomic_vs_usdn': atomic_vs_usdn,
     }
 
     # required dictionaries for each plotter
@@ -133,18 +129,10 @@ def plot_data(desc, type, dir, df_dict, plots):
         # atomic vs usdn
         'atomic_vs_usdn_join': {'atomic': ['atomic-op'],
                                 'usdn': ['join', 'node']},
-        'atomic_vs_usdn_react_lat': {'atomic': ['atomic-op'],
-                                     'usdn': ['sdn', 'node']},
-        'atomic_vs_usdn_react': {'atomic': ['atomic-op', 'atomic-energy'],
-                                 'usdn': ['sdn', 'node', 'pow']},
-        'atomic_vs_usdn_configure_lat': {'atomic': ['atomic-op'],
-                                         'usdn': ['sdn', 'node']},
-        'atomic_vs_usdn_configure': {'atomic': ['atomic-op', 'atomic-energy'],
-                                     'usdn': ['sdn', 'node', 'pow']},
-        'atomic_vs_usdn_collect_lat': {'atomic': ['atomic-op'],
-                                       'usdn': ['sdn', 'node']},
-        'atomic_vs_usdn_collect': {'atomic': ['atomic-op', 'atomic-energy'],
-                                   'usdn': ['sdn', 'node', 'pow']},
+        'atomic_vs_usdn_lat': {'atomic': ['atomic-op'],
+                               'usdn': ['sdn', 'node']},
+        'atomic_vs_usdn': {'atomic': ['atomic-op', 'atomic-energy'],
+                           'usdn': ['sdn', 'node', 'pow']},
     }
 
     sim_desc = desc
@@ -209,7 +197,7 @@ def format_usdn_pow_data(df):
     """Format power data."""
     print('> Read sdn power log')
     # get last row of each 'id' group and use the all_radio value
-    df = df.groupby('id').last()
+    df = df.groupby('id').mean()
     # need to convert all our columns to numeric values from strings
     df = df.apply(pd.to_numeric, errors='ignore')
     # rearrage cols
@@ -634,194 +622,7 @@ def atomic_vs_usdn_react_lat(df_dict):
 
 
 # ----------------------------------------------------------------------------#
-def atomic_vs_usdn_react(df_dict):
-    """Plot atomic vs usdn react pdr and energy."""
-    # PDR
-    if 'usdn' in sim_type:
-        # copy dfs
-        df_node = df_dict['node'].copy().reset_index()
-        df_node = df_node[df_node['hops'] > 0]
-        df_sdn = df_dict['sdn'].copy()
-        df_sdn = df_sdn[((df_sdn['typ'] == 'FTQ') | (df_sdn['typ'] == 'FTS'))]
-
-        # separate ftq/fts
-        ftq_df = df_sdn.loc[(df_sdn['typ'] == 'FTQ')]
-        fts_df = df_sdn.loc[(df_sdn['typ'] == 'FTS')]
-        ftq_df = ftq_df.drop('in_t', 1).rename(columns={'out_t': 'time'})
-        fts_df = fts_df.drop('out_t', 1).rename(columns={'in_t': 'time'})
-        # join them together and add a node id column based n FTQ src
-        df = pd.concat([ftq_df, fts_df])
-        df['id'] = np.where(df['typ'] == 'FTQ', df['src'], df['dest'])
-        df = df.sort_values(['id', 'seq']).drop(['src', 'dest'], 1)
-        df = df.merge(df_node, left_on='id', right_on='id')  # merge hops col
-        df = df.pivot_table(index=['id', 'seq'],
-                            columns=['typ'],
-                            values=['time', 'hops'])
-        # df is now multilevel, drop unanswered FTQs, and calc lat
-        # df = df[np.isfinite(df['hops']['FTS'])]
-        df = df.drop(('hops', 'FTS'), 1)
-        df['react_time'] = (df['time']['FTS'] - df['time']['FTQ'])/1000
-        df.columns = df.columns.droplevel(0)
-        df.columns = ['hops', 'FTQ', 'FTS', 'react_time']
-        df['hops'] = df['hops'].astype(int)
-        df = df[(df['hops'] > 0) & (df['hops'] <= 5)]
-        df['drpd'] = np.where(df['react_time'].isnull(), True, False)
-        print(df)
-    elif 'atomic' in sim_type:
-        df = df_dict['atomic-op'].copy()
-        df = df[df['op_type'] == 'RACT']
-        df['react_time'] = df['c_time'].astype(int)
-        df = df[df['hops'] != 0]
-        df['drpd'] = np.where(df['react_time'] == 0, True, False)
-        print(df)
-    else:
-        raise Exception('ERROR: Unknown types!')
-
-    df_pdr = df.groupby('hops')['drpd'] \
-               .apply(lambda x: ratio(len(x), x.sum()))
-    df_pdr = df_pdr.groupby('hops')           \
-                   .apply(lambda x: x.mean()) \
-                   .reset_index()             \
-                   .set_index('hops')
-    x = df_pdr.index.tolist()
-    y = df_pdr['drpd'].tolist()
-    cpplot.plot_bar(df_pdr, 'atomic_vs_usdn_react_pdr', sim_dir, x, y,
-                    xlabel='Hops', ylabel='End-to-end PDR (%)')
-
-    # Energy
-    if 'usdn' in sim_type:
-        df_node = df_dict['node'].copy().reset_index()
-        df = df_dict['pow'].copy().reset_index()
-        df = df.merge(df_node, left_on='id', right_on='id')  # merge hops col
-        df = df[(df['hops'] > 0) & (df['hops'] <= 5)]
-        df = df.rename(columns={'all_radio': 'all_rdc'})
-        g = df.groupby('hops')
-        data = {}
-        for k, v in g:
-            data[k] = v.groupby('id').last()['all_rdc'].mean()
-
-    elif 'atomic' in sim_type:
-        df = df_dict['atomic-energy'].copy()
-        df = df[df['op_type'] == 'RACT']
-        df = df[df['hops'] != 0]
-        g = df.groupby('hops')
-        data = {}
-        for k, v in g:
-            data[k] = v.groupby('id').last()['all_rdc'].mean()
-    else:
-        raise Exception('ERROR: Unknown types!')
-
-    x = data.keys()
-    y = data.values()
-
-    cpplot.plot_bar(df, 'atomic_vs_usdn_react_energy', sim_dir, x, y,
-                    xlabel='Hops', ylabel='Radio Duty Cycle (%)')
-
-
-# ----------------------------------------------------------------------------#
-def atomic_vs_usdn_configure_lat(df_dict):
-    """Plot atomic vs usdn react times."""
-    # parse the df
-    if 'usdn' in sim_type:
-        # get dfs
-        df_node = df_dict['node'].copy().reset_index()
-        df_sdn = df_dict['sdn'].copy()
-        # take only NSU and drop any dropped packets
-        df = df_sdn[(df_sdn['typ'] == 'FTS') & (df_sdn['drpd'] == 0)]
-        df = df.rename(columns={'lat': 'conf_time'})
-        df = df.merge(df_node, left_on='dest', right_on='id')  # merge hops col
-        df = df[(df['hops'] > 0) & (df['hops'] <= 5)]
-    elif 'atomic' in sim_type:
-        df = df_dict['atomic-op'].copy()
-        df = df[df['op_type'] == 'CONF']
-        df['conf_time'] = df['c_time'].astype(int)
-        df = df[df['conf_time'] != 0]
-        df = df[df['hops'] != 0]
-    else:
-        raise Exception('ERROR: Unknown sim type!')
-
-    df = df.pivot_table(index=df.groupby('hops').cumcount(),
-                        columns=['hops'],
-                        values='conf_time')
-
-    x = list(df.columns.values)  # x ticks are the column headers
-    #  BOX
-    # y = np.column_stack(df.transpose().values.tolist())  # need a list
-    # cpplot.plot_box(df, 'atomic_vs_usdn_react_lat', sim_dir, x, y,
-    #                 xlabel='Hops', ylabel='End-to-end delay (ms)')
-    #  LINE
-    y = df.mean()
-    cpplot.plot_line(df, 'atomic_vs_usdn_configure_lat', sim_dir, x, y,
-                     xlabel='Hops', ylabel='End-to-end delay (ms)')
-
-
-# ----------------------------------------------------------------------------#
-def atomic_vs_usdn_configure(df_dict):
-    """Plot atomic vs usdn configure pdr and energy."""
-    # PDR
-    if 'usdn' in sim_type:
-        # get dfs
-        df_node = df_dict['node'].copy().reset_index()
-        df_sdn = df_dict['sdn'].copy()
-        # take only NSU and drop any dropped packets
-        df = df_sdn[(df_sdn['typ'] == 'FTS')]
-        df = df.rename(columns={'lat': 'conf_time'})
-        df = df.merge(df_node, left_on='dest', right_on='id')  # merge hops col
-        df = df[(df['hops'] > 0) & (df['hops'] <= 5)]
-        print(df)
-    elif 'atomic' in sim_type:
-        df = df_dict['atomic-op'].copy()
-        df = df[df['op_type'] == 'CONF']
-        df['react_time'] = df['c_time'].astype(int)
-        df = df[df['hops'] != 0]
-        df['drpd'] = np.where(df['react_time'] == 0, True, False)
-        print(df)
-    else:
-        raise Exception('ERROR: Unknown types!')
-
-    df_pdr = df.groupby('hops')['drpd'] \
-               .apply(lambda x: ratio(len(x), x.sum()))
-    df_pdr = df_pdr.groupby('hops')           \
-                   .apply(lambda x: x.mean()) \
-                   .reset_index()             \
-                   .set_index('hops')
-    x = df_pdr.index.tolist()
-    y = df_pdr['drpd'].tolist()
-    cpplot.plot_bar(df_pdr, 'atomic_vs_usdn_configure_pdr', sim_dir, x, y,
-                    xlabel='Hops', ylabel='End-to-end PDR (%)')
-
-    # Energy
-    if 'usdn' in sim_type:
-        df_node = df_dict['node'].copy().reset_index()
-        df = df_dict['pow'].copy().reset_index()
-        df = df.merge(df_node, left_on='id', right_on='id')  # merge hops col
-        df = df[(df['hops'] > 0) & (df['hops'] <= 5)]
-        df = df.rename(columns={'all_radio': 'all_rdc'})
-        g = df.groupby('hops')
-        data = {}
-        for k, v in g:
-            data[k] = v.groupby('id').last()['all_rdc'].mean()
-
-    elif 'atomic' in sim_type:
-        df = df_dict['atomic-energy'].copy()
-        df = df[df['op_type'] == 'CONF']
-        df = df[df['hops'] != 0]
-        g = df.groupby('hops')
-        data = {}
-        for k, v in g:
-            data[k] = v.groupby('id').last()['all_rdc'].mean()
-    else:
-        raise Exception('ERROR: Unknown types!')
-
-    x = data.keys()
-    y = data.values()
-
-    cpplot.plot_bar(df, 'atomic_vs_usdn_configure_energy', sim_dir, x, y,
-                    xlabel='Hops', ylabel='Radio Duty Cycle (%)')
-
-
-# ----------------------------------------------------------------------------#
-def atomic_vs_usdn_collect_lat(df_dict):
+def atomic_vs_usdn_lat(df_dict):
     """Plot atomic vs usdn collect times."""
     if 'usdn' in sim_type:
         # copy dfs
@@ -847,15 +648,15 @@ def atomic_vs_usdn_collect_lat(df_dict):
                         values='collect_time')
     x = list(df.columns.values)  # x ticks are the column headers
     # y = np.column_stack(df.transpose().values.tolist())  # need a list
-    # cpplot.plot_box(df, 'atomic_vs_usdn_collect_lat', sim_dir, x, y,
+    # cpplot.plot_box(df, 'atomic_vs_usdn_lat', sim_dir, x, y,
     #                 xlabel='Hops', ylabel='End-to-end delay (ms)')
     y = df.mean()
-    cpplot.plot_line(df, 'atomic_vs_usdn_collect_lat', sim_dir, x, y,
+    cpplot.plot_line(df, 'atomic_vs_usdn_lat', sim_dir, x, y,
                      xlabel='Hops', ylabel='End-to-end delay (ms)')
 
 
 # ----------------------------------------------------------------------------#
-def atomic_vs_usdn_collect(df_dict):
+def atomic_vs_usdn(df_dict):
     """Plot atomic vs usdn collect pdr and energy."""
     # PDR
     if 'usdn' in sim_type:
@@ -895,25 +696,16 @@ def atomic_vs_usdn_collect(df_dict):
         df = df.merge(df_node, left_on='id', right_on='id')  # merge hops col
         df = df[(df['hops'] > 0) & (df['hops'] <= 5)]
         df = df.rename(columns={'all_radio': 'all_rdc'})
-        g = df.groupby('hops')
-        data = {}
-        for k, v in g:
-            # ignore the timesync (0 hops)
-            if(k > 0):
-                data[k] = v.groupby('id').last()['all_rdc'].mean()
-
     elif 'atomic' in sim_type:
         df = df_dict['atomic-energy'].copy()
         df = df[df['op_type'] == 'CLCT']
         df = df[df['hops'] != 0]
-        g = df.groupby('hops')
-        data = {}
-        for k, v in g:
-            # ignore the timesync (0 hops)
-            if(k > 0):
-                data[k] = v.groupby('id').last()['all_rdc'].mean()
     else:
         raise Exception('ERROR: Unknown types!')
+    g = df.groupby('hops')
+    data = {}
+    for k, v in g:
+        data[k] = v.groupby('id').last()['all_rdc'].mean()
 
     x = data.keys()
     y = data.values()

@@ -86,24 +86,27 @@ def set_fig_and_save(fig, ax, data, desc, dir, **kwargs):
     ylim = kwargs['ylim'] if 'ylim' in kwargs else None
     xlabel = kwargs['xlabel'] if 'xlabel' in kwargs else ''
     ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
+
+    # set y limits
+    ax.set_ylim(ylim)
     # set axis' labels
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    # set y limits
-    if ylim is not None:
-        ax.set_ylim(ylim)
+
     # Remove top axes and right axes ticks
     ax.get_xaxis().tick_bottom()
     ax.get_yaxis().tick_left()
     # tight layout
     fig.set_tight_layout(True)
+
     # save  data for post compare
     if data is not None:
         pickle.dump(data, open(dir + desc + '.pkl', 'w'))
-
-    # save figure
+    # save ax for post compare
+    pickle.dump(ax, open(dir + 'ax_' + desc + '.pkl', 'w+'))
+    # save pdf of figure plus the figure itself
     fig.savefig(dir + 'fig_' + desc + '.pdf', bbox_inches="tight")
-    pickle.dump(ax, open('ax_' + dir + desc + '.pkl', 'w'))
+
     # with open('myplot.pkl','rb') as fid:
     # ax = pickle.load(fid)
 
@@ -260,20 +263,19 @@ def plot_line(df, desc, dir, x, y, **kwargs):
     color = kwargs['color'] if 'color' in kwargs else color
     marker = kwargs['marker'] if 'marker' in kwargs else 's'
     ls = kwargs['ls'] if 'ls' in kwargs else '-'
+    lw = kwargs['lw'] if 'lw' in kwargs else 2.0
     xlabel = kwargs['xlabel'] if 'xlabel' in kwargs else ''
     ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
-    label = kwargs['label'] if 'label' in kwargs else ylabel
+    # label = kwargs['label'] if 'label' in kwargs else ylabel
 
     # set xticks
     xticks = np.arange(min(x), max(x)+1, steps)
 
     # plot
     fig, ax = plt.subplots(figsize=(8, 6))
-    ax.errorbar(xticks, y, errors, color=color, marker=marker,
-                ls=ls, lw=2.0)
+    ax.errorbar(xticks, y, errors, color=color, marker=marker, ls=ls, lw=lw)
 
-    # legend
-    ax.legend(label, loc=2)
+    # ax.legend(label, loc=2)
     # save figure
     data = {'x': x, 'y': y, 'errors': errors,
             'type': 'line',

@@ -177,7 +177,10 @@ def main():
     # analyze the generated results
     if int(args.comp) and compare is not None:
         print('**** Compare plots in dir: ' + args.out)
-        cpcomp.compare(args.out, compare['sims'], compare['plots'])
+        cpcomp.compare(args.out,  # directory
+                       compare['sims'],
+                       # {compare['sims']: compare['labels']},  # sims + labels
+                       compare['plots'])  # plots to compare
 
 
 # ----------------------------------------------------------------------------#
@@ -255,6 +258,7 @@ def run(contiki, target, log, wd, csc, outdir, args, simname):
     subprocess.call(cmd, shell=True)
     print('**** Copy contiki log into simulation directory')
     # Copy contiki ouput log file and prefix the simname
+    # TODO: can we instruct cooja to write to a new log each time?
     simlog = outdir + simname + '.log'
     contikilog = contiki + log
     shutil.copyfile(contikilog, simlog)

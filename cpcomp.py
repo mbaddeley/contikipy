@@ -81,7 +81,7 @@ def search_dirs(rootdir, simlist, plottypes):
                         found = False
                         print('  ... Scanning \"' + root + '/' + dir + '/\"')
                         for f in os.listdir(os.path.join(root, dir)):
-                            if (plot + '.pkl') in f:
+                            if (plot + '.pkl') == f:
                                 print('  - found ' + plot + '.pkl in '
                                       + dir + '!')
                                 d = pickle.load(open(os.path.join(root,

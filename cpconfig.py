@@ -2,6 +2,8 @@
 """Module allows parsing of the yaml config."""
 from itertools import product
 
+from pprint import pprint
+
 
 def TUPLES(config, key):
     """Turn a dict into a k,v tuple."""
