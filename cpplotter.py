@@ -14,9 +14,9 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
 plt.rc('font', family='sans-serif', weight='bold')
 # plt.rc('text', usetex=True)
 # plt.rc('text.latex', preamble='\\usepackage{sfmath}')
-plt.rc('xtick', labelsize=18)
-plt.rc('ytick', labelsize=18)
-plt.rc('axes', labelsize=18, labelweight='bold')
+plt.rc('xtick', labelsize=20)
+plt.rc('ytick', labelsize=20)
+plt.rc('axes', labelsize=20, labelweight='bold')
 plt.rc('legend', fontsize=14)
 
 plt.style.use('seaborn-deep')
@@ -103,6 +103,9 @@ def set_fig_and_save(fig, ax, data, desc, dir, **kwargs):
 
     # save figure
     fig.savefig(dir + 'fig_' + desc + '.pdf', bbox_inches="tight")
+    pickle.dump(ax, open('ax_' + dir + desc + '.pkl', 'w'))
+    # with open('myplot.pkl','rb') as fid:
+    # ax = pickle.load(fid)
 
     # close all open figs
     plt.close('all')
@@ -131,7 +134,7 @@ def plot_hist(df, desc, dir, x, y, ylim=None, **kwargs):
     ax.set_xticks(np.linspace(bins[0], bins[len(bins)-1], 5))
     # ax.legend_.remove()
 
-    data = {'x': x, 'y': y,
+    data = {'x': x, 'y': y, 'errors': None,
             'type': 'hist',
             'xlabel': xlabel,
             'ylabel': ylabel}
@@ -169,7 +172,7 @@ def plot_bar(df, desc, dir, x, y, ylim=None, **kwargs):
     if ylim is not None:
         ax.set_ylim(ylim)
 
-    data = {'x': x, 'y': y,
+    data = {'x': x, 'y': y, 'errors': None,
             'type': 'bar',
             'width': width,
             'xlabel': xlabel,
@@ -204,7 +207,7 @@ def plot_box(df, desc, dir, x, y, ylim=None, **kwargs):
     bp = ax.boxplot(y, showfliers=False, patch_artist=True)
     set_box_colors(bp, 0)
 
-    data = {'x': x, 'y': y,
+    data = {'x': x, 'y': y, 'errors': None,
             'type': 'box',
             'width': width,
             'xlabel': xlabel,
@@ -232,7 +235,7 @@ def plot_violin(df, desc, dir, x, xlabel, y, ylabel):
                            df[df[x] == 3][y],
                            df[df[x] == 4][y]])
 
-    data = {'x': x, 'y': y,
+    data = {'x': x, 'y': y, 'errors': None,
             'type': 'violin',
             'xlabel': xlabel,
             'ylabel': ylabel}
@@ -266,61 +269,16 @@ def plot_line(df, desc, dir, x, y, **kwargs):
 
     # plot
     fig, ax = plt.subplots(figsize=(8, 6))
-    if errors is not None:
-        ax.errorbar(xticks, y, errors, color=color, marker=marker,
-                    ls=ls, lw=2.0)
-    else:
-        ax.plot(xticks, y, color=color, marker=marker, ls=ls, lw=2.0)
+    ax.errorbar(xticks, y, errors, color=color, marker=marker,
+                ls=ls, lw=2.0)
 
     # legend
     ax.legend(label, loc=2)
     # save figure
-    data = {'x': x, 'y': y,
+    data = {'x': x, 'y': y, 'errors': errors,
             'type': 'line',
             'xlabel': xlabel,
             'ylabel': ylabel}
     fig, ax = set_fig_and_save(fig, ax, data, desc, dir,
                                xlabel=xlabel, ylabel=ylabel)
-    return fig, ax
-
-
-# ----------------------------------------------------------------------------#
-def traffic_ratio(app_df, sdn_df, icmp_df, desc, dir, **kwargs):
-    """Plot traffic ratio."""
-    # FIXME: Make this generic
-    if sdn_df is not None:
-        sdn_cbr_len = (sdn_df['typ'] == 'NSU').sum()
-        sdn_vbr_len = (sdn_df['typ'] == 'FTQ').sum() + \
-                      (sdn_df['typ'] == 'FTS').sum()
-
-    rpl_icmp_count = (icmp_df['type'] == 155).sum()
-    if sdn_df is not None:
-        total = len(app_df) + sdn_cbr_len + sdn_vbr_len \
-                + rpl_icmp_count
-    else:
-        total = len(app_df) + rpl_icmp_count
-
-    app_ratio = len(app_df)/total  # get app packets as a % of total
-    if sdn_df is not None:
-        sdn_cbr_ratio = sdn_cbr_len/total  # get sdn packets as a % of total
-        sdn_vbr_ratio = sdn_vbr_len/total  # get sdn packets as a % of total
-    rpl_icmp_ratio = rpl_icmp_count/total
-
-    if sdn_df is not None:
-        df = pd.DataFrame([app_ratio, rpl_icmp_ratio,
-                           sdn_cbr_ratio, sdn_vbr_ratio],
-                          index=['App', 'RPL', 'SDN-CBR', 'SDN-VBR'],
-                          columns=['ratio'])
-    else:
-        df = pd.DataFrame([app_ratio, rpl_icmp_ratio],
-                          index=['App', 'RPL'],
-                          columns=['ratio'])
-    df.index.name = 'type'
-    fig, ax = plot_bar(df, desc, dir, x=df.index,
-                       y=df.ratio)
-    data = {'x': df.index, 'y': df.ratio}
-    set_fig_and_save(fig, ax, data, desc, dir,
-                     xlabel='Traffic type',
-                     ylabel='Ratio of total traffic')
-
     return fig, ax

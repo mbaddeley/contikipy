@@ -10,7 +10,7 @@ import re       # for regex
 import matplotlib.pyplot as plt  # general plotting
 import numpy as np               # number crunching
 # import seaborn as sns          # fancy plotting
-# import pandas as pd              # table manipulation
+# import pandas as pd            # table manipulation
 
 from pprint import pprint
 
@@ -157,21 +157,14 @@ def add_box(ax, artists, index, color, label, data):
 # ----------------------------------------------------------------------------#
 def add_line(ax, color, label, data, **kwargs):
     """Add data to bar plot."""
-    lw = 3.0
+    lw = 4.0
     marker = 's'
     x_min = min(data['x'])
     x_max = max(data['x'])
 
-    # get kwargs
-    errors = kwargs['errors'] if 'errors' in kwargs else None
-
-    if errors is not None:
-        ax.errorbar(data['x'], data['y'], 2,
-                    color=color, marker=marker, lw=lw, label=label,
-                    capsize=3)
-    else:
-        ax.plot(data['x'], data['y'],
-                color=color, marker=marker, lw=lw, label=label)
+    ax.errorbar(data['x'], data['y'], data['errors'],
+                color=color, marker=marker, lw=lw, label=label,
+                capsize=3)
 
     # Re-calculate the xticks
     ind = np.arange(x_min, x_max + 1, 1)

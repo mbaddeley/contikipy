@@ -624,14 +624,12 @@ def atomic_vs_usdn_react_lat(df_dict):
                         columns=['hops'],
                         values='react_time')
 
+    # min = df.min().tolist()
+    # max = df.max().tolist()
     x = list(df.columns.values)  # x ticks are the column headers
-    #  BOX
-    # y = np.column_stack(df.transpose().values.tolist())  # need a list
-    # cpplot.plot_box(df, 'atomic_vs_usdn_react_lat', sim_dir, x, y,
-    #                 xlabel='Hops', ylabel='End-to-end delay (ms)')
-    #  LINE
-    y = df.mean()
-    cpplot.plot_line(df, 'atomic_vs_usdn_react_lat', sim_dir, x, y,
+    y = df.mean()  # df.mode().transpose()[0]
+    e = None
+    cpplot.plot_line(df, 'atomic_vs_usdn_react_lat', sim_dir, x, y, errors=e,
                      xlabel='Hops', ylabel='End-to-end delay (ms)')
 
 
