@@ -201,8 +201,7 @@ def format_usdn_pow_data(df):
     # need to convert all our columns to numeric values from strings
     df = df.apply(pd.to_numeric, errors='ignore')
     # rearrage cols
-    df = df[['seqid', 'time',
-             'all_radio', 'radio', 'all_tx', 'tx', 'all_listen', 'listen']]
+    df = df[['all_rdc', 'rdc']]
 
     return df
 
@@ -396,12 +395,12 @@ def usdn_energy_v_hops(df_dict):
     hops = app_df[['src', 'hops']].groupby('src').agg(lambda x: mode(x)[0])
     pow_df = pow_df.join(hops['hops'].astype(int))
 
-    df = pow_df.groupby('hops')['all_radio']    \
+    df = pow_df.groupby('hops')['all_rdc']    \
                .apply(lambda x: x.mean()) \
                .reset_index()             \
                .set_index('hops')
     x = df.index.tolist()
-    y = df['all_radio'].tolist()
+    y = df['all_rdc'].tolist()
     cpplot.plot_bar(df, 'usdn_energy_v_hops', sim_dir, x, y,
                     xlabel='Hops',
                     ylabel='Radio duty cycle (%)')
@@ -695,7 +694,6 @@ def atomic_vs_usdn(df_dict):
         df = df_dict['pow'].copy().reset_index()
         df = df.merge(df_node, left_on='id', right_on='id')  # merge hops col
         df = df[(df['hops'] > 0) & (df['hops'] <= 5)]
-        df = df.rename(columns={'all_radio': 'all_rdc'})
     elif 'atomic' in sim_type:
         df = df_dict['atomic-energy'].copy()
         df = df[df['op_type'] == 'CLCT']

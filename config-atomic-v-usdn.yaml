@@ -26,7 +26,7 @@ formatters:
       regex: \s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<op_type>\w+)(?:\s*h:(?P<hops>\d+)|\s+p:\(\s*(?P<c_phase>\d+)|\/(?P<n_phases>\d+)\) |.*:\(\s*(?P<c_time>\d+)|\/(?P<op_duration>\d+))+.*?$
     # usdn
     - type:   pow
-      regex:  .*P \d+.\d+ (?P<seqid>\d+).*\(radio (?P<all_radio>\d+\W{1,2}\d+).* (?P<radio>\d+[.,-]{1,2}\d+).* (?P<all_tx>\d+[.,-]{1,2}\d+).* (?P<tx>\d+\W{1,2}\d+).* (?P<all_listen>\d+[.,-]{1,2}\d+).* (?P<listen>\d+[.,-]{1,2}\d+)
+      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*](?:\s*PW\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
     - type:   app
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<status>(TX|RX))\s+(?P<typ>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>[1-5])|\s+m:(?P<mac>\d+))+.*?$
     - type:   sdn
@@ -58,7 +58,7 @@ multiflow:
 # ----------------------------------------------------------------------------
 simulations:
   # 30 Node Atomic
-  - desc:           Atomic-SDN-2
+  - desc:           Atomic-SDN
     type:           atomic
     contiki:        /home/mike/Repos/atomic
     wd:             /home/mike/Repos/atomic/examples/atomic
@@ -128,8 +128,7 @@ simulations:
 compare:
   - sims:
     # which sims do we want to compare?
-    - Atomic-SDN-2
-    # - Atomic-SDN-2
+    - Atomic-SDN
     - uSDN-CSMA
     - uSDN-CONTIKIMAC
     # which plots do we want to compare?
