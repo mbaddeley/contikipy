@@ -2,7 +2,7 @@
 # ContikiPy
 # ----------------------------------------------------------------------------
 contiki: /home/mike/Repos/usdn
-wd:      /home/mike/Repos/usdn/examples/ipv6/sdn-udp
+wd:      /home/mike/Repos/usdn/examples/sdn
 fmt:     cooja
 log:     /tools/cooja/build/COOJA.testlog
 out:     /home/mike/Results/USDN
@@ -20,7 +20,7 @@ logtypes:
 formatters:
   dictionary:
     - type:   pow
-      regex:  .*P \d+.\d+ (?P<seqid>\d+).*\(radio (?P<all_radio>\d+\W{1,2}\d+).* (?P<radio>\d+[.,-]{1,2}\d+).* (?P<all_tx>\d+[.,-]{1,2}\d+).* (?P<tx>\d+\W{1,2}\d+).* (?P<all_listen>\d+[.,-]{1,2}\d+).* (?P<listen>\d+[.,-]{1,2}\d+)
+      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*](?:\s*PW\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
     - type:   app
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<status>(TX|RX))\s+(?P<typ>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>[1-5])|\s+m:(?P<mac>\d+))+.*?$
     - type:   sdn
@@ -81,33 +81,53 @@ multiflow:
 # ----------------------------------------------------------------------------
 simulations:
 # ----------------------------------------------------------------------------
-  # - desc:           RPL
-  #   makeargs:
-  #     MAC:          CSMA
-  #     SDN:          0
-  #   multiflow:      1_flow
-  #   plot:
-  #     - usdn_energy_v_hops        # Radio duty cycle vs hops
-  #     - usdn_pdr_v_hops           # Packet receive ratio vs hops
-  #     - usdn_latency_v_hops       # Hops vs e2e latency
-  #     - usdn_join_time            # DAG join time
-  #     - usdn_traffic_ratio        # RPL traffic ratio
-  #
-  - desc:           uSDN
+  - desc:           RPL
+    type:           usdn
     makeargs:
       MAC:          CSMA
-      SDN:          1
-      FTREFRESH:    1
-      FTSRETRY:     1
-      FORCENSU:     1
-      NSUFREQ:      600           # NSU frequency actually helps over 0 frequency
+      SDN:          0
+      MULTIFLOW:    1
     multiflow:      1_flow
+    regex:
+      - 'app'
+      - 'icmp'
+      - 'node'
+      - 'sdn'
+      - 'pow'
+      - 'join'
     plot:
       - usdn_energy_v_hops        # Radio duty cycle vs hops
       - usdn_pdr_v_hops           # Packet receive ratio vs hops
       - usdn_latency_v_hops       # Hops vs e2e latency
+      - usdn_join_time            # DAG join time
+      # - usdn_traffic_ratio        # RPL traffic ratio
+  #
+  - desc:           uSDN
+    type:           usdn
+    makeargs:
+      MAC:          CSMA
+      SDN:          1
+      FTREFRESH:    1
+      FTSRETRY:     0
+      FORCENSU:     1
+      FTLIFETIME:   300
+      NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
+      MULTIFLOW:    1
+    multiflow:      1_flow
+    regex:
+      - 'app'
+      - 'icmp'
+      - 'node'
+      - 'sdn'
+      - 'pow'
+      - 'join'
+    plot:
+      # - usdn_traffic_ratio        # SDN traffic ratio
+      - usdn_energy_v_hops        # Radio duty cycle vs hops
+      - usdn_pdr_v_hops           # Packet receive ratio vs hops
+      - usdn_latency_v_hops       # Hops vs e2e latency
       - usdn_join_time            # SDN controller join time
-      - usdn_traffic_ratio        # SDN traffic ratio
+
 
 # ----------------------------------------------------------------------------
   # - desc:           SDN-NSU-10
@@ -210,25 +230,25 @@ simulations:
 # ----------------------------------------------------------------------------
 compare:
 # ----------------------------------------------------------------------------
-  # - sims:
-  #   - SDN
-  #   - RPL
-  #   plots:
-  #     - usdn_energy_v_hops
-  #     - usdn_pdr_v_hops
-  #     - usdn_latency_v_hops
-  #     - usdn_join_time
+  - sims:
+    - uSDN
+    - RPL
+    plots:
+      - usdn_energy_v_hops
+      - usdn_pdr_v_hops
+      - usdn_latency_v_hops
+      - usdn_join_time
 
 # ----------------------------------------------------------------------------
-  - sims:
-    -  SDN-NSU-10
-    -  SDN-NSU-30
-    -  SDN-NSU-60
-    plots:
-    - usdn_energy_v_hops
-    - usdn_pdr_v_hops
-    - usdn_latency_v_hops
-    - usdn_join_time
+  # - sims:
+  #   -  SDN-NSU-10
+  #   -  SDN-NSU-30
+  #   -  SDN-NSU-60
+  #   plots:
+  #   - usdn_energy_v_hops
+  #   - usdn_pdr_v_hops
+  #   - usdn_latency_v_hops
+  #   - usdn_join_time
 
 # ----------------------------------------------------------------------------
   # - sims:

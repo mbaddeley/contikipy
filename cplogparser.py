@@ -149,7 +149,8 @@ def plot_data(desc, type, dir, df_dict, plots):
                 if all(k in dfs for k in df_list):
                     atomic_function_map[plot](dfs)
                 else:
-                    raise Exception('ERROR: Required DFs not in dictionary!')
+                    raise Exception('ERROR: Required DFs not in dictionary ' +
+                                    'for plot [' + plot + ']')
             else:
                 raise Exception('ERROR: No plot function!')
         except Exception as e:
@@ -516,7 +517,8 @@ def usdn_traffic_ratio(df_dict):
     except Exception:
             traceback.print_exc()
             sys.exit(0)
-    cpplot.traffic_ratio(app_df, sdn_df, icmp_df, 'traffic_ratio', sim_dir)
+
+    cpplot.plot_bar(app_df, sdn_df, icmp_df, 'traffic_ratio', sim_dir)
 
 
 # ----------------------------------------------------------------------------#

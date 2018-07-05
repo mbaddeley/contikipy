@@ -282,8 +282,8 @@ def compare_bar(datasets, **kwargs):
         index += 1
 
     # add legend
-    ax.legend(labels, loc='best')
-    # ax.legend(labels, loc='best', bbox_to_anchor=(1, 1))
+    # ax.legend(labels, loc='best')
+    ax.legend(labels, loc='best', bbox_to_anchor=(1, 1))
     # ax.legend(labels, loc='lower center', ncol=n_plots)
     return fig, ax
 

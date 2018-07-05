@@ -88,9 +88,10 @@ simulations:
       FTREFRESH:    1
       FTSRETRY:     0
       FORCENSU:     1
-      FTLIFETIME:   0xFFFF
+      FTLIFETIME:   300
       NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
-      MULTIFLOW:    0
+      MULTIFLOW:    1
+    multiflow:      1_flow
     regex:
       - 'node'
       - 'sdn'
@@ -110,10 +111,10 @@ simulations:
       FTREFRESH:    1
       FTSRETRY:     0
       FORCENSU:     1
-      FTLIFETIME:   0xFFFF
+      FTLIFETIME:   300
       NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
-      MULTIFLOW:    0
-    # multiflow:      1_flow # causes issues with unknown #defines!!!
+      MULTIFLOW:    1
+    multiflow:      1_flow
     regex:
       - 'node'
       - 'sdn'
