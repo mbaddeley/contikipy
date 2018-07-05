@@ -1,11 +1,11 @@
 # ----------------------------------------------------------------------------
 # ContikiPy
 # ----------------------------------------------------------------------------
-path:    /home/mike/Repos/atomic
-wd:      /examples/atomic
+contiki: /home/mike/Repos/atomic
+wd:      /home/mike/Repos/atomic/examples/atomic
 fmt:     cooja
 log:     /tools/cooja/build/COOJA.testlog
-out:     /home/mike/Results/ATOMIC
+out:     /home/mike/Results/ATOMIC-test
 csc:     atomic-30-node.csc
 target:  sky
 
@@ -15,12 +15,15 @@ target:  sky
 # ----------------------------------------------------------------------------
 logtypes:
   - type:    cooja
-    fmt_re:  ^\s*(?P<time>\d+):\s+(?P<id>\d+):\s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<op_type>\w+)
+    fmt_re:  '^\s*(?P<time>\d+):\s+(?P<id>\d+):'
 
 formatters:
   dictionary:
-    - type:  atomic
-      regex: (?:\s*h:(?P<hops>\d+)|\s+np:(?P<n_phases>\d+)|\s+gon:(?P<gon>\d+)|\s+ron:(?P<ron>\d+)|\s+con:(?P<con>\d+)\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
+    # atomic
+    - type:  atomic-energy
+      regex: \s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<op_type>\w+)(?:\s*h:(?P<hops>\d+)|\s+np:(?P<n_phases>\d+)|\s+gon:(?P<gon>\d+)|\s+ron:(?P<ron>\d+)|\s+con:(?P<con>\d+)\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
+    - type:  atomic-op
+      regex: \s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<op_type>\w+)(?:\s*h:(?P<hops>\d+)|\s+p:\(\s*(?P<c_phase>\d+)|\/(?P<n_phases>\d+)\) |.*:\(\s*(?P<c_time>\d+)|\/(?P<op_duration>\d+))+.*?$
 
 # ----------------------------------------------------------------------------
 # Simulations
@@ -30,33 +33,46 @@ simulations:
   - desc:     ATM_40
     csc:      atomic-40-node.csc
     makeargs:
+      ATM_CONF_MAX_NODES:         40
+      ATM_CONF_COLLECT_ALL_NODES: 1
+      ATM_CONF_COLLECT_FREQ:      5
+      ATM_CONF_REACT_FREQ:        0
+      ATM_CONF_CONFIGURE_FREQ:    0
     plot:
       - atomic_energy_v_hops
       - atomic_op_times
   # 30 Node
-  - desc:     ATM_30
-    csc:      atomic-30-node.csc
-    makeargs:
-    plot:
-      - atomic_energy_v_hops
-      - atomic_op_times
-  # 20 Node
-  - desc:    ATM_20
-    csc:     atomic-20-node.csc
-    makeargs:
-    plot:
-      - atomic_energy_v_hops
-      - atomic_op_times
+  # - desc:     ATM_30
+  #   csc:      atomic-30-node.csc
+  #   makeargs:
+  #     ATM_CONF_MAX_NODES:       30
+  #     ATM_CONF_COLLECT_FREQ:    5
+  #     ATM_CONF_REACT_FREQ:      0
+  #     ATM_CONF_CONFIGURE_FREQ:  0
+  #   plot:
+  #     - atomic_energy_v_hops
+  #     - atomic_op_times
+  # # 20 Node
+  # - desc:    ATM_20
+  #   csc:     atomic-20-node.csc
+  #   makeargs:
+  #     ATM_CONF_MAX_NODES:       20
+  #     ATM_CONF_COLLECT_FREQ:    5
+  #     ATM_CONF_REACT_FREQ:      0
+  #     ATM_CONF_CONFIGURE_FREQ:  0
+  #   plot:
+  #     - atomic_energy_v_hops
+  #     - atomic_op_times
 
 # ----------------------------------------------------------------------------
-# analysis (comparison) config
+# compare (comparison) config
 # ----------------------------------------------------------------------------
-analysis:
+compare:
   - sims:
     # which sims do we want to compare?
     - ATM_20
     - ATM_30
-    # - ATM_40
+    - ATM_40
     # which plots do we want to compare?
     plots:
       - atomic_energy_v_hops

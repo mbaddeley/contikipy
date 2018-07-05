@@ -2,10 +2,7 @@
 """Module allows parsing of the yaml config."""
 from itertools import product
 
-import yaml
-
-# import yaml config
-cfg = yaml.load(open("config-usdn.yaml", 'r'))
+from pprint import pprint
 
 
 def TUPLES(config, key):
@@ -64,40 +61,46 @@ def DICTLIST_TO_STRINGLIST(D):
 class Config:
     """Config class."""
 
+    cfg = None
     MFLOWS = {}
     SIMS = []
 
-    # format multiflow makeargs
-    if 'multiflow' in cfg:
-        for config in cfg['multiflow']:
-            index = config['id']
-            # format the makeargs as strings
-            MFLOWS[index] = ''
-            # number of flow applications
-            MFLOWS[index] = (DICT_TO_STRING({'NUM_APPS': config['NUM_APPS']}))
-            # the rest of the makeargs for this flow
-            MFLOWS[index] = " ".join([MFLOWS[index],
-                                      DICT_TO_STRING(config['flows'])])
+    def __init__(self, cfg):
+        """Get YAML config and find simulations."""
+        self.cfg = cfg
 
-    # format simulation makeargs
-    if 'simulations' in cfg:
-        for sim in cfg['simulations']:
-            # format the makeargs as strings
-            if 'makeargs' in sim and sim['makeargs'] is not None:
-                sim['makeargs'] = DICT_TO_STRING(sim['makeargs'])
-            if 'multiflow' in cfg:
-                # get multiflow args and add them to makeargs
-                sim['makeargs'] = " ".join([sim['makeargs'],
-                                            MFLOWS[sim['multiflow']]])
-            # add to the sims
-            SIMS.append(sim)
+        # format multiflow makeargs
+        if 'multiflow' in self.cfg:
+            for config in self.cfg['multiflow']:
+                index = config['id']
+                # format the makeargs as strings
+                self.MFLOWS[index] = ''
+                # number of flow applications
+                self.MFLOWS[index] = (DICT_TO_STRING(
+                                      {'NUM_APPS': config['NUM_APPS']}))
+                # the rest of the makeargs for this flow
+                self.MFLOWS[index] = " ".join([self.MFLOWS[index],
+                                               DICT_TO_STRING(
+                                                   config['flows'])])
+        # format simulation makeargs
+        if 'simulations' in cfg:
+            for sim in cfg['simulations']:
+                # format the makeargs as strings
+                if 'makeargs' in sim and sim['makeargs'] is not None:
+                    sim['makeargs'] = DICT_TO_STRING(sim['makeargs'])
+                if 'multiflow' in sim and 'multiflow' in cfg:
+                    # get multiflow args and add them to makeargs
+                    sim['makeargs'] = " ".join([sim['makeargs'],
+                                                self.MFLOWS[sim['multiflow']]])
+                # add to the sims
+                self.SIMS.append(sim)
 
     def simconfig(self):
         """Sim configuration."""
-        if 'simulations' in cfg:
+        if 'simulations' in self.cfg:
             return self.SIMS
 
-    def analysisconfig(self):
+    def compareconfig(self):
         """Analysis configuration."""
-        if 'analysis' in cfg:
-            return cfg['analysis'][0]
+        if 'compare' in self.cfg:
+            return self.cfg['compare'][0]
