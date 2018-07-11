@@ -184,12 +184,13 @@ def format_atomic_op_data(df):
     df.set_index('epoch', inplace=True)
     # rearrage other cols (and drop level/time)
     df = df[['id', 'module', 'op_type', 'hops', 'c_phase', 'n_phases',
-             'c_time', 'op_duration']]
+             'c_time', 'op_duration', 'active']]
     # dump anything that isn't an OP log
     df = df[df['module'] == 'OP']
-    # convert phase cols to ints
+    # convert to ints
     df['c_phase'] = df['c_phase'].astype(int)
     df['n_phases'] = df['n_phases'].astype(int)
+    df['active'] = df['active'].astype(int)
     return df
 
 
@@ -654,7 +655,7 @@ def atomic_vs_usdn_lat(df_dict):
     y = df.mean()
     cpplot.plot_line(df, 'atomic_vs_usdn_lat', sim_dir, x, y,
                      xlabel='Hops', ylabel='End-to-end delay (ms)')
-
+    print('  ... LAT mean: ' + str(np.mean(y)))
 
 # ----------------------------------------------------------------------------#
 def atomic_vs_usdn(df_dict):
@@ -675,7 +676,8 @@ def atomic_vs_usdn(df_dict):
         df = df[df['op_type'] == 'CLCT']
         df['collect_time'] = df['c_time'].astype(int)
         df = df[df['hops'] != 0]
-        df['drpd'] = np.where(df['collect_time'] == 0, True, False)
+        df['drpd'] = np.where((df['active'] == 1) & (df['collect_time'] == 0),
+                              True, False)
     else:
         raise Exception('ERROR: Unknown types!')
 
@@ -685,10 +687,12 @@ def atomic_vs_usdn(df_dict):
                    .apply(lambda x: x.mean()) \
                    .reset_index()             \
                    .set_index('hops')
+
     x = df_pdr.index.tolist()
     y = df_pdr['drpd'].tolist()
     cpplot.plot_bar(df_pdr, 'atomic_vs_usdn_collect_pdr', sim_dir, x, y,
                     xlabel='Hops', ylabel='End-to-end PDR (%)')
+    print('  ... PDR mean: ' + str(np.mean(y)))
 
     # Energy
     if 'usdn' in sim_type:
@@ -712,3 +716,4 @@ def atomic_vs_usdn(df_dict):
 
     cpplot.plot_bar(df, 'atomic_vs_usdn_collect_energy', sim_dir, x, y,
                     xlabel='Hops', ylabel='Radio Duty Cycle (%)')
+    print('  ... RDC mean: ' + str(np.mean(y)))

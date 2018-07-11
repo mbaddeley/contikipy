@@ -5,7 +5,7 @@ contiki:
 wd:
 fmt:     cooja
 log:     /tools/cooja/build/COOJA.testlog
-out:     /home/mike/Results/ATOMIC_vs_USDN_collect
+out:     /home/mike/Results/ATOMIC_vs_USDN
 csc:
 target:
 
@@ -23,7 +23,7 @@ formatters:
     - type:  atomic-energy
       regex: \s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<op_type>\w+)(?:\s*h:(?P<hops>\d+)|\s+np:(?P<n_phases>\d+)|\s+gon:(?P<gon>\d+)|\s+ron:(?P<ron>\d+)|\s+con:(?P<con>\d+)\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
     - type:  atomic-op
-      regex: \s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<op_type>\w+)(?:\s*h:(?P<hops>\d+)|\s+p:\(\s*(?P<c_phase>\d+)|\/(?P<n_phases>\d+)\) |.*:\(\s*(?P<c_time>\d+)|\/(?P<op_duration>\d+))+.*?$
+      regex: \s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<op_type>\w+)(?:\s*h:(?P<hops>\d+)|\scp:\s*(?P<c_phase>\d+)|\s+tp:\s*(?P<n_phases>\d+)|\s+dur:\s*(?P<c_time>\d+)|\s+tdur:\s*(?P<op_duration>\d+)|\s+an:(?P<active>\d+))+.*?$
     # usdn
     - type:   pow
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*](?:\s*PW\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
@@ -65,8 +65,10 @@ simulations:
     csc:            atomic-30-node.csc
     makeargs:
       ATM_CONF_MAX_NODES:         30
+      ATM_CONF_MAX_EMPTY_STOP:    1
       ATM_CONF_COLLECT_ALL_NODES: 0
       ATM_CONF_REACT_ALL_NODES:   0
+      ATM_CONF_OP_FREQ:           0
       ATM_CONF_COLLECT_FREQ:      60
       ATM_CONF_REACT_FREQ:        0
       ATM_CONF_CONFIGURE_FREQ:    0
@@ -80,7 +82,7 @@ simulations:
   - desc:           uSDN-CSMA
     type:           usdn
     contiki:        /home/mike/Repos/usdn
-    wd:             /home/mike/Repos/usdn/examples/ipv6/sdn-udp
+    wd:             /home/mike/Repos/usdn/examples/sdn
     csc:            usdn-30-node.csc
     makeargs:
       MAC:          CSMA
@@ -103,7 +105,7 @@ simulations:
   - desc:           uSDN-CONTIKIMAC
     type:           usdn
     contiki:        /home/mike/Repos/usdn
-    wd:             /home/mike/Repos/usdn/examples/ipv6/sdn-udp
+    wd:             /home/mike/Repos/usdn/examples/sdn
     csc:            usdn-30-node.csc
     makeargs:
       MAC:          CONTIKIMAC
