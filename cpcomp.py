@@ -104,43 +104,37 @@ def search_dirs(rootdir, simlist, plottypes):
     return plotdata
 
 
-def calc_plot_pos(plot_index, x_max, x_len, gap=0.35, width=0.35):
+def calc_plot_pos(total_plots, plot_index, x_max, x_len, gap=0.35, width=0.35):
     """Calculate an array of x positions based on plot index."""
-    n = plot_index-1
-    start = n*width
-    end = x_max + start
-    step = ((end - start)) / x_len
-    ind = np.arange(start, end, step).tolist()
-    i = 0
-    for x in ind:
-        ind[i] = ind[i] + i*gap
-        i = i+1
+    ind = []
+    i = plot_index-1
+    start = gap
+    for n in range(x_len):
+        pos = start + n*gap + i*width + n*(total_plots*width)
+        ind.append(pos)
     return ind
 
 
-def calc_xtick_pos(plot_index, x_max, x_len, gap=0.35, width=0.35):
+def calc_xtick_pos(total_plots, plot_index, x_max, x_len,
+                   gap=0.35, width=0.35):
     """Calculate the midpoint positions for xticks, based on plot index."""
-    n = plot_index-1
-    start = width*(n)/plot_index + gap*(n)/plot_index
-    end = x_max + start
-    step = (end - start) / x_len
-    ind = np.arange(start, end, step).tolist()
-    i = 0
-    for x in ind:
-        ind[i] = ind[i] + i*gap - gap/plot_index
-        i = i+1
+    ind = []
+    start = gap
+    for n in range(x_len):
+        pos = start/2 + n*gap + n*(total_plots*width) + (total_plots*width)/2
+        ind.append(pos)
     return ind
 
 
 # ----------------------------------------------------------------------------#
-def add_box(ax, artists, index, color, label, data):
+def add_box(ax, artists, total, index, color, label, data):
     """Add data to box plot."""
     width = 0.35
     notch = False
     fliers = False
     x_max = max(data['x'])
     x_len = len(data['x'])
-    ind = calc_plot_pos(index, x_max, x_len)
+    ind = calc_plot_pos(total, index, x_max, x_len)
     bp = ax.boxplot(data['y'],
                     positions=ind,
                     notch=notch,
@@ -151,7 +145,7 @@ def add_box(ax, artists, index, color, label, data):
     cpplot.set_box_colors(bp, index-1)
     artists.append(bp["boxes"][0])
     # Re-calculate the xticks
-    ind = calc_xtick_pos(index, x_max, x_len)
+    ind = calc_xtick_pos(total, index, x_max, x_len)
     ax.set_xticks(ind)
     ax.set_xticklabels(data['x'])
 
@@ -174,7 +168,7 @@ def add_line(ax, color, label, data, **kwargs):
 
 
 # ----------------------------------------------------------------------------#
-def add_bar(ax, index, color, label, data):
+def add_bar(ax, total, index, color, label, data):
     """Add data to bar plot."""
     width = 0.35
     x_len = len(data['x'])
@@ -183,10 +177,10 @@ def add_bar(ax, index, color, label, data):
         x_max = max(data['x'])
     else:
         x_max = x_len  # if there's a string we use x_len for xticks
-    ind = calc_plot_pos(index, x_max, x_len)
+    ind = calc_plot_pos(total, index, x_max, x_len)
     ax.bar(ind, data['y'], width, color=color, label=label)
     # Re-calculate the xticks
-    ind = calc_xtick_pos(index, x_max, x_len)
+    ind = calc_xtick_pos(total, index, x_max, x_len)
     ax.set_xticks(ind)
     # convert xlabels to ints if they are floats
     xlabels = [str(int(x)) if isinstance(x, float) else x for x in data['x']]
@@ -239,7 +233,8 @@ def compare_box(datasets, **kwargs):
         # Set the color for this iteration color (cyclic)
         color = list(plt.rcParams['axes.prop_cycle'])[index-1]['color']
         # plot the box and add to the parent fig
-        add_box(ax, artists, index, color, data['label'], data['data'])
+        add_box(ax, artists, len(datasets), index, color,
+                data['label'], data['data'])
         # increment plot index
         index += 1
 
@@ -279,7 +274,7 @@ def compare_bar(datasets, **kwargs):
         # plot the bar and add to the parent fig
         data['data']['x'] = X[data['id']]
         data['data']['y'] = Y[data['id']]
-        add_bar(ax, index, color, data['label'], data['data'])
+        add_bar(ax, len(datasets), index, color, data['label'], data['data'])
         # increment plot index
         index += 1
 

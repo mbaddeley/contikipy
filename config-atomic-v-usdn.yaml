@@ -158,7 +158,7 @@ compare:
     - Atomic-SDN
     - uSDN-CSMA
     - uSDN-CONTIKIMAC
-    - uSDN-NULLMAC
+    # - uSDN-NULLMAC
     # which plots do we want to compare?
     plots:
       - atomic_vs_usdn_lat
