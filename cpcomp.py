@@ -6,6 +6,7 @@ import sys      # for exceptions
 import os       # for makedir
 import pickle   # for saving data
 import re       # for regex
+import traceback
 
 import matplotlib.pyplot as plt  # general plotting
 import numpy as np               # number crunching
@@ -76,19 +77,19 @@ def search_dirs(rootdir, simlist, plottypes):
             print('> Plot type: ' + plot + ' ...')
             # walk through directory structure
             for root, dirs, files in os.walk(rootdir):
-                for dir in sorted(dirs):
-                    if dir in simlist:
+                for sim in simlist:
+                    if sim in sorted(dirs):
                         found = False
-                        print('  ... Scanning \"' + root + '/' + dir + '/\"')
-                        for f in os.listdir(os.path.join(root, dir)):
+                        print('  ... Scanning \"' + root + '/' + sim + '/\"')
+                        for f in os.listdir(os.path.join(root, sim)):
                             if (plot + '.pkl') == f:
                                 print('  - found ' + plot + '.pkl in '
-                                      + dir + '!')
+                                      + sim + '!')
                                 d = pickle.load(open(os.path.join(root,
-                                                                  dir, f)))
-                                id = contains_int(dir)
+                                                                  sim, f)))
+                                id = contains_int(sim)
                                 plotdata[plot].append({'id': id,
-                                                       'label': dir,
+                                                       'label': sim,
                                                        'data': d})
                                 found = True
                         if not found:
@@ -96,9 +97,10 @@ def search_dirs(rootdir, simlist, plottypes):
                             raise Exception('ERROR: Can\'t find ' + plot +
                                             '.pkl!')
     except Exception as e:
+            traceback.print_exc()
             print(e)
             sys.exit(0)
-
+    # pprint(plotdata)
     return plotdata
 
 
@@ -355,7 +357,7 @@ def compare(dir, simlist, plottypes, **kwargs):
     for plot, datasets in plotdata.items():
         print('> Compare ' + str(len(datasets)) + ' datasets for ' + plot),
         # sort the datasets for each plot
-        datasets = sorted(datasets, key=lambda d: d['id'], reverse=False)
+        # datasets = sorted(datasets, key=lambda d: d['id'], reverse=False)
 
         n_plots = 0
 

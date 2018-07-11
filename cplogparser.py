@@ -657,6 +657,7 @@ def atomic_vs_usdn_lat(df_dict):
                      xlabel='Hops', ylabel='End-to-end delay (ms)')
     print('  ... LAT mean: ' + str(np.mean(y)))
 
+
 # ----------------------------------------------------------------------------#
 def atomic_vs_usdn(df_dict):
     """Plot atomic vs usdn collect pdr and energy."""
