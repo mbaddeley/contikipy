@@ -21,13 +21,14 @@ cfg = None
 def run_cooja(args, sim, outdir, makeargs, simname):
     """Run cooja."""
     try:
-        # check for working directory in the sim
+        # check for contiki directory in the sim
         if 'contiki' in sim:
             contiki = sim['contiki']
         elif 'contiki' in args and args.contiki:
             contiki = args.contiki
         else:
             raise Exception('ERROR: No path to contiki!')
+        # check for working directory in the sim
         if 'wd' in sim:
             wd = sim['wd']
         elif 'wd' in args and args.wd:
@@ -41,9 +42,14 @@ def run_cooja(args, sim, outdir, makeargs, simname):
             csc = args.csc
         else:
             raise Exception('ERROR: No csc file!')
+        # check for cooja log in the sim
+        if 'log' in sim:
+            log = sim['log']
+        else:
+            log = contiki + "/tools/cooja/build/COOJA.testlog"
         simlog = run(contiki,
                      args.target,
-                     args.log,
+                     log,
                      wd,
                      csc,
                      outdir,
@@ -107,8 +113,6 @@ def main():
                     help='Absolute path to contiki folder')
     ap.add_argument('--out', required=False,
                     help='Absolute path to output folder')
-    ap.add_argument('--log', required=False,
-                    help='Relative path to contiki log')
     ap.add_argument('--wd', required=False,
                     help='(Relative) working directory for code + csc')
     ap.add_argument('--csc', required=False,
@@ -122,7 +126,6 @@ def main():
 
     args.contiki = cfg['contiki'] if not args.contiki else args.contiki
     args.out = cfg['out'] if not args.out else args.out
-    args.log = cfg['log'] if not args.log else args.log
     args.wd = cfg['wd'] if not args.wd else args.wd
     args.csc = cfg['csc'] if not args.csc else args.csc
     args.target = cfg['target'] if not args.target else args.target
@@ -179,8 +182,8 @@ def main():
         print('**** Compare plots in dir: ' + args.out)
         cpcomp.compare(args.out,  # directory
                        compare['sims'],
-                       # {compare['sims']: compare['labels']},  # sims + labels
-                       compare['plots'])  # plots to compare
+                       compare['plots'],
+                       compare['args'])  # plots to compare
 
 
 # ----------------------------------------------------------------------------#
@@ -258,10 +261,8 @@ def run(contiki, target, log, wd, csc, outdir, args, simname):
     subprocess.call(cmd, shell=True)
     print('**** Copy contiki log into simulation directory')
     # Copy contiki ouput log file and prefix the simname
-    # TODO: can we instruct cooja to write to a new log each time?
     simlog = outdir + simname + '.log'
-    contikilog = contiki + log
-    shutil.copyfile(contikilog, simlog)
+    shutil.copyfile(log, simlog)
 
     return simlog
 

@@ -219,7 +219,7 @@ def add_hist(ax, color, data, bins=30):
 
 
 # ----------------------------------------------------------------------------#
-def compare_box(datasets, **kwargs):
+def compare_box(ax, datasets, **kwargs):
     """Compare box plots."""
     labels = []             # save the labels for the legend
     history = []            # save the data history
@@ -245,15 +245,14 @@ def compare_box(datasets, **kwargs):
     #              width=1.5, height=1.5,
     #              xlim=[0, 6.5], ylim=[0, 11000],
     #              bp_width=width, pos=[5])
-    return fig, ax
+    return ax
 
 
 # ----------------------------------------------------------------------------#
-def compare_bar(datasets, **kwargs):
+def compare_bar(ax, datasets, **kwargs):
     """Compare bar plots."""
     labels = []             # save the labels for the legend
     history = []            # save the data history
-    fig, ax = plt.subplots(1, 1, figsize=(8, 6))    # create a new figure
     index = 1   # start index
     # compare each dataset for this plot
     X = {}
@@ -274,7 +273,8 @@ def compare_bar(datasets, **kwargs):
         # plot the bar and add to the parent fig
         data['data']['x'] = X[data['id']]
         data['data']['y'] = Y[data['id']]
-        add_bar(ax, len(datasets), index, color, data['label'], data['data'])
+        add_bar(ax, len(datasets), index, color,
+                data['label'], data['data'])
         # increment plot index
         index += 1
 
@@ -282,11 +282,11 @@ def compare_bar(datasets, **kwargs):
     # ax.legend(labels, loc='best')
     ax.legend(labels, loc='best', bbox_to_anchor=(1, 1))
     # ax.legend(labels, loc='lower center', ncol=n_plots)
-    return fig, ax
+    return ax
 
 
 # ----------------------------------------------------------------------------#
-def compare_line(datasets, **kwargs):
+def compare_line(ax, datasets, **kwargs):
     """Compare line plots."""
     labels = []             # save the labels for the legend
     history = []            # save the data history
@@ -306,11 +306,11 @@ def compare_line(datasets, **kwargs):
     # add legend
     ax.legend(labels, loc='best')
     # ax.legend(labels, loc='best', bbox_to_anchor=(1, 1))
-    return fig, ax
+    return ax
 
 
 # ----------------------------------------------------------------------------#
-def compare_hist(datasets, **kwargs):
+def compare_hist(ax, datasets, **kwargs):
     """Compare histograms."""
     labels = []             # save the labels for the legend
     history = []            # save the data history
@@ -331,15 +331,12 @@ def compare_hist(datasets, **kwargs):
     ax.legend(labels, loc='best')
     # ax.legend(['RPL-DAG', r'$\mu$SDN-Controller'],
     #           loc='lower right')
-    return fig, ax
+    return ax
 
 
 # ----------------------------------------------------------------------------#
-def compare(dir, simlist, plottypes, **kwargs):
+def compare(dir, simlist, plottypes, args, **kwargs):
     """Compare results between data sets for a list of plot types."""
-    # print(' ... simulations: ' + str(simlist))
-    # print(' ... plots: ' + str(plottypes))
-
     # dictionary of the various comparison functions
     function_map = {
         'bar':   compare_bar,
@@ -348,23 +345,33 @@ def compare(dir, simlist, plottypes, **kwargs):
         'hist':  compare_hist,
     }
 
+    # search for the required plots
     plotdata = search_dirs(dir, simlist, plottypes)
     for plot, datasets in plotdata.items():
         print('> Compare ' + str(len(datasets)) + ' datasets for ' + plot),
         # sort the datasets for each plot
         # datasets = sorted(datasets, key=lambda d: d['id'], reverse=False)
-
-        n_plots = 0
-
         # check all the dataset types, xlabels and ylabels match
+        # TODO: Throw if not
         for data in datasets:
             type = data['data']['type']
             xlabel = data['data']['xlabel']
             ylabel = data['data']['ylabel']
-            n_plots = n_plots+1
         print('(' + str(type).upper() + ') ...'),
-        # call appropriate comparison function
-        fig, ax, = function_map[type](datasets)
+
+        # call appropriate comparison function and plot
+        # if 'samefigure' in args and args['samefigure'] is 1:
+        fig, axes = plt.subplots(args['nrows'], args['ncols'], figsize=(8, 6))
+        print(isinstance(axes, list))
+        pprint(axes)
+        if (isinstance(axes, list)):
+            row = args[plot]['row']
+            col = args[plot]['col']
+            # x = np.linspace(0, 2*np.pi, 400)
+            # y = np.sin(x**2)
+            ax = function_map[type](axes[0, 0], datasets)
+        else:
+            ax = function_map[type](axes, datasets)
 
         # make labels bold
         # labels = [r'\textbf{' + label + '}' for label in labels]

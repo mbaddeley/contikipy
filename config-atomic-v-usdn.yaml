@@ -4,7 +4,6 @@
 contiki:
 wd:
 fmt:     cooja
-log:     /tools/cooja/build/COOJA.testlog
 out:     /home/mike/Results/ATOMIC_vs_USDN
 csc:
 target:
@@ -57,81 +56,37 @@ multiflow:
 # Simulations
 # ----------------------------------------------------------------------------
 simulations:
-  # # 30 Node Atomic
-  # - desc:           Atomic-SDN
-  #   type:           atomic
-  #   contiki:        /home/mike/Repos/atomic
-  #   wd:             /home/mike/Repos/atomic/examples/atomic
-  #   csc:            atomic-30-node.csc
-  #   makeargs:
-  #     ATM_CONF_MAX_NODES:         30
-  #     ATM_CONF_MAX_EMPTY_STOP:    1
-  #     ATM_CONF_COLLECT_ALL_NODES: 0
-  #     ATM_CONF_REACT_ALL_NODES:   0
-  #     ATM_CONF_OP_FREQ:           0
-  #     ATM_CONF_COLLECT_FREQ:      60
-  #     ATM_CONF_REACT_FREQ:        0
-  #     ATM_CONF_CONFIGURE_FREQ:    0
-  #   regex:
-  #     - 'atomic-energy'
-  #     - 'atomic-op'
-  #   plot:
-  #     - atomic_vs_usdn_lat
-  #     - atomic_vs_usdn
-  # # 30 Node uSDN CSMA
-  # - desc:           uSDN-CSMA
-  #   type:           usdn
-  #   contiki:        /home/mike/Repos/usdn
-  #   wd:             /home/mike/Repos/usdn/examples/sdn
-  #   csc:            usdn-30-node.csc
-  #   makeargs:
-  #     MAC:          CSMA
-  #     SDN:          1
-  #     FTREFRESH:    1
-  #     FTSRETRY:     0
-  #     FORCENSU:     1
-  #     FTLIFETIME:   300
-  #     NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
-  #     MULTIFLOW:    1
-  #   multiflow:      1_flow
-  #   regex:
-  #     - 'node'
-  #     - 'sdn'
-  #     - 'pow'
-  #   plot:
-  #     - atomic_vs_usdn_lat
-  #     - atomic_vs_usdn
-  # # 30 Node uSDN CONTIKIMAC
-  # - desc:           uSDN-CONTIKIMAC
-  #   type:           usdn
-  #   contiki:        /home/mike/Repos/usdn
-  #   wd:             /home/mike/Repos/usdn/examples/sdn
-  #   csc:            usdn-30-node.csc
-  #   makeargs:
-  #     MAC:          CONTIKIMAC
-  #     SDN:          1
-  #     FTREFRESH:    1
-  #     FTSRETRY:     0
-  #     FORCENSU:     1
-  #     FTLIFETIME:   300
-  #     NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
-  #     MULTIFLOW:    1
-  #   multiflow:      1_flow
-  #   regex:
-  #     - 'node'
-  #     - 'sdn'
-  #     - 'pow'
-  #   plot:
-  #     - atomic_vs_usdn_lat
-  #     - atomic_vs_usdn
-  # 30 Node uSDN NULLMAC
-  - desc:           uSDN-NULLMAC
+  # 30 Node Atomic
+  - desc:           Atomic-SDN
+    type:           atomic
+    contiki:        /home/mike/Repos/atomic
+    wd:             /home/mike/Repos/atomic/examples/atomic
+    csc:            atomic-30-node.csc
+    log:            /home/mike/Results/atomic-30-node.log
+    makeargs:
+      ATM_CONF_MAX_NODES:         30
+      ATM_CONF_MAX_EMPTY_STOP:    1
+      ATM_CONF_COLLECT_ALL_NODES: 0
+      ATM_CONF_REACT_ALL_NODES:   0
+      ATM_CONF_OP_FREQ:           0
+      ATM_CONF_COLLECT_FREQ:      60
+      ATM_CONF_REACT_FREQ:        0
+      ATM_CONF_CONFIGURE_FREQ:    0
+    regex:
+      - 'atomic-energy'
+      - 'atomic-op'
+    plot:
+      - atomic_vs_usdn_lat
+      - atomic_vs_usdn
+  # 30 Node uSDN CSMA
+  - desc:           uSDN-CSMA
     type:           usdn
     contiki:        /home/mike/Repos/usdn
     wd:             /home/mike/Repos/usdn/examples/sdn
     csc:            usdn-30-node.csc
+    log:            /home/mike/Results/usdn-30-node.log
     makeargs:
-      MAC:          NULLMAC
+      MAC:          CSMA
       SDN:          1
       FTREFRESH:    1
       FTSRETRY:     0
@@ -147,6 +102,52 @@ simulations:
     plot:
       - atomic_vs_usdn_lat
       - atomic_vs_usdn
+  # 30 Node uSDN CONTIKIMAC
+  - desc:           uSDN-CONTIKIMAC
+    type:           usdn
+    contiki:        /home/mike/Repos/usdn
+    wd:             /home/mike/Repos/usdn/examples/sdn
+    csc:            usdn-30-node.csc
+    makeargs:
+      MAC:          CONTIKIMAC
+      SDN:          1
+      FTREFRESH:    1
+      FTSRETRY:     0
+      FORCENSU:     1
+      FTLIFETIME:   300
+      NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
+      MULTIFLOW:    1
+    multiflow:      1_flow
+    regex:
+      - 'node'
+      - 'sdn'
+      - 'pow'
+    plot:
+      - atomic_vs_usdn_lat
+      - atomic_vs_usdn
+  # 30 Node uSDN NULLMAC
+  # - desc:           uSDN-NULLMAC
+  #   type:           usdn
+  #   contiki:        /home/mike/Repos/usdn
+  #   wd:             /home/mike/Repos/usdn/examples/sdn
+  #   csc:            usdn-30-node.csc
+  #   makeargs:
+  #     MAC:          NULLMAC
+  #     SDN:          1
+  #     FTREFRESH:    1
+  #     FTSRETRY:     0
+  #     FORCENSU:     1
+  #     FTLIFETIME:   300
+  #     NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
+  #     MULTIFLOW:    1
+  #   multiflow:      1_flow
+  #   regex:
+  #     - 'node'
+  #     - 'sdn'
+  #     - 'pow'
+  #   plot:
+  #     - atomic_vs_usdn_lat
+  #     - atomic_vs_usdn
 
 # ----------------------------------------------------------------------------
 # compare (comparison) config
@@ -154,13 +155,23 @@ simulations:
 compare:
   - sims:
     # which sims do we want to compare?
-    # TODO: make this the order they are displayed
     - Atomic-SDN
     - uSDN-CSMA
     - uSDN-CONTIKIMAC
     # - uSDN-NULLMAC
     # which plots do we want to compare?
     plots:
-      - atomic_vs_usdn_lat
+      # - atomic_vs_usdn_lat
       - atomic_vs_usdn_collect_pdr
       - atomic_vs_usdn_collect_energy
+    # plot arguments
+    args:
+      samefigure: 1
+      nrows:      2
+      ncols:      1
+      atomic_vs_usdn_collect_pdr:
+        row: 0
+        col: 0
+      atomic_vs_usdn_collect_energy:
+        row: 1
+        col: 0
