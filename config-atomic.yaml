@@ -29,7 +29,7 @@ formatters:
 # Simulations
 # ----------------------------------------------------------------------------
 simulations:
-  # 40 Node
+  # 20 Node
   - desc:     ATM_20
     type:     atomic
     contiki:  /home/mike/Repos/atomic

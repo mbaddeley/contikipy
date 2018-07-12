@@ -570,57 +570,95 @@ def atomic_vs_usdn_join(df_dict):
 
 
 # ----------------------------------------------------------------------------#
-def atomic_vs_usdn_react_lat(df_dict):
-    """Plot atomic vs usdn react times."""
-    # parse the df
-    if 'usdn' in sim_type:
-        # get dfs
-        df_node = df_dict['node'].copy().reset_index()
-        df_node = df_node[df_node['hops'] > 0]
-        df_sdn = df_dict['sdn'].copy()
-        df_sdn = df_sdn[((df_sdn['typ'] == 'FTQ') | (df_sdn['typ'] == 'FTS'))
-                        & (df_sdn['drpd'] == 0)]
-        # separate ftq/fts
-        ftq_df = df_sdn.loc[(df_sdn['typ'] == 'FTQ')]
-        fts_df = df_sdn.loc[(df_sdn['typ'] == 'FTS')]
-        ftq_df = ftq_df.drop('in_t', 1).rename(columns={'out_t': 'time'})
-        fts_df = fts_df.drop('out_t', 1).rename(columns={'in_t': 'time'})
-        # join them together and add a node id column based n FTQ src
-        df = pd.concat([ftq_df, fts_df])
-        df['id'] = np.where(df['typ'] == 'FTQ', df['src'], df['dest'])
-        df = df.sort_values(['id', 'seq']).drop(['src', 'dest'], 1)
-        df = df.merge(df_node, left_on='id', right_on='id')  # merge hops col
-        df = df.pivot_table(index=['id', 'seq'],
-                            columns=['typ'],
-                            values=['time', 'hops'])
-        # df is now multilevel, drop unanswered FTQs, and calc lat
-        df = df[np.isfinite(df['hops']['FTS'])]
-        df = df.drop(('hops', 'FTS'), 1)
-        df['react_time'] = (df['time']['FTS'] - df['time']['FTQ'])/1000
-        df.columns = df.columns.droplevel(0)
-        df.columns = ['hops', 'FTQ', 'FTS', 'react_time']
-        df['hops'] = df['hops'].astype(int)
-        df = df[(df['hops'] > 0) & (df['hops'] <= 5)]
-    elif 'atomic' in sim_type:
-        df = df_dict['atomic-op'].copy()
-        df = df[df['op_type'] == 'RACT']
-        df = df[df['c_time'] != 0]
-        df['react_time'] = df['c_time'].astype(int)
-        df = df[df['hops'] != 0]
-    else:
-        raise Exception('ERROR: Unknown sim type!')
+# def atomic_vs_usdn_lat(df_dict):
+#     """Plot atomic vs usdn react times."""
+#     # parse the df
+#     if 'usdn' in sim_type:
+#         # get dfs
+#         df_node = df_dict['node'].copy().reset_index()
+#         df_node = df_node[df_node['hops'] > 0]
+#         df_sdn = df_dict['sdn'].copy()
+#         df_sdn = df_sdn[((df_sdn['typ'] == 'FTQ') | (df_sdn['typ'] == 'FTS'))
+#                         & (df_sdn['drpd'] == 0)]
+#         # separate ftq/fts
+#         ftq_df = df_sdn.loc[(df_sdn['typ'] == 'FTQ')]
+#         fts_df = df_sdn.loc[(df_sdn['typ'] == 'FTS')]
+#         ftq_df = ftq_df.drop('in_t', 1).rename(columns={'out_t': 'time'})
+#         fts_df = fts_df.drop('out_t', 1).rename(columns={'in_t': 'time'})
+#         # join them together and add a node id column based n FTQ src
+#         df = pd.concat([ftq_df, fts_df])
+#         df['id'] = np.where(df['typ'] == 'FTQ', df['src'], df['dest'])
+#         df = df.sort_values(['id', 'seq']).drop(['src', 'dest'], 1)
+#         df = df.merge(df_node, left_on='id', right_on='id')  # merge hops col
+#         df = df.pivot_table(index=['id', 'seq'],
+#                             columns=['typ'],
+#                             values=['time', 'hops'])
+#         # df is now multilevel, drop unanswered FTQs, and calc lat
+#         df = df[np.isfinite(df['hops']['FTS'])]
+#         df = df.drop(('hops', 'FTS'), 1)
+#         df['react_time'] = (df['time']['FTS'] - df['time']['FTQ'])/1000
+#         df.columns = df.columns.droplevel(0)
+#         df.columns = ['hops', 'FTQ', 'FTS', 'react_time']
+#         df['hops'] = df['hops'].astype(int)
+#         df = df[(df['hops'] > 0) & (df['hops'] <= 5)]
+#     elif 'atomic' in sim_type:
+#         df = df_dict['atomic-op'].copy()
+#         df = df[df['op_type'] == 'RACT']
+#         df = df[df['c_time'] != 0]
+#         df['react_time'] = df['c_time'].astype(int)
+#         df = df[df['hops'] != 0]
+#     else:
+#         raise Exception('ERROR: Unknown sim type!')
+#
+#     df = df.pivot_table(index=df.groupby('hops').cumcount(),
+#                         columns=['hops'],
+#                         values='react_time')
+#
+#     # min = df.min().tolist()
+#     # max = df.max().tolist()
+#     x = list(df.columns.values)  # x ticks are the column headers
+#     y = df.mean()  # df.mode().transpose()[0]
+#     e = None
+#     cpplot.plot_line(df, 'atomic_vs_usdn_lat_ract', sim_dir, x, y, errors=e,
+#                      xlabel='Hops', ylabel='End-to-end delay (ms)')
 
-    df = df.pivot_table(index=df.groupby('hops').cumcount(),
-                        columns=['hops'],
-                        values='react_time')
 
-    # min = df.min().tolist()
-    # max = df.max().tolist()
-    x = list(df.columns.values)  # x ticks are the column headers
-    y = df.mean()  # df.mode().transpose()[0]
-    e = None
-    cpplot.plot_line(df, 'atomic_vs_usdn_react_lat', sim_dir, x, y, errors=e,
-                     xlabel='Hops', ylabel='End-to-end delay (ms)')
+# ----------------------------------------------------------------------------#
+# def atomic_vs_usdn_lat(df_dict):
+#     """Plot atomic vs usdn collect times."""
+#     if 'usdn' in sim_type:
+#         # copy dfs
+#         df_node = df_dict['node'].copy().reset_index()
+#         df_sdn = df_dict['sdn'].copy()
+#         # take only CONT and drop any dropped packets
+#         df = df_sdn[(df_sdn['typ'] == 'CONF') & (df_sdn['drpd'] == 0)]
+#         df = df.rename(columns={'lat': 'conf_time'})
+#         df = df[df['src'] != 1]
+#         df = df.merge(df_node, left_on='src', right_on='id')  # merge hops col
+#         df = df[(df['hops'] > 0) & (df['hops'] <= 5)]
+#     elif 'atomic' in sim_type:
+#         df = df_dict['atomic-op'].copy()
+#         df = df[df['op_type'] == 'CONF']
+#         df['conf_time'] = df['c_time'].astype(int)
+#         df = df[df['conf_time'] != 0]
+#         df = df[df['hops'] != 0]
+#     else:
+#         raise Exception('ERROR: Unknown types!')
+#
+#     # HACK: Removes some ridiculous outliers at hop 4
+#     df = df[(df['conf_time'] < 2000)]
+#     df = df.pivot_table(index=df.groupby('hops').cumcount(),
+#                         columns=['hops'],
+#                         values='conf_time')
+#     x = list(df.columns.values)  # x ticks are the column headers
+#     # y = np.column_stack(df.transpose().values.tolist())  # need a list
+#     # cpplot.plot_box(df, 'atomic_vs_usdn_lat', sim_dir, x, y,
+#     #                 xlabel='Hops', ylabel='End-to-end delay (ms)')
+#
+#     y = df.mean()
+#     cpplot.plot_line(df, 'atomic_vs_usdn_lat_conf', sim_dir, x, y,
+#                      xlabel='Hops', ylabel='End-to-end delay (ms)')
+#     print('  ... LAT mean: ' + str(np.mean(y)))
 
 
 # ----------------------------------------------------------------------------#
@@ -645,6 +683,8 @@ def atomic_vs_usdn_lat(df_dict):
     else:
         raise Exception('ERROR: Unknown types!')
 
+    # HACK: Removes some ridiculous outliers at hop 4
+    df = df[(df['collect_time'] < 2000)]
     df = df.pivot_table(index=df.groupby('hops').cumcount(),
                         columns=['hops'],
                         values='collect_time')
@@ -652,6 +692,7 @@ def atomic_vs_usdn_lat(df_dict):
     # y = np.column_stack(df.transpose().values.tolist())  # need a list
     # cpplot.plot_box(df, 'atomic_vs_usdn_lat', sim_dir, x, y,
     #                 xlabel='Hops', ylabel='End-to-end delay (ms)')
+
     y = df.mean()
     cpplot.plot_line(df, 'atomic_vs_usdn_lat', sim_dir, x, y,
                      xlabel='Hops', ylabel='End-to-end delay (ms)')

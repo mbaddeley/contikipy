@@ -12,6 +12,7 @@ import yaml
 import cpconfig
 import cplogparser as lp
 import cpcomp
+import cpcsc
 
 # import yaml config
 cfg = None
@@ -45,6 +46,7 @@ def run_cooja(args, sim, outdir, makeargs, simname):
         # check for cooja log in the sim
         if 'log' in sim:
             log = sim['log']
+            # cpcsc.set_simulation_title(log)
         else:
             log = contiki + "/tools/cooja/build/COOJA.testlog"
         simlog = run(contiki,
@@ -179,11 +181,12 @@ def main():
 
     # analyze the generated results
     if int(args.comp) and compare is not None:
+        compare_args = compare['args'] if 'args' in compare else None
         print('**** Compare plots in dir: ' + args.out)
         cpcomp.compare(args.out,  # directory
                        compare['sims'],
                        compare['plots'],
-                       compare['args'])  # plots to compare
+                       compare_args)  # plots to compare
 
 
 # ----------------------------------------------------------------------------#

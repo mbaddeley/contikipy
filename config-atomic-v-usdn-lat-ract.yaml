@@ -4,7 +4,7 @@
 contiki:
 wd:
 fmt:     cooja
-out:     /home/mike/Results/ATOMIC_vs_USDN
+out:     /home/mike/Results/ATOMIC_vs_USDN_LAT_RACT
 csc:
 target:
 
@@ -69,8 +69,8 @@ simulations:
       ATM_CONF_COLLECT_ALL_NODES: 0
       ATM_CONF_REACT_ALL_NODES:   0
       ATM_CONF_OP_FREQ:           0
-      ATM_CONF_COLLECT_FREQ:      60
-      ATM_CONF_REACT_FREQ:        0
+      ATM_CONF_COLLECT_FREQ:      0
+      ATM_CONF_REACT_FREQ:        60
       ATM_CONF_CONFIGURE_FREQ:    0
     regex:
       - 'atomic-energy'
@@ -88,7 +88,7 @@ simulations:
     makeargs:
       MAC:          CSMA
       SDN:          1
-      FTREFRESH:    1
+      FTREFRESH:    0
       FTSRETRY:     0
       FORCENSU:     1
       FTLIFETIME:   300
@@ -125,29 +125,6 @@ simulations:
     plot:
       - atomic_vs_usdn_lat
       - atomic_vs_usdn
-  # 30 Node uSDN NULLMAC
-  # - desc:           uSDN-NULLMAC
-  #   type:           usdn
-  #   contiki:        /home/mike/Repos/usdn
-  #   wd:             /home/mike/Repos/usdn/examples/sdn
-  #   csc:            usdn-30-node.csc
-  #   makeargs:
-  #     MAC:          NULLMAC
-  #     SDN:          1
-  #     FTREFRESH:    1
-  #     FTSRETRY:     0
-  #     FORCENSU:     1
-  #     FTLIFETIME:   300
-  #     NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
-  #     MULTIFLOW:    1
-  #   multiflow:      1_flow
-  #   regex:
-  #     - 'node'
-  #     - 'sdn'
-  #     - 'pow'
-  #   plot:
-  #     - atomic_vs_usdn_lat
-  #     - atomic_vs_usdn
 
 # ----------------------------------------------------------------------------
 # compare (comparison) config
@@ -158,15 +135,14 @@ compare:
     - Atomic-SDN
     - uSDN-CSMA
     - uSDN-CONTIKIMAC
-    # - uSDN-NULLMAC
     # which plots do we want to compare?
     plots:
-      # - atomic_vs_usdn_lat
+      - atomic_vs_usdn_lat
       - atomic_vs_usdn_collect_pdr
       - atomic_vs_usdn_collect_energy
     # plot arguments
     args:
-      samefigure: 1
+      samefigure: 0
       # N.B. If you are going to put these on the same fig then be careful
       # with rows and cols, as there isn't much input checking!!!
       nrows:      2

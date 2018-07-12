@@ -354,11 +354,20 @@ def compare(dir, simlist, plottypes, args, **kwargs):
     }
     # Set defaults
     samefigure = 0
+    nrows = 1
+    ncols = 1
     # search for the required plots
     plotdata = search_dirs(dir, simlist, plottypes)
+    if args is not None:
+        if 'nrows' in args and 'ncols' in args:
+            nrows = args['nrows']
+            ncols = args['ncols']
+        if 'samefigure' in args:
+            samefigure = args['samefigure']
+            fig, axes = plt.subplots(nrows, ncols, figsize=(10, 12),
+                                     sharex=True)
     # loop through the sims, comparing the data in the datasets and then plot
     for sim, datasets in plotdata.items():
-
         print('> Compare ' + str(len(datasets)) + ' datasets for ' + sim),
         # check all the types, xlabels and ylabels match for entries in the ds
         # TODO: Throw if not
@@ -369,10 +378,7 @@ def compare(dir, simlist, plottypes, args, **kwargs):
         print('(' + str(datatype).upper() + ') ...'),
 
         # check for sim arguments
-        if args and sim in args:
-            samefigure = args['samefigure']
-            nrows = args['nrows']
-            ncols = args['ncols']
+        if args is not None and sim in args:
             # check for specified legend position
             legend = args[sim]['legend'] if 'legend' in args[sim] else 'best'
             bbox_pattern = re.compile('\\(.*\\)')
@@ -387,8 +393,6 @@ def compare(dir, simlist, plottypes, args, **kwargs):
         # SAME FIGURE
         if samefigure == 1:
             print('SAME FIG'),
-            fig, axes = plt.subplots(nrows, ncols, figsize=(16, 12),
-                                     sharex=True)
             if nrows != 1 or ncols != 1:
                 if nrows > 1 and ncols == 1:
                     ax = axes[row]
@@ -421,7 +425,6 @@ def compare(dir, simlist, plottypes, args, **kwargs):
 
     # save if all on same figure
     if samefigure == 1:
-        print("Should not be here")
         cpplot.set_fig_and_save(fig, None, None,
                                 sim + '_' + str(plottypes),  # filename
                                 dir + '/')                   # directory
