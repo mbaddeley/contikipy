@@ -6,6 +6,7 @@ import sys      # for exceptions
 import os       # for makedir
 import pickle   # for saving data
 import re       # for regex
+from ast import literal_eval as make_tuple
 import traceback
 
 import matplotlib.pyplot as plt  # general plotting
@@ -221,10 +222,10 @@ def add_hist(ax, color, data, bins=30):
 # ----------------------------------------------------------------------------#
 def compare_box(ax, datasets, **kwargs):
     """Compare box plots."""
+    legend = kwargs['legend'] if 'legend' in kwargs else 'best'
     labels = []             # save the labels for the legend
     history = []            # save the data history
     artists = []            # save the artists for the legend
-    fig, ax = plt.subplots(1, 1, figsize=(8, 6))    # create a new figure
     index = 1   # start index
     # compare each dataset for this plot
     for data in datasets:
@@ -239,7 +240,8 @@ def compare_box(ax, datasets, **kwargs):
         index += 1
 
     # add legend (need to do this here because of the artists)
-    ax.legend(artists, labels, loc='best')
+    if legend:
+        ax.legend(artists, labels, loc=legend)
 
     # boxplot_zoom(ax, lastdata,
     #              width=1.5, height=1.5,
@@ -251,6 +253,8 @@ def compare_box(ax, datasets, **kwargs):
 # ----------------------------------------------------------------------------#
 def compare_bar(ax, datasets, **kwargs):
     """Compare bar plots."""
+    legend = kwargs['legend'] if 'legend' in kwargs else 'best'
+    # variables for later
     labels = []             # save the labels for the legend
     history = []            # save the data history
     index = 1   # start index
@@ -279,18 +283,20 @@ def compare_bar(ax, datasets, **kwargs):
         index += 1
 
     # add legend
-    # ax.legend(labels, loc='best')
-    ax.legend(labels, loc='best', bbox_to_anchor=(1, 1))
-    # ax.legend(labels, loc='lower center', ncol=n_plots)
+    if legend:
+        ax.legend(labels, loc=legend)
+        # ax.legend(labels, loc='upper center', bbox_to_anchor=(0.5, 2.1))
+        # ax.legend(labels, loc='lower center', ncol=n_plots)
+
     return ax
 
 
 # ----------------------------------------------------------------------------#
 def compare_line(ax, datasets, **kwargs):
     """Compare line plots."""
+    legend = kwargs['legend'] if 'legend' in kwargs else 'best'
     labels = []             # save the labels for the legend
     history = []            # save the data history
-    fig, ax = plt.subplots(1, 1, figsize=(8, 6))    # create a new figure
     index = 1   # start index
     # compare each dataset for this plot
     for data in datasets:
@@ -304,7 +310,8 @@ def compare_line(ax, datasets, **kwargs):
         index += 1
 
     # add legend
-    ax.legend(labels, loc='best')
+    if legend:
+        ax.legend(labels, loc=legend)
     # ax.legend(labels, loc='best', bbox_to_anchor=(1, 1))
     return ax
 
@@ -312,9 +319,9 @@ def compare_line(ax, datasets, **kwargs):
 # ----------------------------------------------------------------------------#
 def compare_hist(ax, datasets, **kwargs):
     """Compare histograms."""
+    legend = kwargs['legend'] if 'legend' in kwargs else 'best'
     labels = []             # save the labels for the legend
     history = []            # save the data history
-    fig, ax = plt.subplots(1, 1, figsize=(8, 6))    # create a new figure
     index = 1   # start index
     # compare each dataset for this plot
     for data in datasets:
@@ -328,7 +335,8 @@ def compare_hist(ax, datasets, **kwargs):
         index += 1
 
     # add legend
-    ax.legend(labels, loc='best')
+    if legend:
+        ax.legend(labels, loc=legend)
     # ax.legend(['RPL-DAG', r'$\mu$SDN-Controller'],
     #           loc='lower right')
     return ax
@@ -337,55 +345,85 @@ def compare_hist(ax, datasets, **kwargs):
 # ----------------------------------------------------------------------------#
 def compare(dir, simlist, plottypes, args, **kwargs):
     """Compare results between data sets for a list of plot types."""
-    # dictionary of the various comparison functions
+    # dictionary of the various plot comparison functions
     function_map = {
         'bar':   compare_bar,
         'box':   compare_box,
         'line':  compare_line,
         'hist':  compare_hist,
     }
-
+    # Set defaults
+    samefigure = 0
     # search for the required plots
     plotdata = search_dirs(dir, simlist, plottypes)
-    for plot, datasets in plotdata.items():
-        print('> Compare ' + str(len(datasets)) + ' datasets for ' + plot),
-        # sort the datasets for each plot
-        # datasets = sorted(datasets, key=lambda d: d['id'], reverse=False)
-        # check all the dataset types, xlabels and ylabels match
+    # loop through the sims, comparing the data in the datasets and then plot
+    for sim, datasets in plotdata.items():
+
+        print('> Compare ' + str(len(datasets)) + ' datasets for ' + sim),
+        # check all the types, xlabels and ylabels match for entries in the ds
         # TODO: Throw if not
         for data in datasets:
-            type = data['data']['type']
+            datatype = data['data']['type']
             xlabel = data['data']['xlabel']
             ylabel = data['data']['ylabel']
-        print('(' + str(type).upper() + ') ...'),
+        print('(' + str(datatype).upper() + ') ...'),
 
-        # call appropriate comparison function and plot
-        # if 'samefigure' in args and args['samefigure'] is 1:
-        fig, axes = plt.subplots(args['nrows'], args['ncols'], figsize=(8, 6))
-        print(isinstance(axes, list))
-        pprint(axes)
-        if (isinstance(axes, list)):
-            row = args[plot]['row']
-            col = args[plot]['col']
-            # x = np.linspace(0, 2*np.pi, 400)
-            # y = np.sin(x**2)
-            ax = function_map[type](axes[0, 0], datasets)
+        # check for sim arguments
+        if args and sim in args:
+            samefigure = args['samefigure']
+            nrows = args['nrows']
+            ncols = args['ncols']
+            # check for specified legend position
+            legend = args[sim]['legend'] if 'legend' in args[sim] else 'best'
+            bbox_pattern = re.compile('\\(.*\\)')
+            if legend == 'None':
+                legend = None
+            elif bbox_pattern.match(legend):
+                legend = make_tuple(legend)
+            # check for row and col
+            row = args[sim]['row']
+            col = args[sim]['col']
+
+        # SAME FIGURE
+        if samefigure == 1:
+            print('SAME FIG'),
+            fig, axes = plt.subplots(nrows, ncols, figsize=(16, 12),
+                                     sharex=True)
+            if nrows != 1 or ncols != 1:
+                if nrows > 1 and ncols == 1:
+                    ax = axes[row]
+                elif nrows == 1 and ncols > 1:
+                    ax = axes[col]
+                else:
+                    ax = axes[row, col]
+            else:
+                ax = axes
+            # call the function map
+            ax = function_map[datatype](ax, datasets, legend=legend)
+            # HACK: Set the correct labels if same figure
+            ax.set_xlabel(xlabel)
+            ax.set_ylabel(ylabel)
+            # Remove top axes and right axes ticks
+            ax.get_xaxis().tick_bottom()
+            ax.get_yaxis().tick_left()
+        # DIFFERENT FIGURES
         else:
-            ax = function_map[type](axes, datasets)
+            print('NEW FIG'),
+            fig, axes = plt.subplots(1, 1, figsize=(8, 6))
+            ax = function_map[datatype](axes, datasets)
+            cpplot.set_fig_and_save(fig, ax, None,
+                                    sim + '_' + str(simlist),  # filename
+                                    dir + '/',                 # directory
+                                    xlabel=xlabel,
+                                    ylabel=ylabel)
 
-        # make labels bold
-        # labels = [r'\textbf{' + label + '}' for label in labels]
-        # add escape for underscores
-        # labels = [label.replace("_", "\\_") for label in labels]
-        # ax.legend(labels, loc='best')
-        # ax.legend(labels, loc='lower center', ncol=n_plots)
-
-        # save figure
-        cpplot.set_fig_and_save(fig, ax, None,
-                                plot + '_' + str(simlist),  # filename
-                                dir + '/',                  # directory
-                                xlabel=xlabel,
-                                ylabel=ylabel)
         print('OK')
+
+    # save if all on same figure
+    if samefigure == 1:
+        print("Should not be here")
+        cpplot.set_fig_and_save(fig, None, None,
+                                sim + '_' + str(plottypes),  # filename
+                                dir + '/')                   # directory
 
     print('> SUCCESS! Finshed comparing plots :D')

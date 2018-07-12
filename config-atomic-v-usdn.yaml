@@ -161,17 +161,21 @@ compare:
     # - uSDN-NULLMAC
     # which plots do we want to compare?
     plots:
-      # - atomic_vs_usdn_lat
+      - atomic_vs_usdn_lat
       - atomic_vs_usdn_collect_pdr
       - atomic_vs_usdn_collect_energy
     # plot arguments
     args:
-      samefigure: 1
+      samefigure: 0
+      # N.B. If you are going to put these on the same fig then be careful
+      # with rows and cols, as there isn't much input checking!!!
       nrows:      2
       ncols:      1
       atomic_vs_usdn_collect_pdr:
         row: 0
         col: 0
+        legend: (0.38, 1.1)  # location, None, or Tuple
       atomic_vs_usdn_collect_energy:
         row: 1
         col: 0
+        legend: None
