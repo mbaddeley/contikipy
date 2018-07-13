@@ -6,7 +6,6 @@ import sys      # for exceptions
 import os       # for makedir
 import pickle   # for saving data
 import re       # for regex
-from ast import literal_eval as make_tuple
 import traceback
 
 import matplotlib.pyplot as plt  # general plotting
@@ -14,9 +13,10 @@ import numpy as np               # number crunching
 # import seaborn as sns          # fancy plotting
 # import pandas as pd            # table manipulation
 
-from pprint import pprint
-
 import cpplotter as cpplot
+
+from ast import literal_eval as make_tuple
+# from pprint import pprint
 
 
 # ----------------------------------------------------------------------------#
@@ -95,8 +95,8 @@ def search_dirs(rootdir, simlist, plottypes):
                                 found = True
                         if not found:
                             print('- None')
-                            raise Exception('ERROR: Can\'t find ' + plot +
-                                            '.pkl!')
+                            raise Exception('ERROR: Can\'t find ' + plot
+                                            + '.pkl!')
     except Exception as e:
             traceback.print_exc()
             print(e)
@@ -200,7 +200,7 @@ def add_hist(ax, color, data, bins=30):
     # FIXME: Currently an issue with outliers causing smaller plots to be
     #       unreadable. Using range() in mean time.
     norm = 1
-    range = (0, 50)
+    # range = (0, 50)
     type = 'bar'
     cumul = True
     stack = True

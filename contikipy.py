@@ -8,91 +8,17 @@ import traceback
 import sys
 
 import yaml
+import pandas as pd
 
 import cpconfig
 import cplogparser as lp
 import cpcomp
-import cpcsc
+# import cpcsc
 
-# import yaml config
+from pprint import pprint
+
+# yaml config
 cfg = None
-
-
-# ----------------------------------------------------------------------------#
-def run_cooja(args, sim, outdir, makeargs, simname):
-    """Run cooja."""
-    try:
-        # check for contiki directory in the sim
-        if 'contiki' in sim:
-            contiki = sim['contiki']
-        elif 'contiki' in args and args.contiki:
-            contiki = args.contiki
-        else:
-            raise Exception('ERROR: No path to contiki!')
-        # check for working directory in the sim
-        if 'wd' in sim:
-            wd = sim['wd']
-        elif 'wd' in args and args.wd:
-            wd = args.wd
-        else:
-            raise Exception('ERROR: No working directory!')
-        # check for csc in the sim
-        if 'csc' in sim:
-            csc = sim['csc']
-        elif 'csc' in args and args.csc:
-            csc = args.csc
-        else:
-            raise Exception('ERROR: No csc file!')
-        # check for cooja log in the sim
-        if 'log' in sim:
-            log = sim['log']
-            # cpcsc.set_simulation_title(log)
-        else:
-            log = contiki + "/tools/cooja/build/COOJA.testlog"
-        simlog = run(contiki,
-                     args.target,
-                     log,
-                     wd,
-                     csc,
-                     outdir,
-                     makeargs,
-                     simname)
-        return simlog
-    except Exception:
-        traceback.print_exc()
-        sys.exit(0)
-
-
-# ----------------------------------------------------------------------------#
-def parse(log, dir, simname, simtype, fmt, regex_list, plots):
-    """Parse the main log for each datatype."""
-    global cfg
-    if log is None:
-        log = dir + simname + ".log"
-    # print(some information about what's being parsed
-    simstr = '- Simulation: ' + simname
-    dirstr = '- Directory: ' + dir
-    plotstr = '- Plots {0}'.format(plots)
-    info = simstr + '\n' + dirstr + '\n' + plotstr
-    info_len = len(max([simstr, dirstr, plotstr], key=len))
-    print('-' * info_len)
-    print(info)
-    print('-' * info_len)
-    print('**** Parse log and gererate data logs in: ' + dir)
-    logtype = (l for l in cfg['logtypes'] if l['type'] == fmt).next()
-    df_dict = {}
-    for d in cfg['formatters']['dictionary']:
-        if regex_list is None or d['type'] in regex_list:
-            regex = logtype['fmt_re'] + d['regex']
-            df = lp.scrape_data(d['type'], log, dir, fmt, regex)
-            if df is not None:
-                df_dict.update({d['type']: df})
-    if bool(df_dict):
-        print('**** Pickle the data...')
-        lp.pickle_data(dir, df_dict)
-    if plots is not None:
-        print('**** Generate the following plots: [' + ' '.join(plots) + ']')
-        lp.plot_data(simname, simtype, dir, df_dict, plots)
 
 
 # ----------------------------------------------------------------------------#
@@ -142,44 +68,26 @@ def main():
         simulations = [{'simname': '', 'makeargs': str(args.makeargs)}]
         compare = None
 
-    simlog = None
+    # get simulation config
     print('**** Run ' + str(len(simulations)) + ' simulations')
     for sim in simulations:
-        # get simulation description
-        sim_desc = sim['desc']
-        # get simulation type
-        sim_type = sim['type']
-        # get makeargs
-        if 'makeargs' in sim and sim['makeargs'] is not None:
-            makeargs = sim['makeargs']
-        else:
-            makeargs = None
-        # get regex
-        regex = sim['regex'] if 'regex' in sim else None
-
-        plot_config = sim['plot']
-        # print(some information about this simulation
-        info = 'Running simulation: {0}'.format(sim_desc)
-        print('=' * len(info))
-        print(info)
-        print('=' * len(info))
-
-        if makeargs is not None:
-            # HACK: replace remove list brackets
-            makeargs = makeargs.replace('[', '').replace(']', '')
-            print(makeargs)
-
-        # make a note of our intended sim directory
+        sim_desc, sim_type, makeargs, regex, plots = get_sim_config(sim)
         sim_dir = args.out + "/" + sim_desc + "/"
-        # run a cooja simulation with these sim settings
+        # check for cooja log in the sim
+        if 'log' in sim:
+            sim_log = sim['log']
+            # cpcsc.set_simulation_title(log)
+        else:
+            sim_log = args.contiki + "/tools/cooja/build/COOJA.testlog"
+# RUNCOOJA ----------------------------------------------------------- RUNCOOJA
         if int(args.runcooja):
-            simlog = run_cooja(args, sim, sim_dir, makeargs, sim_desc)
-        # generate results by parsing the cooja log
+            runcooja(args, sim, sim_dir, makeargs, sim_desc, sim_log)
+# PARSE ----------------------------------------------------------------- PARSE
         if int(args.parse) and sim_desc is not None:
-            parse(simlog, sim_dir, sim_desc, sim_type,
-                  cfg['fmt'], regex, plot_config)
-
-    # analyze the generated results
+            logtype_re = cfg['logtypes']['cooja']
+            parse(logtype_re, sim_log, sim_dir, sim_desc, sim_type,
+                  regex, plots)
+# COMP ------------------------------------------------------------------- COMP
     if int(args.comp) and compare is not None:
         compare_args = compare['args'] if 'args' in compare else None
         print('**** Compare plots in dir: ' + args.out)
@@ -187,6 +95,115 @@ def main():
                        compare['sims'],
                        compare['plots'],
                        compare_args)  # plots to compare
+
+
+# ----------------------------------------------------------------------------#
+def get_sim_config(sim):
+    """Get the simulation configuration."""
+    sim_desc = sim['desc']
+    sim_type = sim['type']
+    makeargs = sim['makeargs'] if 'makeargs' in sim else None
+    regex = sim['regex'] if 'regex' in sim else None
+    plots = sim['plot']
+
+    return sim_desc, sim_type, makeargs, regex, plots
+
+
+# ----------------------------------------------------------------------------#
+def runcooja(args, sim, outdir, makeargs, sim_desc, sim_log):
+    """Run cooja."""
+    try:
+        # print some information about this simulation
+        simstr = 'Simulation: ' + sim_desc
+        dirstr = 'Directory: ' + outdir
+        info = simstr + '\n' + dirstr
+        print('-' * len(info))
+        print(info)
+        print('-' * len(info))
+        # check for contiki directory in the sim
+        if 'contiki' in sim:
+            contiki = sim['contiki']
+        elif 'contiki' in args and args.contiki:
+            contiki = args.contiki
+        else:
+            raise Exception('ERROR: No path to contiki!')
+        # check for working directory in the sim
+        if 'wd' in sim:
+            wd = sim['wd']
+        elif 'wd' in args and args.wd:
+            wd = args.wd
+        else:
+            raise Exception('ERROR: No working directory!')
+        # check for csc in the sim
+        if 'csc' in sim:
+            csc = sim['csc']
+        elif 'csc' in args and args.csc:
+            csc = args.csc
+        else:
+            raise Exception('ERROR: No csc file!')
+        run(contiki, args.target, sim_log, wd, csc, outdir, makeargs, sim_desc)
+    except Exception:
+        traceback.print_exc()
+        sys.exit(0)
+
+
+# ----------------------------------------------------------------------------#
+def parse(logtype_re, sim_log, sim_dir, sim_desc, sim_type,
+          pattern_types, plot_types):
+    """Parse the main log for each datatype."""
+    global cfg
+    # print(some information about what's being parsed
+    simstr = '- Simulation: ' + sim_desc
+    dirstr = '- Directory: ' + sim_dir
+    plotstr = '- Plots {0}'.format(plot_types)
+    info = simstr + '\n' + dirstr + '\n' + plotstr
+    info_len = len(max([simstr, dirstr, plotstr], key=len))
+    print('-' * info_len)
+    print(info)
+    print('-' * info_len)
+    print('**** Parse log and gererate data logs in: ' + sim_dir)
+    df_dict = {}
+    for p in pattern_types:
+        df_dict.update({p: parse_regex(sim_log, logtype_re, p, sim_dir)})
+    # Save
+    if bool(df_dict):
+        print('**** Process the data...')
+        df_dict = process_data(df_dict, cfg['formatters']['process'])
+        print('**** Pickle the data...')
+        lp.pickle_data(sim_dir, df_dict)
+    # """Generate plots."""
+    print('**** Generate the following plots: [' + ' '.join(plot_types) + ']')
+    lp.plot_data(sim_desc, sim_type, sim_dir, df_dict, plot_types)
+
+
+# ----------------------------------------------------------------------------#
+def parse_regex(sim_log, logtype_re, pattern_type, sim_dir):
+    """Parse log for data regex."""
+    for p in cfg['formatters']['patterns']:
+        if pattern_type in p['type']:
+            regex = logtype_re + p['regex']
+            return lp.scrape_data(p['type'], sim_log, sim_dir, regex)
+
+
+# ----------------------------------------------------------------------------#
+def process_data(data_dict, process_list):
+    """Process the dataframes."""
+    # Check to see if we have a processing task for each data df
+    for k, v in cfg['formatters']['process'].items():
+        if k in data_dict:
+            df = data_dict[k]
+            if 'merge' in v:
+                m = v['merge']
+                pprint(df)
+                df = df.merge(data_dict[m['df']], left_on=m['left_on'],
+                              right_on=m['right_on'])
+            if 'filter' in v:
+                f = v['filter']
+                df = df[(df[f['col']] >= f['min'])
+                        & (df[f['col']] <= f['max'])]
+            data_dict[k] = df
+
+    return data_dict
 
 
 # ----------------------------------------------------------------------------#
@@ -210,7 +227,6 @@ def clean(path, target):
         target_str = ""
     else:
         target_str = 'TARGET=' + target
-    print(target_str)
     subprocess.call('make clean ' + target_str + ' -C ' + path, shell=True)
 
 
@@ -224,9 +240,8 @@ def make(path, target, args=None):
         target_str = ""
     else:
         target_str = 'TARGET=' + target
-    print("-------------> " + target_str + " " + args)
-    subprocess.call('make ' + target_str + ' ' + args +
-                    ' -C ' + path, shell=True)
+    subprocess.call('make ' + target_str + ' ' + args
+                    + ' -C ' + path, shell=True)
 
 
 # ----------------------------------------------------------------------------#

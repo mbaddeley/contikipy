@@ -24,9 +24,9 @@ pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 pd.set_option('display.float_format', lambda x: '%.3f' % x)
 
-sim_dir = 'NOT_SET'
-sim_type = 'NOT_SET'
-sim_desc = 'NOT_SET'
+sim_dir = 'NULL'
+sim_type = 'NULL'
+sim_desc = 'NULL'
 
 
 # ----------------------------------------------------------------------------#
@@ -40,7 +40,7 @@ def ratio(sent, dropped):
 # ----------------------------------------------------------------------------#
 # Main functions
 # ----------------------------------------------------------------------------#
-def scrape_data(datatype, log, dir, fmt, regex):
+def scrape_data(datatype, log, dir, regex):
     """Scrape the main log for data."""
     # dictionary of the various data df formatters
     read_function_map = {
@@ -147,10 +147,13 @@ def plot_data(desc, type, dir, df_dict, plots):
                 df_list = atomic_dict_map[plot][sim_type]
                 dfs = {k: df_dict[k] for k in df_list if k in df_dict.keys()}
                 if all(k in dfs for k in df_list):
-                    atomic_function_map[plot](dfs)
+                    if plots[plot] is None:
+                        atomic_function_map[plot](dfs)
+                    else:
+                        atomic_function_map[plot](dfs, **plots[plot])
                 else:
-                    raise Exception('ERROR: Required DFs not in dictionary ' +
-                                    'for plot [' + plot + ']')
+                    raise Exception('ERROR: Required DFs not in dictionary '
+                                    + 'for plot [' + plot + ']')
             else:
                 raise Exception('ERROR: No plot function!')
         except Exception as e:
@@ -204,6 +207,8 @@ def format_usdn_pow_data(df):
     df = df.apply(pd.to_numeric, errors='ignore')
     # rearrage cols
     df = df[['all_rdc', 'rdc']]
+    # make 'id' a col
+    df = df.reset_index()
 
     return df
 
@@ -271,6 +276,7 @@ def format_usdn_node_data(df):
     print('> Read sdn node log')
     # get the most common hops and degree for each node
     df = df.groupby('id')[['hops', 'degree']].agg(lambda x: x.mode())
+    df = df.reset_index()
     return df
 
 
@@ -332,7 +338,7 @@ def csv_to_df(file):
 # ----------------------------------------------------------------------------#
 # Atomic plotting
 # ----------------------------------------------------------------------------#
-def atomic_op_times(df_dict):
+def atomic_op_times(df_dict, **kwargs):
     """Plot atomic op times."""
     df = df_dict['atomic-op'].copy()
     g = df.groupby('op_type')
@@ -357,7 +363,7 @@ def atomic_op_times(df_dict):
 
 
 # ----------------------------------------------------------------------------#
-def atomic_energy_v_hops(df_dict):
+def atomic_energy_v_hops(df_dict, **kwargs):
     """Plot atomic energy vs hops."""
     try:
         if 'atomic-energy' in df_dict:
@@ -381,7 +387,7 @@ def atomic_energy_v_hops(df_dict):
 # ----------------------------------------------------------------------------#
 # uSDN plotting
 # ----------------------------------------------------------------------------#
-def usdn_energy_v_hops(df_dict):
+def usdn_energy_v_hops(df_dict, **kwargs):
     """Plot usdn energy vs hops."""
     try:
         if 'app' in df_dict and 'pow' in df_dict:
@@ -409,7 +415,7 @@ def usdn_energy_v_hops(df_dict):
 
 
 # ----------------------------------------------------------------------------#
-def usdn_pdr_v_hops(df_dict):
+def usdn_pdr_v_hops(df_dict, **kwargs):
     """Plot usdn energy vs hops."""
     try:
         if 'app' in df_dict:
@@ -437,7 +443,7 @@ def usdn_pdr_v_hops(df_dict):
 
 
 # ----------------------------------------------------------------------------#
-def usdn_latency_v_hops(df_dict):
+def usdn_latency_v_hops(df_dict, **kwargs):
     """Plot usdn end-to-end latency vs hops."""
     try:
         if 'app' in df_dict:
@@ -459,7 +465,7 @@ def usdn_latency_v_hops(df_dict):
 
 
 # ----------------------------------------------------------------------------#
-def usdn_join_time(df_dict):
+def usdn_join_time(df_dict, **kwargs):
     """Plot usdn controller and rpl-dag join times."""
     try:
         if 'join' in df_dict:
@@ -503,7 +509,7 @@ def usdn_join_time(df_dict):
 
 
 # ----------------------------------------------------------------------------#
-def usdn_traffic_ratio(df_dict):
+def usdn_traffic_ratio(df_dict, **kwargs):
     """Plot traffic ratios."""
     try:
         if 'app' in df_dict and 'icmp' in df_dict:
@@ -523,7 +529,7 @@ def usdn_traffic_ratio(df_dict):
 
 
 # ----------------------------------------------------------------------------#
-def atomic_vs_usdn_join(df_dict):
+def atomic_vs_usdn_join(df_dict, **kwargs):
     """Plot atomic vs usdn join times."""
     # check we have the correct dicts
     try:
@@ -570,7 +576,7 @@ def atomic_vs_usdn_join(df_dict):
 
 
 # ----------------------------------------------------------------------------#
-# def atomic_vs_usdn_lat(df_dict):
+# def atomic_vs_usdn_lat_ract(df_dict, **kwargs):
 #     """Plot atomic vs usdn react times."""
 #     # parse the df
 #     if 'usdn' in sim_type:
@@ -624,101 +630,72 @@ def atomic_vs_usdn_join(df_dict):
 
 
 # ----------------------------------------------------------------------------#
-# def atomic_vs_usdn_lat(df_dict):
-#     """Plot atomic vs usdn collect times."""
-#     if 'usdn' in sim_type:
-#         # copy dfs
-#         df_node = df_dict['node'].copy().reset_index()
-#         df_sdn = df_dict['sdn'].copy()
-#         # take only CONT and drop any dropped packets
-#         df = df_sdn[(df_sdn['typ'] == 'CONF') & (df_sdn['drpd'] == 0)]
-#         df = df.rename(columns={'lat': 'conf_time'})
-#         df = df[df['src'] != 1]
-#         df = df.merge(df_node, left_on='src', right_on='id')  # merge hops col
-#         df = df[(df['hops'] > 0) & (df['hops'] <= 5)]
-#     elif 'atomic' in sim_type:
-#         df = df_dict['atomic-op'].copy()
-#         df = df[df['op_type'] == 'CONF']
-#         df['conf_time'] = df['c_time'].astype(int)
-#         df = df[df['conf_time'] != 0]
-#         df = df[df['hops'] != 0]
-#     else:
-#         raise Exception('ERROR: Unknown types!')
-#
-#     # HACK: Removes some ridiculous outliers at hop 4
-#     df = df[(df['conf_time'] < 2000)]
-#     df = df.pivot_table(index=df.groupby('hops').cumcount(),
-#                         columns=['hops'],
-#                         values='conf_time')
-#     x = list(df.columns.values)  # x ticks are the column headers
-#     # y = np.column_stack(df.transpose().values.tolist())  # need a list
-#     # cpplot.plot_box(df, 'atomic_vs_usdn_lat', sim_dir, x, y,
-#     #                 xlabel='Hops', ylabel='End-to-end delay (ms)')
-#
-#     y = df.mean()
-#     cpplot.plot_line(df, 'atomic_vs_usdn_lat_conf', sim_dir, x, y,
-#                      xlabel='Hops', ylabel='End-to-end delay (ms)')
-#     print('  ... LAT mean: ' + str(np.mean(y)))
-
-
-# ----------------------------------------------------------------------------#
-def atomic_vs_usdn_lat(df_dict):
+def atomic_vs_usdn_lat(df_dict, **kwargs):
     """Plot atomic vs usdn collect times."""
+    df_name = kwargs['df'] if 'df' in kwargs else None
+    packets = kwargs['packets'] if 'packets' in kwargs else None
+    filename = kwargs['file'] if 'file' in kwargs else 'latency'
+
+    if packets is None:
+        raise Exception('ERROR: No df!')
+    if packets is None:
+        raise Exception('ERROR: No packets to search for!')
+
+    df = df_dict[df_name].copy()
+    for p in packets:
+        df = df[(df['type'] == p)]
+
     if 'usdn' in sim_type:
         # copy dfs
-        df_node = df_dict['node'].copy().reset_index()
         df_sdn = df_dict['sdn'].copy()
         # take only NSU and drop any dropped packets
-        df = df_sdn[(df_sdn['typ'] == 'NSU') & (df_sdn['drpd'] == 0)]
-        df = df.rename(columns={'lat': 'collect_time'})
-        df = df[df['src'] != 1]
-        df = df.merge(df_node, left_on='src', right_on='id')  # merge hops col
-        df = df[(df['hops'] > 0) & (df['hops'] <= 5)]
+        df = df_sdn[(df_sdn['typ'] == 'NSU')]
+
     elif 'atomic' in sim_type:
         df = df_dict['atomic-op'].copy()
         df = df[df['op_type'] == 'CLCT']
-        df['collect_time'] = df['c_time'].astype(int)
-        df = df[df['collect_time'] != 0]
+        df['lat'] = df['c_time'].astype(int)
+        df = df[df['lat'] != 0]
         df = df[df['hops'] != 0]
     else:
         raise Exception('ERROR: Unknown types!')
 
     # HACK: Removes some ridiculous outliers at hop 4
-    df = df[(df['collect_time'] < 2000)]
+    df = df[(df['lat'] < 2000)]
     df = df.pivot_table(index=df.groupby('hops').cumcount(),
                         columns=['hops'],
-                        values='collect_time')
+                        values='lat')
     x = list(df.columns.values)  # x ticks are the column headers
     # y = np.column_stack(df.transpose().values.tolist())  # need a list
     # cpplot.plot_box(df, 'atomic_vs_usdn_lat', sim_dir, x, y,
     #                 xlabel='Hops', ylabel='End-to-end delay (ms)')
 
     y = df.mean()
-    cpplot.plot_line(df, 'atomic_vs_usdn_lat', sim_dir, x, y,
+    cpplot.plot_line(df, filename, sim_dir, x, y,
                      xlabel='Hops', ylabel='End-to-end delay (ms)')
     print('  ... LAT mean: ' + str(np.mean(y)))
 
+    # except Exception as e:
+    #     traceback.print_exc()
+    #     print(e)
+    #     sys.exit(0)
+
 
 # ----------------------------------------------------------------------------#
-def atomic_vs_usdn(df_dict):
+def atomic_vs_usdn(df_dict, **kwargs):
     """Plot atomic vs usdn collect pdr and energy."""
     # PDR
     if 'usdn' in sim_type:
         # copy dfs
-        df_node = df_dict['node'].copy().reset_index()
         df_sdn = df_dict['sdn'].copy()
         # take only NSU and drop any dropped packets
         df = df_sdn[(df_sdn['typ'] == 'NSU')]
-        df = df.rename(columns={'lat': 'collect_time'})
-        df = df[df['src'] != 1]
-        df = df.merge(df_node, left_on='src', right_on='id')  # merge hops col
-        df = df[(df['hops'] > 0) & (df['hops'] <= 5)]
     elif 'atomic' in sim_type:
         df = df_dict['atomic-op'].copy()
         df = df[df['op_type'] == 'CLCT']
-        df['collect_time'] = df['c_time'].astype(int)
+        df['lat'] = df['c_time'].astype(int)
         df = df[df['hops'] != 0]
-        df['drpd'] = np.where((df['active'] == 1) & (df['collect_time'] == 0),
+        df['drpd'] = np.where((df['active'] == 1) & (df['lat'] == 0),
                               True, False)
     else:
         raise Exception('ERROR: Unknown types!')
@@ -738,10 +715,7 @@ def atomic_vs_usdn(df_dict):
 
     # Energy
     if 'usdn' in sim_type:
-        df_node = df_dict['node'].copy().reset_index()
         df = df_dict['pow'].copy().reset_index()
-        df = df.merge(df_node, left_on='id', right_on='id')  # merge hops col
-        df = df[(df['hops'] > 0) & (df['hops'] <= 5)]
     elif 'atomic' in sim_type:
         df = df_dict['atomic-energy'].copy()
         df = df[df['op_type'] == 'CLCT']

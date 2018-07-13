@@ -3,7 +3,7 @@
 # ----------------------------------------------------------------------------
 contiki:
 wd:
-fmt:     cooja
+logtype: cooja
 out:     /home/mike/Results/ATOMIC_vs_USDN_LAT_CLCT
 csc:
 target:
@@ -13,29 +13,48 @@ target:
 # packet regex ... https://regex101.com/r/26KZoD/15/
 # ----------------------------------------------------------------------------
 logtypes:
-  - type:    cooja
-    fmt_re:  '^\s*(?P<time>\d+):\s+(?P<id>\d+):'
+  cooja: '^\s*(?P<time>\d+):\s+(?P<id>\d+):'
 
 formatters:
-  dictionary:
+  patterns:
     # atomic
     - type:  atomic-energy
       regex: \s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<op_type>\w+)(?:\s*h:(?P<hops>\d+)|\s+np:(?P<n_phases>\d+)|\s+gon:(?P<gon>\d+)|\s+ron:(?P<ron>\d+)|\s+con:(?P<con>\d+)\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
     - type:  atomic-op
       regex: \s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<op_type>\w+)(?:\s*h:(?P<hops>\d+)|\scp:\s*(?P<c_phase>\d+)|\s+tp:\s*(?P<n_phases>\d+)|\s+dur:\s*(?P<c_time>\d+)|\s+tdur:\s*(?P<op_duration>\d+)|\s+an:(?P<active>\d+))+.*?$
-    # usdn
+    # uSDN
     - type:   pow
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*](?:\s*PW\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
     - type:   app
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<status>(TX|RX))\s+(?P<typ>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>[1-5])|\s+m:(?P<mac>\d+))+.*?$
-    - type:   sdn
-      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<status>(OUT|BUF|IN))\s+(?P<typ>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>[1-5])|\s+m:(?P<mac>\d+))+.*?$
     - type:   node
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*h:(?P<hops>\d+), n:(?P<degree>\d+)
+    - type:   sdn
+      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<status>(OUT|BUF|IN))\s+(?P<typ>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>[1-5])|\s+m:(?P<mac>\d+))+.*?$
     - type:   icmp
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?:\s+type:(?P<type>\d+)|\s+code:(?P<code>\d+))+.*?$
     - type:   join
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?:\s+n:(?P<node>\d+)|\s+c:(?P<controller>\d+)|\s+dag:(?P<dag>\d+)|\s+dao:(?P<dao>\d+))+.*?$
+  process:
+    # uSDN
+    sdn:
+      merge:
+        df:       node
+        left_on:  src
+        right_on: id
+      filter:
+        col:      hops
+        min:      1
+        max:      5
+    pow:
+      merge:
+        df:       node
+        left_on:  id
+        right_on: id
+      filter:
+        col:      hops
+        min:      1
+        max:      5
 
 # ----------------------------------------------------------------------------
 # Multiflow
@@ -76,8 +95,11 @@ simulations:
       - 'atomic-energy'
       - 'atomic-op'
     plot:
-      - atomic_vs_usdn_lat
-      - atomic_vs_usdn
+      atomic_vs_usdn_lat:
+        df:      atomic-op
+        packets: ['CLCT']
+        file:    'atomic_vs_usdn_lat'
+      atomic_vs_usdn:
   # 30 Node uSDN CSMA
   - desc:           uSDN-CSMA
     type:           usdn
@@ -100,31 +122,36 @@ simulations:
       - 'sdn'
       - 'pow'
     plot:
-      - atomic_vs_usdn_lat
-      - atomic_vs_usdn
-  # 30 Node uSDN CONTIKIMAC
-  - desc:           uSDN-CONTIKIMAC
-    type:           usdn
-    contiki:        /home/mike/Repos/usdn
-    wd:             /home/mike/Repos/usdn/examples/sdn
-    csc:            usdn-30-node.csc
-    makeargs:
-      MAC:          CONTIKIMAC
-      SDN:          1
-      FTREFRESH:    0
-      FTSRETRY:     0
-      FORCENSU:     1
-      FTLIFETIME:   300
-      NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
-      MULTIFLOW:    1
-    multiflow:      1_flow
-    regex:
-      - 'node'
-      - 'sdn'
-      - 'pow'
-    plot:
-      - atomic_vs_usdn_lat
-      - atomic_vs_usdn
+      atomic_vs_usdn_lat:
+        df:      sdn
+        packets: ['NSU']
+        file:    'atomic_vs_usdn_lat'
+      atomic_vs_usdn:
+        packets: ['NSU']
+        file: 'atomic_vs_usdn'
+  # # 30 Node uSDN CONTIKIMAC
+  # - desc:           uSDN-CONTIKIMAC
+  #   type:           usdn
+  #   contiki:        /home/mike/Repos/usdn
+  #   wd:             /home/mike/Repos/usdn/examples/sdn
+  #   csc:            usdn-30-node.csc
+  #   makeargs:
+  #     MAC:          CONTIKIMAC
+  #     SDN:          1
+  #     FTREFRESH:    0
+  #     FTSRETRY:     0
+  #     FORCENSU:     1
+  #     FTLIFETIME:   300
+  #     NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
+  #     MULTIFLOW:    1
+  #   multiflow:      1_flow
+  #   regex:
+  #     - 'node'
+  #     - 'sdn'
+  #     - 'pow'
+  #   plot:
+  #     atomic_vs_usdn_lat:
+  #     atomic_vs_usdn:
 
 # ----------------------------------------------------------------------------
 # compare (comparison) config

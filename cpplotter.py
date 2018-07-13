@@ -7,7 +7,7 @@ import pickle
 import matplotlib.pyplot as plt  # general plotting
 import numpy as np  # number crunching
 # import seaborn as sns  # fancy plotting
-import pandas as pd  # table manipulation
+# import pandas as pd  # table manipulation
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
 
 # Matplotlib settings for graphs (need texlive-full, ghostscript and dvipng)
