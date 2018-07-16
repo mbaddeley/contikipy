@@ -19,23 +19,33 @@ formatters:
   patterns:
     # atomic
     - type:  atomic-energy
-      regex: \s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<op_type>\w+)(?:\s*h:(?P<hops>\d+)|\s+np:(?P<n_phases>\d+)|\s+gon:(?P<gon>\d+)|\s+ron:(?P<ron>\d+)|\s+con:(?P<con>\d+)\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
+      regex: \s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<type>\w+)(?:\s*h:(?P<hops>\d+)|\s+np:(?P<n_phases>\d+)|\s+gon:(?P<gon>\d+)|\s+ron:(?P<ron>\d+)|\s+con:(?P<con>\d+)\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
     - type:  atomic-op
-      regex: \s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<op_type>\w+)(?:\s*h:(?P<hops>\d+)|\scp:\s*(?P<c_phase>\d+)|\s+tp:\s*(?P<n_phases>\d+)|\s+dur:\s*(?P<c_time>\d+)|\s+tdur:\s*(?P<op_duration>\d+)|\s+an:(?P<active>\d+))+.*?$
+      regex: \s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<type>\w+)(?:\s*h:(?P<hops>\d+)|\scp:\s*(?P<c_phase>\d+)|\s+tp:\s*(?P<n_phases>\d+)|\s+dur:\s*(?P<lat>\d+)|\s+tdur:\s*(?P<op_duration>\d+)|\s+an:(?P<active>\d+))+.*?$
     # uSDN
     - type:   pow
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*](?:\s*PW\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
     - type:   app
-      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<status>(TX|RX))\s+(?P<typ>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>[1-5])|\s+m:(?P<mac>\d+))+.*?$
+      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<status>(TX|RX))\s+(?P<type>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>[1-5])|\s+m:(?P<mac>\d+))+.*?$
     - type:   node
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*h:(?P<hops>\d+), n:(?P<degree>\d+)
     - type:   sdn
-      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<status>(OUT|BUF|IN))\s+(?P<typ>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>[1-5])|\s+m:(?P<mac>\d+))+.*?$
+      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<status>(OUT|BUF|IN))\s+(?P<type>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>[1-5])|\s+m:(?P<mac>\d+))+.*?$
     - type:   icmp
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?:\s+type:(?P<type>\d+)|\s+code:(?P<code>\d+))+.*?$
     - type:   join
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?:\s+n:(?P<node>\d+)|\s+c:(?P<controller>\d+)|\s+dag:(?P<dag>\d+)|\s+dao:(?P<dao>\d+))+.*?$
   process:
+    # atomic
+    atomic-op:
+      filter:
+        col:      active
+        min:      1
+        max:      1
+      # filter:
+      #   col:      hops
+      #   min:      1
+      #   max:      5
     # uSDN
     sdn:
       merge:
@@ -81,7 +91,7 @@ simulations:
     contiki:        /home/mike/Repos/atomic
     wd:             /home/mike/Repos/atomic/examples/atomic
     csc:            atomic-30-node.csc
-    log:            /home/mike/Results/atomic-30-node.log
+    log:            /home/mike/Results/ATOMIC_vs_USDN_LAT_CLCT/Atomic-SDN/Atomic-SDN.log
     makeargs:
       ATM_CONF_MAX_NODES:         30
       ATM_CONF_MAX_EMPTY_STOP:    1
@@ -95,11 +105,14 @@ simulations:
       - 'atomic-energy'
       - 'atomic-op'
     plot:
-      atomic_vs_usdn_lat:
+      latency_v_hops:
         df:      atomic-op
         packets: ['CLCT']
-        file:    'atomic_vs_usdn_lat'
-      atomic_vs_usdn:
+        file:    'latency_v_hops'
+      pdr_v_hops:
+        df:      atomic-op
+        packets: ['CLCT']
+        file:    'pdr_v_hops'
   # 30 Node uSDN CSMA
   - desc:           uSDN-CSMA
     type:           usdn
@@ -122,13 +135,14 @@ simulations:
       - 'sdn'
       - 'pow'
     plot:
-      atomic_vs_usdn_lat:
+      latency_v_hops:
         df:      sdn
         packets: ['NSU']
-        file:    'atomic_vs_usdn_lat'
-      atomic_vs_usdn:
+        file:    'latency_v_hops'
+      pdr_v_hops:
+        df:      sdn
         packets: ['NSU']
-        file: 'atomic_vs_usdn'
+        file:    'pdr_v_hops'
   # # 30 Node uSDN CONTIKIMAC
   # - desc:           uSDN-CONTIKIMAC
   #   type:           usdn
@@ -150,7 +164,7 @@ simulations:
   #     - 'sdn'
   #     - 'pow'
   #   plot:
-  #     atomic_vs_usdn_lat:
+  #     latency_v_hops:
   #     atomic_vs_usdn:
 
 # ----------------------------------------------------------------------------
@@ -164,9 +178,9 @@ compare:
     - uSDN-CONTIKIMAC
     # which plots do we want to compare?
     plots:
-      - atomic_vs_usdn_lat
-      - atomic_vs_usdn_collect_pdr
-      - atomic_vs_usdn_collect_energy
+      - latency_v_hops
+      - pdr_v_hops
+      - energy_v_hops
     # plot arguments
     args:
       samefigure: 0
@@ -174,11 +188,11 @@ compare:
       # with rows and cols, as there isn't much input checking!!!
       nrows:      2
       ncols:      1
-      atomic_vs_usdn_collect_pdr:
+      pdr_v_hops:
         row: 0
         col: 0
         legend: (0.33, 1.05)  # location, None, or Tuple
-      atomic_vs_usdn_collect_energy:
+      energy_v_hops:
         row: 1
         col: 0
         legend: None

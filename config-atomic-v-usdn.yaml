@@ -76,7 +76,7 @@ simulations:
       - 'atomic-energy'
       - 'atomic-op'
     plot:
-      - atomic_vs_usdn_lat
+      - latency_v_hops
       - atomic_vs_usdn
   # 30 Node uSDN CSMA
   - desc:           uSDN-CSMA
@@ -100,7 +100,7 @@ simulations:
       - 'sdn'
       - 'pow'
     plot:
-      - atomic_vs_usdn_lat
+      - latency_v_hops
       - atomic_vs_usdn
   # 30 Node uSDN CONTIKIMAC
   - desc:           uSDN-CONTIKIMAC
@@ -123,7 +123,7 @@ simulations:
       - 'sdn'
       - 'pow'
     plot:
-      - atomic_vs_usdn_lat
+      - latency_v_hops
       - atomic_vs_usdn
   # 30 Node uSDN NULLMAC
   # - desc:           uSDN-NULLMAC
@@ -146,7 +146,7 @@ simulations:
   #     - 'sdn'
   #     - 'pow'
   #   plot:
-  #     - atomic_vs_usdn_lat
+  #     - latency_v_hops
   #     - atomic_vs_usdn
 
 # ----------------------------------------------------------------------------
@@ -161,7 +161,7 @@ compare:
     # - uSDN-NULLMAC
     # which plots do we want to compare?
     plots:
-      # - atomic_vs_usdn_lat
+      # - latency_v_hops
       - atomic_vs_usdn_collect_pdr
       - atomic_vs_usdn_collect_energy
     # plot arguments

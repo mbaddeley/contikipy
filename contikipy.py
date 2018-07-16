@@ -165,10 +165,13 @@ def parse(logtype_re, sim_log, sim_dir, sim_desc, sim_type,
     df_dict = {}
     for p in pattern_types:
         df_dict.update({p: parse_regex(sim_log, logtype_re, p, sim_dir)})
-    # Save
     if bool(df_dict):
-        print('**** Process the data...')
-        df_dict = process_data(df_dict, cfg['formatters']['process'])
+        # Do any YAML configured data processing
+        if 'process' in cfg['formatters']:
+            if cfg['formatters']['process'] is not None:
+                print('**** Process the data...')
+                df_dict = process_data(df_dict, cfg['formatters']['process'])
+        # Save the data
         print('**** Pickle the data...')
         lp.pickle_data(sim_dir, df_dict)
     # """Generate plots."""
@@ -194,11 +197,12 @@ def process_data(data_dict, process_list):
             df = data_dict[k]
             if 'merge' in v:
                 m = v['merge']
-                pprint(df)
+                print('> Merge ' + k + ': ' + str(m))
                 df = df.merge(data_dict[m['df']], left_on=m['left_on'],
                               right_on=m['right_on'])
             if 'filter' in v:
                 f = v['filter']
+                print('> Filter ' + k + ': ' + str(f))
                 df = df[(df[f['col']] >= f['min'])
                         & (df[f['col']] <= f['max'])]
             data_dict[k] = df
