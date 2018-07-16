@@ -155,7 +155,7 @@ def parse(logtype_re, sim_log, sim_dir, sim_desc, sim_type,
     # print(some information about what's being parsed
     simstr = '- Simulation: ' + sim_desc
     dirstr = '- Directory: ' + sim_dir
-    plotstr = '- Plots {0}'.format(plot_types)
+    plotstr = '- Plots {0}'.format(plot_types.keys())
     info = simstr + '\n' + dirstr + '\n' + plotstr
     info_len = len(max([simstr, dirstr, plotstr], key=len))
     print('-' * info_len)
@@ -175,7 +175,7 @@ def parse(logtype_re, sim_log, sim_dir, sim_desc, sim_type,
         print('**** Pickle the data...')
         lp.pickle_data(sim_dir, df_dict)
     # """Generate plots."""
-    print('**** Generate the following plots: [' + ' '.join(plot_types) + ']')
+    print('**** Generate the following plots: [' + ', '.join(plot_types) + ']')
     lp.plot_data(sim_desc, sim_type, sim_dir, df_dict, plot_types)
 
 
@@ -194,18 +194,19 @@ def process_data(data_dict, process_list):
     # Check to see if we have a processing task for each data df
     for k, v in cfg['formatters']['process'].items():
         if k in data_dict:
-            df = data_dict[k]
-            if 'merge' in v:
-                m = v['merge']
-                print('> Merge ' + k + ': ' + str(m))
-                df = df.merge(data_dict[m['df']], left_on=m['left_on'],
-                              right_on=m['right_on'])
-            if 'filter' in v:
-                f = v['filter']
-                print('> Filter ' + k + ': ' + str(f))
-                df = df[(df[f['col']] >= f['min'])
-                        & (df[f['col']] <= f['max'])]
-            data_dict[k] = df
+            for p in v:
+                df = data_dict[k]
+                if 'merge' in p.keys():
+                    m = p['merge']
+                    print('> Merge ' + k + ': ' + str(m))
+                    df = df.merge(data_dict[m['df']], left_on=m['left_on'],
+                                  right_on=m['right_on'])
+                if 'filter' in p.keys():
+                    f = p['filter']
+                    print('> Filter ' + k + ': ' + str(f))
+                    df = df[(df[f['col']] >= f['min'])
+                            & (df[f['col']] <= f['max'])]
+                data_dict[k] = df
 
     return data_dict
 

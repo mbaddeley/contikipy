@@ -114,6 +114,7 @@ def plot_data(desc, type, dir, df_dict, plots):
         'atomic_vs_usdn_join': atomic_vs_usdn_join,
         'latency_v_hops': latency_v_hops,
         'pdr_v_hops': pdr_v_hops,
+        'energy_v_hops': energy_v_hops,
     }
 
     # required dictionaries for each plotter
@@ -133,7 +134,9 @@ def plot_data(desc, type, dir, df_dict, plots):
         'latency_v_hops': {'atomic': ['atomic-op'],
                            'usdn': ['sdn', 'node']},
         'pdr_v_hops': {'atomic': ['atomic-op', 'atomic-energy'],
-                       'usdn': ['sdn', 'node', 'pow']},
+                       'usdn': ['sdn', 'node']},
+        'energy_v_hops': {'atomic': ['atomic-energy'],
+                          'usdn': ['sdn', 'node', 'pow']},
     }
 
     sim_desc = desc
@@ -699,54 +702,32 @@ def pdr_v_hops(df_dict, **kwargs):
 
 
 # ----------------------------------------------------------------------------#
-# def atomic_vs_usdn(df_dict, **kwargs):
-#     """Plot atomic vs usdn collect pdr and energy."""
-#     # PDR
-#     if 'usdn' in sim_type:
-#         # copy dfs
-#         df_sdn = df_dict['sdn'].copy()
-#         # take only NSU and drop any dropped packets
-#         df = df_sdn[(df_sdn['type'] == 'NSU')]
-#     elif 'atomic' in sim_type:
-#         df = df_dict['atomic-op'].copy()
-#         df = df[df['type'] == 'CLCT']
-#         df['lat'] = df['lat'].astype(int)
-#         df = df[df['hops'] != 0]
-#         df['drpd'] = np.where((df['active'] == 1) & (df['lat'] == 0),
-#                               True, False)
-#     else:
-#         raise Exception('ERROR: Unknown types!')
-#
-#     df_pdr = df.groupby('hops')['drpd'] \
-#                .apply(lambda x: ratio(len(x), x.sum()))
-#     df_pdr = df_pdr.groupby('hops')           \
-#                    .apply(lambda x: x.mean()) \
-#                    .reset_index()             \
-#                    .set_index('hops')
-#
-#     x = df_pdr.index.tolist()
-#     y = df_pdr['drpd'].tolist()
-#     cpplot.plot_bar(df_pdr, 'atomic_vs_usdn_collect_pdr', sim_dir, x, y,
-#                     xlabel='Hops', ylabel='End-to-end PDR (%)')
-#     print('  ... PDR mean: ' + str(np.mean(y)))
-#
-#     # Energy
-#     if 'usdn' in sim_type:
-#         df = df_dict['pow'].copy().reset_index()
-#     elif 'atomic' in sim_type:
-#         df = df_dict['atomic-energy'].copy()
-#         df = df[df['type'] == 'CLCT']
-#         df = df[df['hops'] != 0]
-#     else:
-#         raise Exception('ERROR: Unknown types!')
-#     g = df.groupby('hops')
-#     data = {}
-#     for k, v in g:
-#         data[k] = v.groupby('id').last()['all_rdc'].mean()
-#
-#     x = data.keys()
-#     y = data.values()
-#
-#     cpplot.plot_bar(df, 'atomic_vs_usdn_collect_energy', sim_dir, x, y,
-#                     xlabel='Hops', ylabel='Radio Duty Cycle (%)')
-#     print('  ... RDC mean: ' + str(np.mean(y)))
+def energy_v_hops(df_dict, **kwargs):
+    """Plot energy vs hops."""
+    df_name = kwargs['df'] if 'df' in kwargs else None
+    packets = kwargs['packets'] if 'packets' in kwargs else None
+    filename = kwargs['file'] if 'file' in kwargs else 'latency'
+
+    print('> Do pdr_v_hops for ' + str(packets) + ' in ' + df_name)
+
+    if packets is None:
+        raise Exception('ERROR: No df!')
+    if packets is None:
+        raise Exception('ERROR: No packets to search for!')
+
+    df = df_dict[df_name].copy()
+    if 'type' in df:
+        for p in packets:
+            df = df[(df['type'] == p)]
+
+    g = df.groupby('hops')
+    data = {}
+    for k, v in g:
+        data[k] = v.groupby('id').last()['all_rdc'].mean()
+
+    x = data.keys()
+    y = data.values()
+
+    cpplot.plot_bar(df, filename, sim_dir, x, y,
+                    xlabel='Hops', ylabel='Radio Duty Cycle (%)')
+    print('  ... RDC mean: ' + str(np.mean(y)))

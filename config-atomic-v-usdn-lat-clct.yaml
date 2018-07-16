@@ -38,33 +38,38 @@ formatters:
   process:
     # atomic
     atomic-op:
-      filter:
-        col:      active
-        min:      1
-        max:      1
-      # filter:
-      #   col:      hops
-      #   min:      1
-      #   max:      5
+      - filter:
+          col:      active
+          min:      1
+          max:      1
+      - filter:
+          col:      hops
+          min:      1
+          max:      5
+    atomic-energy:
+      - filter:
+          col:      hops
+          min:      1
+          max:      5
     # uSDN
     sdn:
-      merge:
-        df:       node
-        left_on:  src
-        right_on: id
-      filter:
-        col:      hops
-        min:      1
-        max:      5
+      - merge:
+          df:       node
+          left_on:  src
+          right_on: id
+      - filter:
+          col:      hops
+          min:      1
+          max:      5
     pow:
-      merge:
-        df:       node
-        left_on:  id
-        right_on: id
-      filter:
-        col:      hops
-        min:      1
-        max:      5
+      - merge:
+          df:       node
+          left_on:  id
+          right_on: id
+      - filter:
+          col:      hops
+          min:      1
+          max:      5
 
 # ----------------------------------------------------------------------------
 # Multiflow
@@ -113,13 +118,17 @@ simulations:
         df:      atomic-op
         packets: ['CLCT']
         file:    'pdr_v_hops'
+      energy_v_hops:
+        df:      atomic-energy
+        packets: ['CLCT']
+        file:    'energy_v_hops'
   # 30 Node uSDN CSMA
   - desc:           uSDN-CSMA
     type:           usdn
     contiki:        /home/mike/Repos/usdn
     wd:             /home/mike/Repos/usdn/examples/sdn
     csc:            usdn-30-node.csc
-    log:            /home/mike/Results/usdn-30-node.log
+    log:            /home/mike/Results/ATOMIC_vs_USDN_LAT_CLCT/uSDN-CSMA/uSDN-CSMA.log
     makeargs:
       MAC:          CSMA
       SDN:          1
@@ -143,29 +152,44 @@ simulations:
         df:      sdn
         packets: ['NSU']
         file:    'pdr_v_hops'
+      energy_v_hops:
+        df:      pow
+        packets: ['NSU']
+        file:    'energy_v_hops'
   # # 30 Node uSDN CONTIKIMAC
-  # - desc:           uSDN-CONTIKIMAC
-  #   type:           usdn
-  #   contiki:        /home/mike/Repos/usdn
-  #   wd:             /home/mike/Repos/usdn/examples/sdn
-  #   csc:            usdn-30-node.csc
-  #   makeargs:
-  #     MAC:          CONTIKIMAC
-  #     SDN:          1
-  #     FTREFRESH:    0
-  #     FTSRETRY:     0
-  #     FORCENSU:     1
-  #     FTLIFETIME:   300
-  #     NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
-  #     MULTIFLOW:    1
-  #   multiflow:      1_flow
-  #   regex:
-  #     - 'node'
-  #     - 'sdn'
-  #     - 'pow'
-  #   plot:
-  #     latency_v_hops:
-  #     atomic_vs_usdn:
+  - desc:           uSDN-CONTIKIMAC
+    type:           usdn
+    contiki:        /home/mike/Repos/usdn
+    wd:             /home/mike/Repos/usdn/examples/sdn
+    csc:            usdn-30-node.csc
+    log:            /home/mike/Results/ATOMIC_vs_USDN_LAT_CLCT/uSDN-CONTIKIMAC/uSDN-CONTIKIMAC.log
+    makeargs:
+      MAC:          CONTIKIMAC
+      SDN:          1
+      FTREFRESH:    0
+      FTSRETRY:     0
+      FORCENSU:     1
+      FTLIFETIME:   300
+      NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
+      MULTIFLOW:    1
+    multiflow:      1_flow
+    regex:
+      - 'node'
+      - 'sdn'
+      - 'pow'
+    plot:
+      latency_v_hops:
+        df:      sdn
+        packets: ['NSU']
+        file:    'latency_v_hops'
+      pdr_v_hops:
+        df:      sdn
+        packets: ['NSU']
+        file:    'pdr_v_hops'
+      energy_v_hops:
+        df:      pow
+        packets: ['NSU']
+        file:    'energy_v_hops'
 
 # ----------------------------------------------------------------------------
 # compare (comparison) config
