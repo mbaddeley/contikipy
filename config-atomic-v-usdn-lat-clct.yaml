@@ -96,7 +96,7 @@ simulations:
     contiki:        /home/mike/Repos/atomic
     wd:             /home/mike/Repos/atomic/examples/atomic
     csc:            atomic-30-node.csc
-    log:            /home/mike/Results/ATOMIC_vs_USDN_LAT_CLCT/Atomic-SDN/Atomic-SDN.log
+    log:            Atomic-SDN-30-CLCT
     makeargs:
       ATM_CONF_MAX_NODES:         30
       ATM_CONF_MAX_EMPTY_STOP:    1
@@ -128,7 +128,7 @@ simulations:
     contiki:        /home/mike/Repos/usdn
     wd:             /home/mike/Repos/usdn/examples/sdn
     csc:            usdn-30-node.csc
-    log:            /home/mike/Results/ATOMIC_vs_USDN_LAT_CLCT/uSDN-CSMA/uSDN-CSMA.log
+    log:            uSDN-CSMA-30-CLCT
     makeargs:
       MAC:          CSMA
       SDN:          1
@@ -162,7 +162,7 @@ simulations:
     contiki:        /home/mike/Repos/usdn
     wd:             /home/mike/Repos/usdn/examples/sdn
     csc:            usdn-30-node.csc
-    log:            /home/mike/Results/ATOMIC_vs_USDN_LAT_CLCT/uSDN-CONTIKIMAC/uSDN-CONTIKIMAC.log
+    log:            uSDN-CONTIKIMAC-30-CLCT
     makeargs:
       MAC:          CONTIKIMAC
       SDN:          1

@@ -13,7 +13,7 @@ import pandas as pd
 import cpconfig
 import cplogparser as lp
 import cpcomp
-# import cpcsc
+import cpcsc
 
 from pprint import pprint
 
@@ -72,16 +72,23 @@ def main():
     print('**** Run ' + str(len(simulations)) + ' simulations')
     for sim in simulations:
         sim_desc, sim_type, makeargs, regex, plots = get_sim_config(sim)
-        sim_dir = args.out + "/" + sim_desc + "/"
-        # check for cooja log in the sim
+        sim_dir = args.out + "/" + sim_desc
         if 'log' in sim:
-            sim_log = sim['log']
-            # cpcsc.set_simulation_title(log)
+            cooja_log = '/home/mike/Results/' + sim['log'] + '.log'
+            sim_log = sim_dir + '/' + sim['log'] + '.log'
         else:
-            sim_log = args.contiki + "/tools/cooja/build/COOJA.testlog"
+            cooja_log = args.contiki + "/tools/cooja/build/COOJA.testlog"
+            sim_log = sim_dir + '/' + sim_desc + '.log'
+        # Create a new folder for this scenario
+        if not os.path.exists(sim_dir):
+            print('**** Create simulation directory')
+            os.makedirs(sim_dir)
 # RUNCOOJA ----------------------------------------------------------- RUNCOOJA
         if int(args.runcooja):
-            runcooja(args, sim, sim_dir, makeargs, sim_desc, sim_log)
+            title = sim['log'] if 'log' in sim else sim_desc
+            runcooja(args, sim, sim_dir, makeargs, title)
+            print('**** Copy cooja log into simulation directory')
+            shutil.copyfile(cooja_log, sim_log)
 # PARSE ----------------------------------------------------------------- PARSE
         if int(args.parse) and sim_desc is not None:
             logtype_re = cfg['logtypes']['cooja']
@@ -110,11 +117,11 @@ def get_sim_config(sim):
 
 
 # ----------------------------------------------------------------------------#
-def runcooja(args, sim, outdir, makeargs, sim_desc, sim_log):
+def runcooja(args, sim, outdir, makeargs, title):
     """Run cooja."""
     try:
         # print some information about this simulation
-        simstr = 'Simulation: ' + sim_desc
+        simstr = 'Simulation: ' + title
         dirstr = 'Directory: ' + outdir
         info = simstr + '\n' + dirstr
         print('-' * len(info))
@@ -141,7 +148,10 @@ def runcooja(args, sim, outdir, makeargs, sim_desc, sim_log):
             csc = args.csc
         else:
             raise Exception('ERROR: No csc file!')
-        run(contiki, args.target, sim_log, wd, csc, outdir, makeargs, sim_desc)
+        # configure csc simulation
+        cpcsc.set_simulation_title(wd + '/' + csc, title)
+        print('**** Run simulation: ' + title)
+        run(contiki, args.target, wd, csc, makeargs)
     except Exception:
         traceback.print_exc()
         sys.exit(0)
@@ -250,7 +260,7 @@ def make(path, target, args=None):
 
 
 # ----------------------------------------------------------------------------#
-def run(contiki, target, log, wd, csc, outdir, args, simname):
+def run(contiki, target, wd, csc, args):
     """Clean, make, and run cooja."""
     csc = wd + "/" + csc
     print('**** Clean and make: ' + csc)
@@ -269,11 +279,6 @@ def run(contiki, target, log, wd, csc, outdir, args, simname):
         print('> Make ' + root)
         make(root, target, args)
     # Run the scenario in cooja with -nogui
-    print('**** Create simulation directory')
-    # Create a new folder for this scenario
-    if not os.path.exists(outdir):
-        os.makedirs(outdir)
-    print('**** Running simulation ' + simname)
     if args is None:
         args = ""
     ant = 'ant run_nogui'
@@ -282,12 +287,6 @@ def run(contiki, target, log, wd, csc, outdir, args, simname):
     cmd = ant + ' ' + antbuild + ' ' + antnogui
     print('> ' + cmd)
     subprocess.call(cmd, shell=True)
-    print('**** Copy contiki log into simulation directory')
-    # Copy contiki ouput log file and prefix the simname
-    simlog = outdir + simname + '.log'
-    shutil.copyfile(log, simlog)
-
-    return simlog
 
 
 # ----------------------------------------------------------------------------#

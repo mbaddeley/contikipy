@@ -5,7 +5,7 @@ import re
 
 
 # ----------------------------------------------------------------------------#
-def set_simulation_title(title):
+def set_simulation_title(file, title):
     """Get the number of nodes in the csc."""
     # Open the .csc file in ET
     tree = ET.parse(file)
@@ -13,9 +13,13 @@ def set_simulation_title(title):
 
     # Get all the motes
     el_title = root.findall('.simulation/title')
-    el_title.text = title
-    print "> cpcsc: " + el_title.tag, el_title.attrib, el_title.text
-    el_title.set('updated', 'yes')
+    for el in el_title:
+        print "> cpcsc orig: " + el.tag, el.attrib, el.text
+        el.text = title
+        print "> cpcsc new: " + el.tag, el.attrib, el.text
+        el.set('updated', 'yes')
+
+    tree.write(file)
 
 
 # ----------------------------------------------------------------------------#
