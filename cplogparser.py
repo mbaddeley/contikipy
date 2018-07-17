@@ -104,10 +104,9 @@ def plot_data(desc, type, dir, df_dict, plots):
         # atomic
         'atomic_op_times': atomic_op_times,
         # usdn
-        'usdn_join_time': usdn_join_time,
         'usdn_traffic_ratio': usdn_traffic_ratio,
         # atomic vs usdn
-        'atomic_vs_usdn_join': atomic_vs_usdn_join,
+        'association_v_time': association_v_time,
         'latency_v_hops': latency_v_hops,
         'pdr_v_hops': pdr_v_hops,
         'energy_v_hops': energy_v_hops,
@@ -118,11 +117,10 @@ def plot_data(desc, type, dir, df_dict, plots):
         # atomic
         'atomic_op_times': {'atomic': ['atomic-op']},
         # usdn
-        'usdn_join_time': {'usdn': ['join']},
         'usdn_traffic_ratio': {'usdn': ['app', 'icmp']},
         # atomic vs usdn
-        'atomic_vs_usdn_join': {'atomic': ['atomic-op'],
-                                'usdn': ['join', 'node']},
+        'association_v_time': {'atomic': ['atomic-op'],
+                               'usdn': ['join']},
         'latency_v_hops': {'atomic': ['atomic-op'],
                            'usdn': ['sdn', 'node']},
         'pdr_v_hops': {'atomic': ['atomic-op', 'atomic-energy'],
@@ -321,6 +319,17 @@ def format_usdn_icmp_data(df):
 def format_usdn_join_data(df):
     """Format node data."""
     print('> Read sdn join log')
+    # rearrage cols
+    df = df[['level', 'module', 'dag', 'dao',
+             'controller', 'node', 'id', 'time']]
+    df['id'] = df['id'].fillna(df['node'])
+    df = df[['dag', 'dao', 'controller', 'id', 'time']]
+    df = (df.set_index(['id', 'time'])
+            .stack()
+            .reorder_levels([2, 0, 1])
+            .reset_index(name='a')
+            .drop('a', 1)
+            .rename(columns={'level_0': 'type'}))
     return df
 
 
@@ -391,50 +400,6 @@ def atomic_op_times(df_dict, **kwargs):
 
 
 # ----------------------------------------------------------------------------#
-def usdn_join_time(df_dict, **kwargs):
-    """Plot usdn controller and rpl-dag join times."""
-    try:
-        if 'join' in df_dict:
-            join_df = df_dict['join']
-        else:
-            raise Exception('ERROR: Correct df(s) not in dict!')
-    except Exception:
-            traceback.print_exc()
-            sys.exit(0)
-    df = join_df.copy()
-    df['time'] = join_df['time']/1000/1000
-    # merge 'node' col into 'node' col, where the value in id is 1
-    # FIXME: Not generic
-    if 'node' in df:
-        df.loc[df['node'] == 1, 'node'] = df['node']
-        df = df.drop('node', 1)
-    # drop the node/module/level columns
-    df = df.drop('module', 1)
-    df = df.drop('level', 1)
-    # merge dis,dao,controller
-    # df = df.set_index(['time', 'node']).stack().reset_index()
-    df = (df.set_index(['time', 'node'])
-          .stack()
-          .reorder_levels([2, 0, 1])
-          .reset_index(name='a')
-          .drop('a', 1)
-          .rename(columns={'level_0': 'type'}))
-    # pivot so we use the type column as our columns
-    df = df.pivot_table(index=['node'],
-                        columns=['type'],
-                        values='time').dropna(how='any')
-    # FIXME: Not generic
-    if 'controller' in df:
-        x = df['controller'].tolist()
-    else:
-        x = df['dag'].tolist()
-    y = df.index.tolist()
-    cpplot.plot_hist(df, 'usdn_join_time', sim_dir, x, y,
-                     xlabel='Time (s)',
-                     ylabel='Propotion of Nodes Joined')
-
-
-# ----------------------------------------------------------------------------#
 def usdn_traffic_ratio(df_dict, **kwargs):
     """Plot traffic ratios."""
     try:
@@ -455,50 +420,43 @@ def usdn_traffic_ratio(df_dict, **kwargs):
 
 
 # ----------------------------------------------------------------------------#
-def atomic_vs_usdn_join(df_dict, **kwargs):
+def association_v_time(df_dict, **kwargs):
     """Plot atomic vs usdn join times."""
-    # check we have the correct dicts
-    try:
-        if 'join' in df_dict:
-            df = df_dict['join'].copy()
-            type = 'usdn'
-        elif 'atomic-op' in df_dict:
-            df = df_dict['atomic-op'].copy()
-            type = 'atomic'
-        else:
-            raise Exception('ERROR: Correct df(s) not in dict!')
-    except Exception:
-            traceback.print_exc()
-            sys.exit(0)
-    if type is 'usdn':
-        # get rows where node has joined controller
-        df = df[df['controller'] == 1]
-        # drop unecessary cols
-        df['node'] = df['node'].astype(int)
-        df = df[['node', 'time']].set_index('node').sort_index()
-        # # convert time to ms
-        df['time'] = df['time']/1000/1000
-        df['time'] = df['time'].astype(int)
-        xlabel = 'Time (s)'
-        color = list(plt.rcParams['axes.prop_cycle'])[0]['color']
-    if type is 'atomic':
-        df = df_dict['atomic-op'].copy()
-        df = df[df['type'] == 'ASSC']
-        df = df[['node', 'lat']]
-        df = df.rename(columns={'lat': 'time'})
+    df_name = kwargs['df'] if 'df' in kwargs else None
+    packets = kwargs['packets'] if 'packets' in kwargs else None
+    filename = kwargs['file'] if 'file' in kwargs else 'latency'
+
+    df = df_dict[df_name].copy()
+    # Filter df for packet types in packets
+    if 'type' in df:
+        df = df[df['type'].isin(packets)]
+
+    # TODO: Make this more abstract
+    if 'atomic' in df_name:
+        # convert time to ms
+        df = df.rename(columns={'lat': 'time', 'node': 'id'})
         df['time'] = df['time'].astype(int)/1000
-        df = df.set_index('node').sort_index()
-        df = df.iloc[1:]
-        xlabel = 'Time (s)'
+        # set color
         color = list(plt.rcParams['axes.prop_cycle'])[1]['color']
+        # df = df.set_index('node').sort_index()
+        # df = df.iloc[1:]
+    else:
+        # convert time to ms
+        df['time'] = df['time']/1000/1000
+        df['time'] = df['time']
+        # set color
+        color = list(plt.rcParams['axes.prop_cycle'])[0]['color']
 
     # plot the join times vs hops
     x = df['time'].tolist()
-    y = df.index.tolist()
-    cpplot.plot_hist(df, 'atomic_vs_usdn_join', sim_dir, x, y,
-                     xlabel=xlabel,
+    y = df['id'].astype(int).tolist()
+    cpplot.plot_hist(df, filename, sim_dir, x, y,
+                     xlabel='Time (s)',
                      ylabel='Propotion of Nodes Joined',
                      color=color)
+    print('  ... Association mean: ' + str(np.mean(x)))
+    print('  ... Association median: ' + str(np.median(x)))
+    print('  ... Association max: ' + str(np.max(x)))
 
 
 # ----------------------------------------------------------------------------#
@@ -507,7 +465,7 @@ def latency_v_hops(df_dict, **kwargs):
     df_name = kwargs['df'] if 'df' in kwargs else None
     packets = kwargs['packets'] if 'packets' in kwargs else None
     index = kwargs['index'] if 'index' in kwargs else None
-    aggfunc = kwargs['aggfunc'] if 'aggfunc' in kwargs else {'lat': sum}
+    aggfunc = kwargs['aggfunc'] if 'aggfunc' in kwargs else None
     filename = kwargs['file'] if 'file' in kwargs else 'latency'
 
     print('> Do latency_v_hops for ' + str(packets) + ' in ' + df_name)
@@ -522,8 +480,9 @@ def latency_v_hops(df_dict, **kwargs):
     if 'type' in df:
         df = df[df['type'].isin(packets)]
 
-    # For multiple packets we need to add the latencies
-    if len(packets) > 1 and index is not None:
+    # For multiple packets we need aggregate based on a function
+    # (e.g. {'lat': sum})
+    if len(packets) > 1 and index is not None and aggfunc is not None:
         index.append('hops')
         df = df.groupby(index, as_index=False).aggregate(aggfunc)
 
@@ -535,8 +494,13 @@ def latency_v_hops(df_dict, **kwargs):
                         columns=['hops'],
                         values='lat')
     x = list(df.columns.values)  # x ticks are the column headers
-
     y = df.mean()
+    # HACK because we aren't getting 5 hops
+    # if 'atomic' in df_name:
+    #     s = pd.Series([34.000], index=[5])
+    #     x.append(5)
+    #     y = y.append(s)
+    #     print(df_name, y)
     cpplot.plot_line(df, filename, sim_dir, x, y,
                      xlabel='Hops', ylabel='End-to-end delay (ms)')
     print('  ... LAT mean: ' + str(np.mean(y)))
@@ -557,6 +521,7 @@ def pdr_v_hops(df_dict, **kwargs):
         raise Exception('ERROR: No packets to search for!')
 
     df = df_dict[df_name].copy()
+    # Filter df for packet types in packets
     if 'type' in df:
         df = df[df['type'].isin(packets)]
 
@@ -589,6 +554,7 @@ def energy_v_hops(df_dict, **kwargs):
         raise Exception('ERROR: No packets to search for!')
 
     df = df_dict[df_name].copy()
+    # Filter df for packet types in packets
     if 'type' in df:
         df = df[df['type'].isin(packets)]
 

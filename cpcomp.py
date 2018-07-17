@@ -414,7 +414,7 @@ def compare(dir, simlist, plottypes, args, **kwargs):
         else:
             print('NEW FIG'),
             fig, axes = plt.subplots(1, 1, figsize=(8, 6))
-            ax = function_map[datatype](axes, datasets)
+            ax = function_map[datatype](axes, datasets, legend=legend)
             cpplot.set_fig_and_save(fig, ax, None,
                                     sim + '_' + str(simlist),  # filename
                                     dir + '/',                 # directory
