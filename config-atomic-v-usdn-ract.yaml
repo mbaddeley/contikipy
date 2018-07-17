@@ -4,7 +4,7 @@
 contiki:
 wd:
 logtype: cooja
-out:     /home/mike/Results/ATOMIC_vs_USDN_LAT_CLCT
+out:     /home/mike/Results/ATOMIC_vs_USDN_LAT_RACT
 csc:
 target:
 
@@ -13,7 +13,7 @@ target:
 # packet regex ... https://regex101.com/r/26KZoD/15/
 # ----------------------------------------------------------------------------
 logtypes:
-  cooja: '^\s*(?P<time>\d+):\s+(?P<id>\d+):'
+  cooja: '^\s*(?P<time>\d+):\s+(?P<node>\d+):'
 
 formatters:
   patterns:
@@ -30,7 +30,7 @@ formatters:
     - type:   node
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*h:(?P<hops>\d+), n:(?P<degree>\d+)
     - type:   sdn
-      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<status>(OUT|BUF|IN))\s+(?P<type>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>[1-5])|\s+m:(?P<mac>\d+))+.*?$
+      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<status>(OUT|BUF|IN))\s+(?P<type>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>\d+)|\s+m:(?P<mac>\d+))+.*?$
     - type:   icmp
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?:\s+type:(?P<type>\d+)|\s+code:(?P<code>\d+))+.*?$
     - type:   join
@@ -53,19 +53,15 @@ formatters:
           max:      5
     # uSDN
     sdn:
-      - merge:
-          df:       node
-          left_on:  src
-          right_on: id
       - filter:
           col:      hops
-          min:      1
+          min:      0
           max:      5
     pow:
       - merge:
           df:       node
-          left_on:  id
-          right_on: id
+          left_on:  node
+          right_on: node
       - filter:
           col:      hops
           min:      1
@@ -96,15 +92,15 @@ simulations:
     contiki:        /home/mike/Repos/atomic
     wd:             /home/mike/Repos/atomic/examples/atomic
     csc:            atomic-30-node.csc
-    log:            Atomic-SDN-30-CLCT
+    log:            Atomic-SDN-30-RACT
     makeargs:
       ATM_CONF_MAX_NODES:         30
       ATM_CONF_MAX_EMPTY_STOP:    1
       ATM_CONF_COLLECT_ALL_NODES: 0
       ATM_CONF_REACT_ALL_NODES:   0
       ATM_CONF_OP_FREQ:           0
-      ATM_CONF_COLLECT_FREQ:      60
-      ATM_CONF_REACT_FREQ:        0
+      ATM_CONF_COLLECT_FREQ:      0
+      ATM_CONF_REACT_FREQ:        60
       ATM_CONF_CONFIGURE_FREQ:    0
     regex:
       - 'atomic-energy'
@@ -112,15 +108,15 @@ simulations:
     plot:
       latency_v_hops:
         df:      atomic-op
-        packets: ['CLCT']
+        packets: ['RACT']
         file:    'latency_v_hops'
       pdr_v_hops:
         df:      atomic-op
-        packets: ['CLCT']
+        packets: ['RACT']
         file:    'pdr_v_hops'
       energy_v_hops:
         df:      atomic-energy
-        packets: ['CLCT']
+        packets: ['RACT']
         file:    'energy_v_hops'
   # 30 Node uSDN CSMA
   - desc:           uSDN-CSMA
@@ -128,7 +124,7 @@ simulations:
     contiki:        /home/mike/Repos/usdn
     wd:             /home/mike/Repos/usdn/examples/sdn
     csc:            usdn-30-node.csc
-    log:            uSDN-CSMA-30-CLCT
+    log:            uSDN-CSMA-30-RACT
     makeargs:
       MAC:          CSMA
       SDN:          1
@@ -146,15 +142,19 @@ simulations:
     plot:
       latency_v_hops:
         df:      sdn
-        packets: ['NSU']
+        packets: ['FTQ', 'FTS']
+        index:   ['seq', 'id']
+        aggfunc: {'lat': sum}
         file:    'latency_v_hops'
       pdr_v_hops:
         df:      sdn
-        packets: ['NSU']
+        packets: ['FTQ', 'FTS']
+        index:   ['seq', 'id']
         file:    'pdr_v_hops'
       energy_v_hops:
         df:      pow
-        packets: ['NSU']
+        packets: ['FTQ', 'FTS']
+        index:   ['seq', 'id']
         file:    'energy_v_hops'
   # # 30 Node uSDN CONTIKIMAC
   - desc:           uSDN-CONTIKIMAC
@@ -162,7 +162,7 @@ simulations:
     contiki:        /home/mike/Repos/usdn
     wd:             /home/mike/Repos/usdn/examples/sdn
     csc:            usdn-30-node.csc
-    log:            uSDN-CONTIKIMAC-30-CLCT
+    log:            uSDN-CONTIKIMAC-30-RACT
     makeargs:
       MAC:          CONTIKIMAC
       SDN:          1
@@ -180,15 +180,19 @@ simulations:
     plot:
       latency_v_hops:
         df:      sdn
-        packets: ['NSU']
+        packets: ['FTQ', 'FTS']
+        index:   ['seq', 'id']
+        aggfunc: {'lat': sum}
         file:    'latency_v_hops'
       pdr_v_hops:
         df:      sdn
-        packets: ['NSU']
+        packets: ['FTQ', 'FTS']
+        index:   ['seq', 'id']
         file:    'pdr_v_hops'
       energy_v_hops:
         df:      pow
-        packets: ['NSU']
+        packets: ['FTQ', 'FTS']
+        index:   ['seq', 'id']
         file:    'energy_v_hops'
 
 # ----------------------------------------------------------------------------
