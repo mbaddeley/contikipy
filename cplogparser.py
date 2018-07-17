@@ -527,6 +527,9 @@ def latency_v_hops(df_dict, **kwargs):
         index.append('hops')
         df = df.groupby(index, as_index=False).aggregate(aggfunc)
 
+    # HACK: Removes some ridiculous outliers at hop 4
+    df = df[(df['lat'] < 2000)]
+
     # Find lat for each hop count
     df = df.pivot_table(index=df.groupby('hops').cumcount(),
                         columns=['hops'],
