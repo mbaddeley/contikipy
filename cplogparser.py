@@ -254,24 +254,35 @@ def format_usdn_sdn_data(df):
 
     # Rearrange columns
     df = df.copy()
-    df = df[['src', 'dest', 'type', 'seq', 'time', 'status', 'id']]
-    # Pivot table. Lose the 'mac' and 'id' column.
-    df = df.pivot_table(index=['src', 'dest', 'type', 'seq'],
+    df = df[['src', 'dest', 'type', 'seq', 'time', 'status', 'id', 'hops']]
+    # Get head 'OUT' and tail 'IN' for 'CFG'
+    index = ['src', 'dest', 'seq']
+    mask = (df['type'] == 'CFG') & (df['status'] == 'OUT')
+    df[mask] = df[mask].groupby(index).head(1)
+    mask = (df['type'] == 'CFG') & (df['status'] == 'IN')
+    df[mask] = df[mask].groupby(index).tail(1)
+    # print(df[(df['type'] == 'CFG') & (df['dest'] == 24)])
+    # Fill in the hops
+    index = ['src', 'dest', 'type', 'seq']
+    df['hops'] = df.groupby(index, sort=False)['hops'].apply(
+                            lambda x: x.ffill().bfill())
+    df = df.pivot_table(index=['src', 'dest', 'type', 'seq', 'hops'],
                         columns=['status'],
                         aggfunc={'time': np.sum},
-                        values=['time'])
+                        values=['time']).bfill()
     # TODO: not very elegant but it does the job
     df.columns = df.columns.droplevel()
     df = df.reset_index()
-    df.columns = ['src', 'dest', 'type', 'seq',
-                  'in_t', 'out_t']
+    df.columns = ['src', 'dest', 'type', 'seq', 'hops', 'in_t', 'out_t']
     # convert floats to ints
     df['dest'] = df['dest'].astype(int)
     df['seq'] = df['seq'].astype(int)
+    df['hops'] = df['hops'].astype(int)
     # add a 'dropped' column
     df['drpd'] = df['in_t'].apply(lambda x: True if np.isnan(x) else False)
     # calculate the latency/delay and add as a column
     df['lat'] = (df['in_t'] - df['out_t'])/1000  # ms
+
     return df
 
 
@@ -639,6 +650,7 @@ def latency_v_hops(df_dict, **kwargs):
     """Plot latency vs hops."""
     df_name = kwargs['df'] if 'df' in kwargs else None
     packets = kwargs['packets'] if 'packets' in kwargs else None
+    ack = kwargs['packets'] if 'ack_packet' in kwargs else None
     filename = kwargs['file'] if 'file' in kwargs else 'latency'
 
     print('> Do latency_v_hops for ' + str(packets) + ' in ' + df_name)
@@ -649,8 +661,8 @@ def latency_v_hops(df_dict, **kwargs):
         raise Exception('ERROR: No packets to search for!')
 
     df = df_dict[df_name].copy()
-    for p in packets:
-        df = df[(df['type'] == p)]
+    if 'type' in df:
+        df = df[df['type'].isin(packets)]
 
     df = df[df['lat'] != 0]
     df = df[df['hops'] != 0]
@@ -674,6 +686,7 @@ def pdr_v_hops(df_dict, **kwargs):
     """Plot pdr vs hops."""
     df_name = kwargs['df'] if 'df' in kwargs else None
     packets = kwargs['packets'] if 'packets' in kwargs else None
+    ack = kwargs['packets'] if 'ack_packet' in kwargs else None
     filename = kwargs['file'] if 'file' in kwargs else 'latency'
 
     print('> Do pdr_v_hops for ' + str(packets) + ' in ' + df_name)
@@ -684,8 +697,8 @@ def pdr_v_hops(df_dict, **kwargs):
         raise Exception('ERROR: No packets to search for!')
 
     df = df_dict[df_name].copy()
-    for p in packets:
-        df = df[(df['type'] == p)]
+    if 'type' in df:
+        df = df[df['type'].isin(packets)]
 
     df_pdr = df.groupby('hops')['drpd'] \
                .apply(lambda x: ratio(len(x), x.sum()))
@@ -706,9 +719,10 @@ def energy_v_hops(df_dict, **kwargs):
     """Plot energy vs hops."""
     df_name = kwargs['df'] if 'df' in kwargs else None
     packets = kwargs['packets'] if 'packets' in kwargs else None
+    ack = kwargs['packets'] if 'ack_packet' in kwargs else None
     filename = kwargs['file'] if 'file' in kwargs else 'latency'
 
-    print('> Do pdr_v_hops for ' + str(packets) + ' in ' + df_name)
+    print('> Do energy_v_hops for ' + str(packets) + ' in ' + df_name)
 
     if packets is None:
         raise Exception('ERROR: No df!')
@@ -717,8 +731,7 @@ def energy_v_hops(df_dict, **kwargs):
 
     df = df_dict[df_name].copy()
     if 'type' in df:
-        for p in packets:
-            df = df[(df['type'] == p)]
+        df = df[df['type'].isin(packets)]
 
     g = df.groupby('hops')
     data = {}

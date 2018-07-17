@@ -72,13 +72,13 @@ def main():
     print('**** Run ' + str(len(simulations)) + ' simulations')
     for sim in simulations:
         sim_desc, sim_type, makeargs, regex, plots = get_sim_config(sim)
-        sim_dir = args.out + "/" + sim_desc
+        sim_dir = args.out + "/" + sim_desc + '/'
         if 'log' in sim:
             cooja_log = '/home/mike/Results/' + sim['log'] + '.log'
-            sim_log = sim_dir + '/' + sim['log'] + '.log'
+            sim_log = sim_dir + sim['log'] + '.log'
         else:
             cooja_log = args.contiki + "/tools/cooja/build/COOJA.testlog"
-            sim_log = sim_dir + '/' + sim_desc + '.log'
+            sim_log = sim_dir + sim_desc + '.log'
         # Create a new folder for this scenario
         if not os.path.exists(sim_dir):
             print('**** Create simulation directory')
@@ -152,6 +152,8 @@ def runcooja(args, sim, outdir, makeargs, title):
         cpcsc.set_simulation_title(wd + '/' + csc, title)
         print('**** Run simulation: ' + title)
         run(contiki, args.target, wd, csc, makeargs)
+        # reset csc simulation
+        cpcsc.set_simulation_title(wd + '/' + csc, csc.split('.csc')[0])
     except Exception:
         traceback.print_exc()
         sys.exit(0)
@@ -209,8 +211,10 @@ def process_data(data_dict, process_list):
                 if 'merge' in p.keys():
                     m = p['merge']
                     print('> Merge ' + k + ': ' + str(m))
-                    df = df.merge(data_dict[m['df']], left_on=m['left_on'],
-                                  right_on=m['right_on'])
+                    how = m['how'] if 'how' in m else 'inner'
+                    print(how)
+                    df = df.merge(data_dict[m['df']], how,
+                                  left_on=m['left_on'], right_on=m['right_on'])
                 if 'filter' in p.keys():
                     f = p['filter']
                     print('> Filter ' + k + ': ' + str(f))

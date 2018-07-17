@@ -17,7 +17,7 @@ def set_simulation_title(file, title):
         print "> cpcsc orig: " + el.tag, el.attrib, el.text
         el.text = title
         print "> cpcsc new: " + el.tag, el.attrib, el.text
-        el.set('updated', 'yes')
+        # el.set('updated', 'yes')
 
     tree.write(file)
 
