@@ -13,7 +13,7 @@ target:
 # packet regex ... https://regex101.com/r/26KZoD/15/
 # ----------------------------------------------------------------------------
 logtypes:
-  cooja: '^\s*(?P<time>\d+):\s+(?P<id>\d+):'
+  cooja: '^\s*(?P<time>\d+):\s+(?P<node>\d+):'
 
 formatters:
   patterns:
@@ -29,6 +29,7 @@ formatters:
           col:      active
           min:      1
           max:      1
+# -------------------------
 
 # ----------------------------------------------------------------------------
 # Simulations
@@ -46,25 +47,19 @@ simulations:
       ATM_CONF_COLLECT_ALL_NODES: 1
       ATM_CONF_REACT_ALL_NODES:   1
       ATM_CONF_OP_FREQ:           60
-      # ATM_CONF_COLLECT_FREQ:      3
-      # ATM_CONF_REACT_FREQ:        5
-      # ATM_CONF_CONFIGURE_FREQ:    7
+      ATM_CONF_COLLECT_FREQ:      0
+      ATM_CONF_REACT_FREQ:        0
+      ATM_CONF_CONFIGURE_FREQ:    0
+      ATM_CONF_LOG_NONE:          0
     regex:
       - 'atomic-energy'
       - 'atomic-op'
     plot:
       atomic_op_times:
-      latency_v_hops:
         df:      atomic-op
-        packets: ['RACT']
-        file:    'latency_v_hops'
-      pdr_v_hops:
-        df:      atomic-op
-        packets: ['RACT']
-        file:    'pdr_v_hops'
       energy_v_hops:
         df:      atomic-energy
-        packets: ['RACT']
+        packets: ['CLCT']
         file:    'energy_v_hops'
 
 # ----------------------------------------------------------------------------
@@ -80,7 +75,7 @@ compare:
       - energy_v_hops
     # plot arguments
     args:
-      samefigure: 1
+      samefigure: 0
       # N.B. If you are going to put these on the same fig then be careful
       # with rows and cols, as there isn't much input checking!!!
       nrows:      2

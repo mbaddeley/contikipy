@@ -6,6 +6,7 @@ import sys      # for exceptions
 import os       # for makedir
 import pickle   # for saving data
 import re       # for regex
+import math
 import traceback
 
 import matplotlib.pyplot as plt  # general plotting
@@ -169,8 +170,22 @@ def add_line(ax, color, label, data, **kwargs):
 
 
 # ----------------------------------------------------------------------------#
-def add_bar(ax, total, index, color, label, data):
+def autolabel(ax, rects, max_h):
+    """Attach a text label above each bar displaying its height."""
+    for rect in rects:
+        rect_height = math.ceil(rect.get_height())
+        # rect_height = rect.get_height()
+        if rect_height > max_h:
+            text_height = rect_height if rect_height <= max_h else max_h
+            ax.text(rect.get_x() + rect.get_width()/2., 1*text_height,
+                    '%d' % int(rect_height),
+                    ha='center', va='bottom')
+
+
+# ----------------------------------------------------------------------------#
+def add_bar(ax, total, index, color, label, data, **kwargs):
     """Add data to bar plot."""
+    ylim = kwargs['ylim'] if 'ylim' in kwargs else None
     width = 0.35
     x_len = len(data['x'])
     # check for strings in x
@@ -179,7 +194,7 @@ def add_bar(ax, total, index, color, label, data):
     else:
         x_max = x_len  # if there's a string we use x_len for xticks
     ind = calc_plot_pos(total, index, x_max, x_len)
-    ax.bar(ind, data['y'], width, color=color, label=label)
+    rects = ax.bar(ind, data['y'], width, color=color, label=label)
     # Re-calculate the xticks
     ind = calc_xtick_pos(total, index, x_max, x_len)
     ax.set_xticks(ind)
@@ -192,6 +207,9 @@ def add_bar(ax, total, index, color, label, data):
     else:
         rc_params = None
     ax.set_xticklabels(xlabels, rc_params)
+    # if there's a y limit then add max value text to top of bars which exceed
+    if ylim is not None:
+        autolabel(ax, rects, ylim)
 
 
 # ----------------------------------------------------------------------------#
@@ -254,6 +272,7 @@ def compare_box(ax, datasets, **kwargs):
 def compare_bar(ax, datasets, **kwargs):
     """Compare bar plots."""
     legend = kwargs['legend'] if 'legend' in kwargs else 'best'
+    ylim = kwargs['ylim'] if 'ylim' in kwargs else None
     # variables for later
     labels = []             # save the labels for the legend
     history = []            # save the data history
@@ -268,6 +287,9 @@ def compare_bar(ax, datasets, **kwargs):
     if not any(isinstance(x, str) for x in data['data']['x']):
         X = pad_x(X)
     Y = pad_y(Y)
+    # set a y limit
+    if ylim is not None:
+        ax.set_ylim([0, ylim])
     # plot the data
     for data in datasets:
         history.append(data['data'])
@@ -278,7 +300,7 @@ def compare_bar(ax, datasets, **kwargs):
         data['data']['x'] = X[data['id']]
         data['data']['y'] = Y[data['id']]
         add_bar(ax, len(datasets), index, color,
-                data['label'], data['data'])
+                data['label'], data['data'], ylim=ylim)
         # increment plot index
         index += 1
 
@@ -345,6 +367,9 @@ def compare_hist(ax, datasets, **kwargs):
 # ----------------------------------------------------------------------------#
 def compare(dir, simlist, plottypes, args, **kwargs):
     """Compare results between data sets for a list of plot types."""
+    # default values
+    legend = 'best'
+    ylim = None
     # dictionary of the various plot comparison functions
     function_map = {
         'bar':   compare_bar,
@@ -380,7 +405,7 @@ def compare(dir, simlist, plottypes, args, **kwargs):
         # check for sim arguments
         if args is not None and sim in args:
             # check for specified legend position
-            legend = args[sim]['legend'] if 'legend' in args[sim] else 'best'
+            legend = args[sim]['legend'] if 'legend' in args[sim] else legend
             bbox_pattern = re.compile('\\(.*\\)')
             if legend == 'None':
                 legend = None
@@ -389,6 +414,8 @@ def compare(dir, simlist, plottypes, args, **kwargs):
             # check for row and col
             row = args[sim]['row']
             col = args[sim]['col']
+            # check for a y limit
+            ylim = args[sim]['ylim'] if 'ylim' in args[sim] else None
 
         # SAME FIGURE
         if samefigure == 1:
@@ -403,18 +430,19 @@ def compare(dir, simlist, plottypes, args, **kwargs):
             else:
                 ax = axes
             # call the function map
-            ax = function_map[datatype](ax, datasets, legend=legend)
+            ax = function_map[datatype](ax, datasets, legend=legend, ylim=ylim)
             # HACK: Set the correct labels if same figure
             ax.set_xlabel(xlabel)
             ax.set_ylabel(ylabel)
             # Remove top axes and right axes ticks
             ax.get_xaxis().tick_bottom()
             ax.get_yaxis().tick_left()
-        # DIFFERENT FIGURES
+        # DIFFERENT FIGURESargs[sim] else legend
         else:
             print('NEW FIG'),
             fig, axes = plt.subplots(1, 1, figsize=(8, 6))
-            ax = function_map[datatype](axes, datasets, legend=legend)
+            ax = function_map[datatype](axes, datasets, legend=legend,
+                                        ylim=ylim)
             cpplot.set_fig_and_save(fig, ax, None,
                                     sim + '_' + str(simlist),  # filename
                                     dir + '/',                 # directory

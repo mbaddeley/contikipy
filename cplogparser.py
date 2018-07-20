@@ -377,10 +377,15 @@ def csv_to_df(file):
 # ----------------------------------------------------------------------------#
 def atomic_op_times(df_dict, **kwargs):
     """Plot atomic op times."""
-    df = df_dict['atomic-op'].copy()
+    df_name = kwargs['df'] if 'df' in kwargs else None
+    packets = kwargs['packets'] if 'packets' in kwargs else None
+    filename = kwargs['file'] if 'file' in kwargs else 'atomic_op_times'
+    df = df_dict[df_name].copy()
+    # Filter df for packet types in packets
+    if 'type' in df and packets is not None:
+        df = df[df['type'].isin(packets)]
     g = df.groupby('type')
     data = pd.DataFrame()
-
     for k, v in g:
         data[k] = pd.Series(v['op_duration'].mean())
 
@@ -395,7 +400,7 @@ def atomic_op_times(df_dict, **kwargs):
     x = list(data.columns.values)
     y = data.values.tolist()[0]
 
-    cpplot.plot_bar(df, 'atomic_op', sim_dir, x, y,
+    cpplot.plot_bar(df, filename, sim_dir, x, y,
                     xlabel='Op Type', ylabel='Time(ms)')
 
 
@@ -424,7 +429,7 @@ def association_v_time(df_dict, **kwargs):
     """Plot atomic vs usdn join times."""
     df_name = kwargs['df'] if 'df' in kwargs else None
     packets = kwargs['packets'] if 'packets' in kwargs else None
-    filename = kwargs['file'] if 'file' in kwargs else 'latency'
+    filename = kwargs['file'] if 'file' in kwargs else 'association_v_time'
 
     df = df_dict[df_name].copy()
     # Filter df for packet types in packets
@@ -466,7 +471,7 @@ def latency_v_hops(df_dict, **kwargs):
     packets = kwargs['packets'] if 'packets' in kwargs else None
     index = kwargs['index'] if 'index' in kwargs else None
     aggfunc = kwargs['aggfunc'] if 'aggfunc' in kwargs else None
-    filename = kwargs['file'] if 'file' in kwargs else 'latency'
+    filename = kwargs['file'] if 'file' in kwargs else 'latency_v_hops'
 
     print('> Do latency_v_hops for ' + str(packets) + ' in ' + df_name)
 
@@ -511,7 +516,7 @@ def pdr_v_hops(df_dict, **kwargs):
     """Plot pdr vs hops."""
     df_name = kwargs['df'] if 'df' in kwargs else None
     packets = kwargs['packets'] if 'packets' in kwargs else None
-    filename = kwargs['file'] if 'file' in kwargs else 'latency'
+    filename = kwargs['file'] if 'file' in kwargs else 'pdr_v_hops'
 
     print('> Do pdr_v_hops for ' + str(packets) + ' in ' + df_name)
 
@@ -544,7 +549,7 @@ def energy_v_hops(df_dict, **kwargs):
     """Plot energy vs hops."""
     df_name = kwargs['df'] if 'df' in kwargs else None
     packets = kwargs['packets'] if 'packets' in kwargs else None
-    filename = kwargs['file'] if 'file' in kwargs else 'latency'
+    filename = kwargs['file'] if 'file' in kwargs else 'energy_v_hops'
 
     print('> Do energy_v_hops for ' + str(packets) + ' in ' + df_name)
 

@@ -144,7 +144,7 @@ simulations:
       latency_v_hops:
         df:      sdn
         packets: ['NSU', 'CONF', 'FTQ', 'FTS']
-        index:   ['node']
+        index:   ['id']
         aggfunc: {'lat': mean}
         file:    'latency_v_hops'
       pdr_v_hops:
@@ -180,7 +180,7 @@ simulations:
       latency_v_hops:
         df:      sdn
         packets: ['NSU', 'CONF', 'FTQ', 'FTS']
-        index:   ['node']
+        index:   ['id']
         aggfunc: {'lat': mean}
         file:    'latency_v_hops'
       pdr_v_hops:
@@ -216,7 +216,7 @@ simulations:
       latency_v_hops:
         df:      sdn
         packets: ['NSU', 'CONF', 'FTQ', 'FTS']
-        index:   ['node']
+        index:   ['id']
         aggfunc: {'lat': mean}
         file:    'latency_v_hops'
       pdr_v_hops:
@@ -236,6 +236,7 @@ compare:
     - Atomic-SDN
     - uSDN-CSMA
     - uSDN-CONTIKIMAC
+    - uSDN-NULLMAC
     # which plots do we want to compare?
     plots:
       - latency_v_hops
@@ -256,3 +257,4 @@ compare:
         row: 1
         col: 0
         legend: None
+        ylim: 25

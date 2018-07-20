@@ -14,38 +14,116 @@ target:  sky
 # packet regex ... https://regex101.com/r/26KZoD/15/
 # ----------------------------------------------------------------------------
 logtypes:
-  - type:    cooja
-    fmt_re:  '^\s*(?P<time>\d+):\s+(?P<id>\d+):'
+  cooja: '^\s*(?P<time>\d+):\s+(?P<node>\d+):'
 
 formatters:
-  dictionary:
+  patterns:
     # atomic
     - type:  atomic-energy
-      regex: \s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<op_type>\w+)(?:\s*h:(?P<hops>\d+)|\s+np:(?P<n_phases>\d+)|\s+gon:(?P<gon>\d+)|\s+ron:(?P<ron>\d+)|\s+con:(?P<con>\d+)\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
+      regex: \s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<type>\w+)(?:\s*h:(?P<hops>\d+)|\s+np:(?P<n_phases>\d+)|\s+gon:(?P<gon>\d+)|\s+ron:(?P<ron>\d+)|\s+con:(?P<con>\d+)\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
     - type:  atomic-op
-      regex: \s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<op_type>\w+)(?:\s*h:(?P<hops>\d+)|\scp:\s*(?P<c_phase>\d+)|\s+tp:\s*(?P<n_phases>\d+)|\s+dur:\s*(?P<c_time>\d+)|\s+tdur:\s*(?P<op_duration>\d+)|\s+an:(?P<active>\d+))+.*?$
-
+      regex: \s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<type>\w+)(?:\s*h:(?P<hops>\d+)|\scp:\s*(?P<c_phase>\d+)|\s+tp:\s*(?P<n_phases>\d+)|\s+dur:\s*(?P<lat>\d+)|\s+tdur:\s*(?P<op_duration>\d+)|\s+an:(?P<active>\d+))+.*?$
+  process:
+    # atomic
+    atomic-op:
+      - filter:
+          col:      active
+          min:      1
+          max:      1
+      - filter:
+          col:      hops
+          min:      1
+          max:      5
+    atomic-energy:
+      - filter:
+          col:      hops
+          min:      1
+          max:      5
 # ----------------------------------------------------------------------------
 # Simulations
 # ----------------------------------------------------------------------------
 simulations:
-  # 20 Node
-  - desc:     ATM_20
+  # 30 Node
+  # - desc:     '30 Node'
+  #   type:     atomic
+  #   contiki:  /home/mike/Repos/atomic
+  #   wd:       /home/mike/Repos/atomic/examples/atomic
+  #   csc:      atomic-30-node.csc
+  #   log:      Atomic-SDN-30
+  #   makeargs:
+  #     ATM_CONF_MAX_NODES:         30
+  #     ATM_CONF_COLLECT_ALL_NODES: 1
+  #     ATM_CONF_REACT_ALL_NODES:   1
+  #     ATM_CONF_OP_FREQ:           60
+  #     ATM_CONF_COLLECT_FREQ:      0
+  #     ATM_CONF_REACT_FREQ:        0
+  #     ATM_CONF_CONFIGURE_FREQ:    0
+  #     ATM_CONF_LOG_NONE:          0
+  #   regex:
+  #     - 'atomic-energy'
+  #     - 'atomic-op'
+  #   plot:
+  #     atomic_op_times:
+  #       df:      atomic-op
+  #       file:    'atomic_op_times'
+  #     energy_v_hops:
+  #       df:      atomic-energy
+  #       packets: ['CLCT', 'RACT', 'CONF']
+  #       file:    'energy_v_hops'
+  # 40 Node
+  - desc:     '40 Node'
     type:     atomic
     contiki:  /home/mike/Repos/atomic
     wd:       /home/mike/Repos/atomic/examples/atomic
-    csc:      atomic-20-node.csc
+    csc:      atomic-40-node.csc
+    log:      Atomic-SDN-40
     makeargs:
-      ATM_CONF_MAX_NODES:         20
+      ATM_CONF_MAX_NODES:         40
       ATM_CONF_COLLECT_ALL_NODES: 1
       ATM_CONF_REACT_ALL_NODES:   1
       ATM_CONF_OP_FREQ:           60
-      # ATM_CONF_COLLECT_FREQ:      3
-      # ATM_CONF_REACT_FREQ:        5
-      # ATM_CONF_CONFIGURE_FREQ:    7
+      ATM_CONF_COLLECT_FREQ:      0
+      ATM_CONF_REACT_FREQ:        0
+      ATM_CONF_CONFIGURE_FREQ:    0
+      ATM_CONF_LOG_NONE:          0
+    regex:
+      - 'atomic-energy'
+      - 'atomic-op'
     plot:
-      - atomic_energy_v_hops
-      - atomic_op_times
+      atomic_op_times:
+        df:      atomic-op
+        file:    'atomic_op_times'
+      energy_v_hops:
+        df:      atomic-energy
+        packets: ['CLCT', 'RACT', 'CONF']
+        file:    'energy_v_hops'
+  # 50 Node
+  - desc:     '50 Node'
+    type:     atomic
+    contiki:  /home/mike/Repos/atomic
+    wd:       /home/mike/Repos/atomic/examples/atomic
+    csc:      atomic-50-node.csc
+    log:      Atomic-SDN-50
+    makeargs:
+      ATM_CONF_MAX_NODES:         50
+      ATM_CONF_COLLECT_ALL_NODES: 1
+      ATM_CONF_REACT_ALL_NODES:   1
+      ATM_CONF_OP_FREQ:           60
+      ATM_CONF_COLLECT_FREQ:      0
+      ATM_CONF_REACT_FREQ:        0
+      ATM_CONF_CONFIGURE_FREQ:    0
+      ATM_CONF_LOG_NONE:          0
+    regex:
+      - 'atomic-energy'
+      - 'atomic-op'
+    plot:
+      atomic_op_times:
+        df:      atomic-op
+        file:    'atomic_op_times'
+      energy_v_hops:
+        df:      atomic-energy
+        packets: ['CLCT', 'RACT', 'CONF']
+        file:    'energy_v_hops'
 
 # ----------------------------------------------------------------------------
 # compare (comparison) config
@@ -53,8 +131,10 @@ simulations:
 compare:
   - sims:
     # which sims do we want to compare?
-    - ATM_20
+    - '30 Node'
+    - '40 Node'
+    - '50 Node'
     # which plots do we want to compare?
     plots:
-      - atomic_energy_v_hops
+      - energy_v_hops
       - atomic_op_times

@@ -200,7 +200,7 @@ compare:
     - uSDN-CONTIKIMAC
     # which plots do we want to compare?
     plots:
-      - latency_v_hops
+      # - latency_v_hops
       - pdr_v_hops
       - energy_v_hops
     # plot arguments
@@ -213,8 +213,9 @@ compare:
       pdr_v_hops:
         row: 0
         col: 0
-        legend: (0.33, 1.05)  # location, None, or Tuple
+        legend: (0.25, 1.05)  # location, None, or Tuple
       energy_v_hops:
         row: 1
         col: 0
         legend: None
+        ylim: 25
