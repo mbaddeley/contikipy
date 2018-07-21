@@ -43,60 +43,6 @@ formatters:
 # Simulations
 # ----------------------------------------------------------------------------
 simulations:
-  # 30 Node
-  # - desc:     '30 Node'
-  #   type:     atomic
-  #   contiki:  /home/mike/Repos/atomic
-  #   wd:       /home/mike/Repos/atomic/examples/atomic
-  #   csc:      atomic-30-node.csc
-  #   log:      Atomic-SDN-30
-  #   makeargs:
-  #     ATM_CONF_MAX_NODES:         30
-  #     ATM_CONF_COLLECT_ALL_NODES: 1
-  #     ATM_CONF_REACT_ALL_NODES:   1
-  #     ATM_CONF_OP_FREQ:           60
-  #     ATM_CONF_COLLECT_FREQ:      0
-  #     ATM_CONF_REACT_FREQ:        0
-  #     ATM_CONF_CONFIGURE_FREQ:    0
-  #     ATM_CONF_LOG_NONE:          0
-  #   regex:
-  #     - 'atomic-energy'
-  #     - 'atomic-op'
-  #   plot:
-  #     atomic_op_times:
-  #       df:      atomic-op
-  #       file:    'atomic_op_times'
-  #     energy_v_hops:
-  #       df:      atomic-energy
-  #       packets: ['CLCT', 'RACT', 'CONF']
-  #       file:    'energy_v_hops'
-  # 40 Node
-  - desc:     '40 Node'
-    type:     atomic
-    contiki:  /home/mike/Repos/atomic
-    wd:       /home/mike/Repos/atomic/examples/atomic
-    csc:      atomic-40-node.csc
-    log:      Atomic-SDN-40
-    makeargs:
-      ATM_CONF_MAX_NODES:         40
-      ATM_CONF_COLLECT_ALL_NODES: 1
-      ATM_CONF_REACT_ALL_NODES:   1
-      ATM_CONF_OP_FREQ:           60
-      ATM_CONF_COLLECT_FREQ:      0
-      ATM_CONF_REACT_FREQ:        0
-      ATM_CONF_CONFIGURE_FREQ:    0
-      ATM_CONF_LOG_NONE:          0
-    regex:
-      - 'atomic-energy'
-      - 'atomic-op'
-    plot:
-      atomic_op_times:
-        df:      atomic-op
-        file:    'atomic_op_times'
-      energy_v_hops:
-        df:      atomic-energy
-        packets: ['CLCT', 'RACT', 'CONF']
-        file:    'energy_v_hops'
   # 50 Node
   - desc:     '50 Node'
     type:     atomic
@@ -119,21 +65,77 @@ simulations:
     plot:
       atomic_op_times:
         df:      atomic-op
+        packets: ['CLCT', 'RACT', 'CONF', 'ASSC']
         file:    'atomic_op_times'
       energy_v_hops:
         df:      atomic-energy
-        packets: ['CLCT', 'RACT', 'CONF']
+        packets: ['CLCT', 'RACT', 'CONF', 'ASSC']
         file:    'energy_v_hops'
-
+  # 60 Node
+  - desc:     '60 Node'
+    type:     atomic
+    contiki:  /home/mike/Repos/atomic
+    wd:       /home/mike/Repos/atomic/examples/atomic
+    csc:      atomic-60-node.csc
+    log:      Atomic-SDN-60
+    makeargs:
+      ATM_CONF_MAX_NODES:         60
+      ATM_CONF_COLLECT_ALL_NODES: 1
+      ATM_CONF_REACT_ALL_NODES:   1
+      ATM_CONF_OP_FREQ:           60
+      ATM_CONF_COLLECT_FREQ:      0
+      ATM_CONF_REACT_FREQ:        0
+      ATM_CONF_CONFIGURE_FREQ:    0
+      ATM_CONF_LOG_NONE:          0
+    regex:
+      - 'atomic-energy'
+      - 'atomic-op'
+    plot:
+      atomic_op_times:
+        df:      atomic-op
+        packets: ['CLCT', 'RACT', 'CONF', 'ASSC']
+        file:    'atomic_op_times'
+      energy_v_hops:
+        df:      atomic-energy
+        packets: ['CLCT', 'RACT', 'CONF', 'ASSC']
+        file:    'energy_v_hops'
+  # 70 Node
+  - desc:     '70 Node'
+    type:     atomic
+    contiki:  /home/mike/Repos/atomic
+    wd:       /home/mike/Repos/atomic/examples/atomic
+    csc:      atomic-70-node.csc
+    log:      Atomic-SDN-70
+    makeargs:
+      ATM_CONF_MAX_NODES:         70
+      ATM_CONF_COLLECT_ALL_NODES: 1
+      ATM_CONF_REACT_ALL_NODES:   1
+      ATM_CONF_OP_FREQ:           60
+      ATM_CONF_COLLECT_FREQ:      0
+      ATM_CONF_REACT_FREQ:        0
+      ATM_CONF_CONFIGURE_FREQ:    0
+      ATM_CONF_LOG_NONE:          0
+    regex:
+      - 'atomic-energy'
+      - 'atomic-op'
+    plot:
+      atomic_op_times:
+        df:      atomic-op
+        packets: ['CLCT', 'RACT', 'CONF', 'ASSC']
+        file:    'atomic_op_times'
+      energy_v_hops:
+        df:      atomic-energy
+        packets: ['CLCT', 'RACT', 'CONF', 'ASSC']
+        file:    'energy_v_hops'
 # ----------------------------------------------------------------------------
 # compare (comparison) config
 # ----------------------------------------------------------------------------
 compare:
   - sims:
     # which sims do we want to compare?
-    - '30 Node'
-    - '40 Node'
     - '50 Node'
+    - '60 Node'
+    - '70 Node'
     # which plots do we want to compare?
     plots:
       - energy_v_hops

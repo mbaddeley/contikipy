@@ -189,6 +189,8 @@ def format_atomic_op_data(df):
     df['c_phase'] = df['c_phase'].astype(int)
     df['n_phases'] = df['n_phases'].astype(int)
     df['active'] = df['active'].astype(int)
+    # HACK: Convert CONF active nodes to 1;
+    df.loc[df.type == 'CONF', ['active']] = 1
     return df
 
 
@@ -381,6 +383,7 @@ def atomic_op_times(df_dict, **kwargs):
     packets = kwargs['packets'] if 'packets' in kwargs else None
     filename = kwargs['file'] if 'file' in kwargs else 'atomic_op_times'
     df = df_dict[df_name].copy()
+    print(df[df['type'] == 'CONF'])
     # Filter df for packet types in packets
     if 'type' in df and packets is not None:
         df = df[df['type'].isin(packets)]
