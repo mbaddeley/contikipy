@@ -7,7 +7,7 @@ import pickle
 import matplotlib.pyplot as plt  # general plotting
 import numpy as np  # number crunching
 # import seaborn as sns  # fancy plotting
-import pandas as pd  # table manipulation
+# import pandas as pd  # table manipulation
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
 
 # Matplotlib settings for graphs (need texlive-full, ghostscript and dvipng)
@@ -87,17 +87,19 @@ def set_fig_and_save(fig, ax, data, desc, dir, **kwargs):
     xlabel = kwargs['xlabel'] if 'xlabel' in kwargs else ''
     ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
 
-    # set y limits
-    ax.set_ylim(ylim)
-    # set axis' labels
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
+    if ax is not None:
+        # set y limits
+        ax.set_ylim(ylim)
+        # set axis' labels
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
 
-    # Remove top axes and right axes ticks
-    ax.get_xaxis().tick_bottom()
-    ax.get_yaxis().tick_left()
+        # Remove top axes and right axes ticks
+        ax.get_xaxis().tick_bottom()
+        ax.get_yaxis().tick_left()
+
     # tight layout
-    fig.set_tight_layout(True)
+    fig.set_tight_layout(False)
 
     # save  data for post compare
     if data is not None:

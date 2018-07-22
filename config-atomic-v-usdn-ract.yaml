@@ -4,7 +4,7 @@
 contiki:
 wd:
 logtype: cooja
-out:     /home/mike/Results/ATOMIC_vs_USDN
+out:     /home/mike/Results/ATOMIC_vs_USDN_LAT_RACT
 csc:
 target:
 
@@ -55,7 +55,7 @@ formatters:
     sdn:
       - filter:
           col:      hops
-          min:      1
+          min:      0
           max:      5
     pow:
       - merge:
@@ -92,32 +92,31 @@ simulations:
     contiki:        /home/mike/Repos/atomic
     wd:             /home/mike/Repos/atomic/examples/atomic
     csc:            atomic-30-node.csc
-    log:            Atomic-SDN-30
+    log:            Atomic-SDN-30-RACT
     makeargs:
-      ATM_CONF_MAX_NODES:         20
-      ATM_CONF_COLLECT_ALL_NODES: 1
-      ATM_CONF_REACT_ALL_NODES:   1
-      ATM_CONF_OP_FREQ:           60
-      # ATM_CONF_COLLECT_FREQ:      3
-      # ATM_CONF_REACT_FREQ:        5
-      # ATM_CONF_CONFIGURE_FREQ:    7
+      ATM_CONF_MAX_NODES:         30
+      ATM_CONF_MAX_EMPTY_STOP:    1
+      ATM_CONF_COLLECT_ALL_NODES: 0
+      ATM_CONF_REACT_ALL_NODES:   0
+      ATM_CONF_OP_FREQ:           0
+      ATM_CONF_COLLECT_FREQ:      0
+      ATM_CONF_REACT_FREQ:        60
+      ATM_CONF_CONFIGURE_FREQ:    0
     regex:
       - 'atomic-energy'
       - 'atomic-op'
     plot:
       latency_v_hops:
         df:      atomic-op
-        packets: ['CLCT', 'CONF', 'RACT']
-        index:   ['node']
-        aggfunc: {'lat': mean}
+        packets: ['RACT']
         file:    'latency_v_hops'
       pdr_v_hops:
         df:      atomic-op
-        packets: ['CLCT', 'CONF', 'RACT']
+        packets: ['RACT']
         file:    'pdr_v_hops'
       energy_v_hops:
         df:      atomic-energy
-        packets: ['CLCT', 'CONF', 'RACT']
+        packets: ['RACT']
         file:    'energy_v_hops'
   # 30 Node uSDN CSMA
   - desc:           uSDN-CSMA
@@ -125,7 +124,7 @@ simulations:
     contiki:        /home/mike/Repos/usdn
     wd:             /home/mike/Repos/usdn/examples/sdn
     csc:            usdn-30-node.csc
-    log:            uSDN-CSMA-30
+    log:            uSDN-CSMA-30-RACT
     makeargs:
       MAC:          CSMA
       SDN:          1
@@ -143,25 +142,27 @@ simulations:
     plot:
       latency_v_hops:
         df:      sdn
-        packets: ['NSU', 'CONF', 'FTQ', 'FTS']
-        index:   ['id']
-        aggfunc: {'lat': mean}
+        packets: ['FTQ', 'FTS']
+        index:   ['seq', 'id']
+        aggfunc: {'lat': sum}
         file:    'latency_v_hops'
       pdr_v_hops:
         df:      sdn
-        packets: ['NSU', 'CONF', 'FTQ', 'FTS']
+        packets: ['FTQ', 'FTS']
+        index:   ['seq', 'id']
         file:    'pdr_v_hops'
       energy_v_hops:
         df:      pow
-        packets: ['NSU', 'CONF', 'FTQ', 'FTS']
+        packets: ['FTQ', 'FTS']
+        index:   ['seq', 'id']
         file:    'energy_v_hops'
-  # 30 Node uSDN CONTIKIMAC
+  # # 30 Node uSDN CONTIKIMAC
   - desc:           uSDN-CONTIKIMAC
     type:           usdn
     contiki:        /home/mike/Repos/usdn
     wd:             /home/mike/Repos/usdn/examples/sdn
     csc:            usdn-30-node.csc
-    log:            uSDN-CONTIKIMAC-30
+    log:            uSDN-CONTIKIMAC-30-RACT
     makeargs:
       MAC:          CONTIKIMAC
       SDN:          1
@@ -179,54 +180,21 @@ simulations:
     plot:
       latency_v_hops:
         df:      sdn
-        packets: ['NSU', 'CONF', 'FTQ', 'FTS']
-        index:   ['id']
-        aggfunc: {'lat': mean}
+        packets: ['FTQ', 'FTS']
+        index:   ['seq', 'id']
+        aggfunc: {'lat': sum}
         file:    'latency_v_hops'
       pdr_v_hops:
         df:      sdn
-        packets: ['NSU', 'CONF', 'FTQ', 'FTS']
+        packets: ['FTQ', 'FTS']
+        index:   ['seq', 'id']
         file:    'pdr_v_hops'
       energy_v_hops:
         df:      pow
-        packets: ['NSU', 'CONF', 'FTQ', 'FTS']
+        packets: ['FTQ', 'FTS']
+        index:   ['seq', 'id']
         file:    'energy_v_hops'
-  # 30 Node uSDN NULLMAC
-  - desc:           uSDN-NULLMAC
-    type:           usdn
-    contiki:        /home/mike/Repos/usdn
-    wd:             /home/mike/Repos/usdn/examples/sdn
-    csc:            usdn-30-node.csc
-    log:            uSDN-NULLMAC-30
-    makeargs:
-      MAC:          NULLMAC
-      SDN:          1
-      FTREFRESH:    0
-      FTSRETRY:     0
-      FORCENSU:     1
-      FTLIFETIME:   300
-      NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
-      MULTIFLOW:    1
-    multiflow:      1_flow
-    regex:
-      - 'node'
-      - 'sdn'
-      - 'pow'
-    plot:
-      latency_v_hops:
-        df:      sdn
-        packets: ['NSU', 'CONF', 'FTQ', 'FTS']
-        index:   ['id']
-        aggfunc: {'lat': mean}
-        file:    'latency_v_hops'
-      pdr_v_hops:
-        df:      sdn
-        packets: ['NSU', 'CONF', 'FTQ', 'FTS']
-        file:    'pdr_v_hops'
-      energy_v_hops:
-        df:      pow
-        packets: ['NSU', 'CONF', 'FTQ', 'FTS']
-        file:    'energy_v_hops'
+
 # ----------------------------------------------------------------------------
 # compare (comparison) config
 # ----------------------------------------------------------------------------
@@ -236,7 +204,6 @@ compare:
     - Atomic-SDN
     - uSDN-CSMA
     - uSDN-CONTIKIMAC
-    - uSDN-NULLMAC
     # which plots do we want to compare?
     plots:
       - latency_v_hops
@@ -257,4 +224,3 @@ compare:
         row: 1
         col: 0
         legend: None
-        ylim: 25

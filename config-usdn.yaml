@@ -24,7 +24,7 @@ formatters:
     - type:   app
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<status>(TX|RX))\s+(?P<typ>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>[1-5])|\s+m:(?P<mac>\d+))+.*?$
     - type:   sdn
-      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<status>(OUT|BUF|IN))\s+(?P<typ>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>[1-5])|\s+m:(?P<mac>\d+))+.*?$
+      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<status>(OUT|BUF|IN))\s+(?P<typ>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>\d+)|\s+m:(?P<mac>\d+))+.*?$
     - type:   node
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*h:(?P<hops>\d+), n:(?P<degree>\d+)
     - type:   icmp
@@ -83,6 +83,10 @@ simulations:
 # ----------------------------------------------------------------------------
   - desc:           RPL
     type:           usdn
+    contiki:        /home/mike/Repos/usdn
+    wd:             /home/mike/Repos/usdn/examples/sdn
+    csc:            usdn-30-node.csc
+    log:            RPL-30
     makeargs:
       MAC:          CSMA
       SDN:          0
@@ -90,24 +94,34 @@ simulations:
     multiflow:      1_flow
     regex:
       - 'app'
-      - 'icmp'
       - 'node'
-      - 'sdn'
       - 'pow'
+      - 'icmp'
       - 'join'
     plot:
-      - usdn_energy_v_hops        # Radio duty cycle vs hops
-      - usdn_pdr_v_hops           # Packet receive ratio vs hops
-      - usdn_latency_v_hops       # Hops vs e2e latency
-      - usdn_join_time            # DAG join time
-      # - usdn_traffic_ratio        # RPL traffic ratio
+      latency_v_hops:
+        df:      sdn
+        packets: ['FTQ', 'FTS']
+        file:    'latency_v_hops'
+      pdr_v_hops:
+        df:      sdn
+        packets: ['FTQ', 'FTS']
+        file:    'pdr_v_hops'
+      energy_v_hops:
+        df:      pow
+        packets: ['FTQ', 'FTS']
+        file:    'energy_v_hops'
   #
   - desc:           uSDN
     type:           usdn
+    contiki:        /home/mike/Repos/usdn
+    wd:             /home/mike/Repos/usdn/examples/sdn
+    csc:            usdn-30-node.csc
+    log:            uSDN-30
     makeargs:
       MAC:          CSMA
       SDN:          1
-      FTREFRESH:    1
+      FTREFRESH:    0
       FTSRETRY:     0
       FORCENSU:     1
       FTLIFETIME:   300
@@ -116,17 +130,24 @@ simulations:
     multiflow:      1_flow
     regex:
       - 'app'
-      - 'icmp'
       - 'node'
       - 'sdn'
       - 'pow'
+      - 'icmp'
       - 'join'
     plot:
-      # - usdn_traffic_ratio        # SDN traffic ratio
-      - usdn_energy_v_hops        # Radio duty cycle vs hops
-      - usdn_pdr_v_hops           # Packet receive ratio vs hops
-      - usdn_latency_v_hops       # Hops vs e2e latency
-      - usdn_join_time            # SDN controller join time
+      latency_v_hops:
+        df:      sdn
+        packets: ['FTQ', 'FTS']
+        file:    'latency_v_hops'
+      pdr_v_hops:
+        df:      sdn
+        packets: ['FTQ', 'FTS']
+        file:    'pdr_v_hops'
+      energy_v_hops:
+        df:      pow
+        packets: ['FTQ', 'FTS']
+        file:    'energy_v_hops'
 
 
 # ----------------------------------------------------------------------------
