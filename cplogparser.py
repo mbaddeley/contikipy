@@ -383,7 +383,7 @@ def atomic_op_times(df_dict, **kwargs):
     packets = kwargs['packets'] if 'packets' in kwargs else None
     filename = kwargs['file'] if 'file' in kwargs else 'atomic_op_times'
     df = df_dict[df_name].copy()
-    print(df[df['type'] == 'CONF'])
+    # print(df[df['type'] == 'CLCT'])
     # Filter df for packet types in packets
     if 'type' in df and packets is not None:
         df = df[df['type'].isin(packets)]
@@ -392,16 +392,21 @@ def atomic_op_times(df_dict, **kwargs):
     for k, v in g:
         data[k] = pd.Series(v['op_duration'].mean())
 
-    # # rearrage cols
-    # data = data[['NONE', 'CLCT', 'CONF', 'RACT', 'ASSC']]
+    # rearrage cols
+    data = data[['CONF', 'CLCT', 'RACT']]
     # # rename cols
-    # data = data.rename(columns={'NONE': 'IND',
-    #                             'CLCT': 'COLLECT',
-    #                             'CONF': 'CONFIGURE',
-    #                             'RACT': 'REACT',
-    #                             'ASSC': 'ASSOCIATE'})
+    data = data.rename(columns={'CLCT': 'COLLECT',
+                                'CONF': 'CONFIGURE',
+                                'RACT': 'REACT'})
     x = list(data.columns.values)
     y = data.values.tolist()[0]
+
+    print(data)
+    print(x)
+
+    print('  ... Op time mean: ' + str(np.mean(y)))
+    print('  ... Op time median: ' + str(np.median(y)))
+    print('  ... Op time max: ' + str(np.max(y)))
 
     cpplot.plot_bar(df, filename, sim_dir, x, y,
                     xlabel='Op Type', ylabel='Time(ms)')
