@@ -103,9 +103,9 @@ def set_fig_and_save(fig, ax, data, desc, dir, **kwargs):
 
     # save  data for post compare
     if data is not None:
-        pickle.dump(data, open(dir + desc + '.pkl', 'w'))
+        pickle.dump(data, open(dir + desc + '.pkl', 'wb'))
     # save ax for post compare
-    pickle.dump(ax, open(dir + 'ax_' + desc + '.pkl', 'w+'))
+    pickle.dump(ax, open(dir + 'ax_' + desc + '.pkl', 'wb+'))
     # save pdf of figure plus the figure itself
     fig.savefig(dir + 'fig_' + desc + '.pdf', bbox_inches="tight")
 
@@ -133,7 +133,7 @@ def plot_hist(df, desc, dir, x, y, ylim=None, **kwargs):
         color = list(plt.rcParams['axes.prop_cycle'])[0]['color']
 
     bins = np.around(np.linspace(0, max(x), len(x)), 3)  # bin values to 3dp
-    ax.hist(x, bins, normed=1, histtype='step', cumulative=True,
+    ax.hist(x, bins, density=1, histtype='step', cumulative=True,
             stacked=True, fill=True, label=desc, color=color)
     # ax.set_xticks([bins[0], bins[len(x)-1]])
     ax.set_xticks(np.linspace(bins[0], bins[len(bins)-1], 5))
@@ -165,6 +165,7 @@ def plot_bar(df, desc, dir, x, y, ylim=None, **kwargs):
     ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
 
     ind = np.arange(len(x))
+
     ax.bar(x=ind, height=y, width=width, color=color)
 
     # set x-axis

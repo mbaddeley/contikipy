@@ -18,6 +18,7 @@ import cpplotter as cpplot
 
 from pprint import pprint
 
+
 # Pandas options
 pd.set_option('display.max_rows', 36)
 pd.set_option('display.max_columns', 500)
@@ -27,7 +28,6 @@ pd.set_option('display.float_format', lambda x: '%.3f' % x)
 sim_dir = 'NULL'
 sim_type = 'NULL'
 sim_desc = 'NULL'
-
 
 # ----------------------------------------------------------------------------#
 # Helper functions
@@ -58,7 +58,7 @@ def scrape_data(datatype, log, dir, regex):
 
     try:
         # check the simulation sim_dir exists, and there is a log there
-        open(log, 'rb')
+        # open(log, 'rb')
         # do the parsing
         print('> Parsing log: ' + log)
         print('> Match regex: ' + datatype)
@@ -301,10 +301,12 @@ def format_usdn_sdn_data(df):
 # ----------------------------------------------------------------------------#
 def format_usdn_node_data(df):
     """Format node data."""
+    global node_data
     print('> Read sdn node log')
     # get the most common hops and degree for each node
     df = df.groupby('node')[['hops', 'degree']].agg(lambda x: x.mode())
     df = df.reset_index()
+    node_df = df
     return df
 
 
@@ -343,8 +345,8 @@ def parse_log(file_from, file_to, pattern):
     # Let's us know this is the first line and we need to write a header.
     write_header = 1
     # open the files
-    with open(file_from, 'rb') as f:
-        with open(file_to, 'wb') as t:
+    with open(file_from, 'r') as f:
+        with open(file_to, 'w') as t:
             for l in f:
                 # HACK: Fixes issue with '-' in pow
                 m = pattern.match(l.replace('.-', '.'))
@@ -570,7 +572,8 @@ def energy_v_hops(df_dict, **kwargs):
     # Filter df for packet types in packets
     if 'type' in df:
         df = df[df['type'].isin(packets)]
-
+    if 'hops' not in df:
+        df['hops'] = df_dict['node']['hops']
     g = df.groupby('hops')
     data = {}
     for k, v in g:
@@ -578,6 +581,9 @@ def energy_v_hops(df_dict, **kwargs):
 
     x = data.keys()
     y = data.values()
+
+    if y is not list:
+        y = list(y)
 
     cpplot.plot_bar(df, filename, sim_dir, x, y,
                     xlabel='Hops', ylabel='Radio Duty Cycle (%)')

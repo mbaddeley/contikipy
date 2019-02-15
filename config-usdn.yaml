@@ -14,23 +14,22 @@ target:  exp5438
 # packet regex ... https://regex101.com/r/mE5wK0/1
 # ----------------------------------------------------------------------------
 logtypes:
-  - type:     cooja
-    fmt_re:   '^\s*(?P<time>\d+):\s*(?P<id>\d+):'
+  cooja:     '^\s*(?P<time>\d+):\s*(?P<node>\d+):'
 
 formatters:
-  dictionary:
+  patterns:
     - type:   pow
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*](?:\s*PW\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
     - type:   app
-      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<status>(TX|RX))\s+(?P<typ>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>[1-5])|\s+m:(?P<mac>\d+))+.*?$
+      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<status>(TX|RX))\s+(?P<type>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>[1-5])|\s+m:(?P<mac>\d+))+.*?$
     - type:   sdn
-      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<status>(OUT|BUF|IN))\s+(?P<typ>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>\d+)|\s+m:(?P<mac>\d+))+.*?$
+      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<status>(OUT|BUF|IN))\s+(?P<type>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>\d+)|\s+m:(?P<mac>\d+))+.*?$
     - type:   node
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*h:(?P<hops>\d+), n:(?P<degree>\d+)
     - type:   icmp
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?:\s+type:(?P<type>\d+)|\s+code:(?P<code>\d+))+.*?$
     - type:   join
-      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?:\s+n:(?P<node>\d+)|\s+c:(?P<controller>\d+)|\s+dag:(?P<dag>\d+)|\s+dao:(?P<dao>\d+))+.*?$
+      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?:\s+n:(?P<id>\d+)|\s+c:(?P<controller>\d+)|\s+dag:(?P<dag>\d+)|\s+dao:(?P<dao>\d+))+.*?$
 
 # ----------------------------------------------------------------------------
 # Multiflow
@@ -81,36 +80,36 @@ multiflow:
 # ----------------------------------------------------------------------------
 simulations:
 # ----------------------------------------------------------------------------
-  - desc:           RPL
-    type:           usdn
-    contiki:        /home/mike/Repos/usdn
-    wd:             /home/mike/Repos/usdn/examples/sdn
-    csc:            usdn-30-node.csc
-    log:            RPL-30
-    makeargs:
-      MAC:          CSMA
-      SDN:          0
-      MULTIFLOW:    1
-    multiflow:      1_flow
-    regex:
-      - 'app'
-      - 'node'
-      - 'pow'
-      - 'icmp'
-      - 'join'
-    plot:
-      latency_v_hops:
-        df:      sdn
-        packets: ['FTQ', 'FTS']
-        file:    'latency_v_hops'
-      pdr_v_hops:
-        df:      sdn
-        packets: ['FTQ', 'FTS']
-        file:    'pdr_v_hops'
-      energy_v_hops:
-        df:      pow
-        packets: ['FTQ', 'FTS']
-        file:    'energy_v_hops'
+  # - desc:           RPL
+  #   type:           usdn
+  #   contiki:        /home/mike/Repos/usdn
+  #   wd:             /home/mike/Repos/usdn/examples/sdn
+  #   csc:            usdn-30-node.csc
+  #   log:            RPL-30
+  #   makeargs:
+  #     MAC:          CSMA
+  #     SDN:          0
+  #     MULTIFLOW:    1
+  #   multiflow:      1_flow
+  #   regex:
+  #     - 'app'
+  #     - 'node'
+  #     - 'pow'
+  #     - 'icmp'
+  #     - 'join'
+  #   plot:
+  #     latency_v_hops:
+  #       df:      sdn
+  #       packets: ['FTQ', 'FTS']
+  #       file:    'latency_v_hops'
+  #     pdr_v_hops:
+  #       df:      sdn
+  #       packets: ['FTQ', 'FTS']
+  #       file:    'pdr_v_hops'
+  #     energy_v_hops:
+  #       df:      pow
+  #       packets: ['FTQ', 'FTS']
+  #       file:    'energy_v_hops'
   #
   - desc:           uSDN
     type:           usdn

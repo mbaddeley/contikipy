@@ -1,8 +1,8 @@
 # ----------------------------------------------------------------------------
 # ContikiPy
 # ----------------------------------------------------------------------------
-contiki: /home/mike/Repos/atomic
-wd:      /home/mike/Repos/atomic/examples/atomic
+contiki: /home/mike/Repos/atomic-sdn
+wd:      /home/mike/Repos/atomic-sdn/examples/atomic
 fmt:     cooja
 log:     /tools/cooja/build/COOJA.testlog
 out:     /home/mike/Results/ATOMIC
@@ -46,8 +46,8 @@ simulations:
   # 30 Node
   - desc:     '30 Node'
     type:     atomic
-    contiki:  /home/mike/Repos/atomic
-    wd:       /home/mike/Repos/atomic/examples/atomic
+    contiki:  /home/mike/Repos/atomic-sdn
+    wd:       /home/mike/Repos/atomic-sdn/examples/atomic
     csc:      atomic-30-node.csc
     log:      Atomic-SDN-30
     makeargs:
@@ -82,8 +82,8 @@ simulations:
   # 40 Node
   - desc:     '40 Node'
     type:     atomic
-    contiki:  /home/mike/Repos/atomic
-    wd:       /home/mike/Repos/atomic/examples/atomic
+    contiki:  /home/mike/Repos/atomic-sdn
+    wd:       /home/mike/Repos/atomic-sdn/examples/atomic
     csc:      atomic-40-node.csc
     log:      Atomic-SDN-40
     makeargs:
@@ -118,8 +118,8 @@ simulations:
   # 50 Node
   - desc:     '50 Node'
     type:     atomic
-    contiki:  /home/mike/Repos/atomic
-    wd:       /home/mike/Repos/atomic/examples/atomic
+    contiki:  /home/mike/Repos/atomic-sdn
+    wd:       /home/mike/Repos/atomic-sdn/examples/atomic
     csc:      atomic-50-node.csc
     log:      Atomic-SDN-50
     makeargs:
@@ -154,8 +154,8 @@ simulations:
   # 60 Node
   - desc:     '60 Node'
     type:     atomic
-    contiki:  /home/mike/Repos/atomic
-    wd:       /home/mike/Repos/atomic/examples/atomic
+    contiki:  /home/mike/Repos/atomic-sdn
+    wd:       /home/mike/Repos/atomic-sdn/examples/atomic
     csc:      atomic-60-node.csc
     log:      Atomic-SDN-60
     makeargs:
@@ -190,8 +190,8 @@ simulations:
   # 70 Node
   - desc:     '70 Node'
     type:     atomic
-    contiki:  /home/mike/Repos/atomic
-    wd:       /home/mike/Repos/atomic/examples/atomic
+    contiki:  /home/mike/Repos/atomic-sdn
+    wd:       /home/mike/Repos/atomic-sdn/examples/atomic
     csc:      atomic-70-node.csc
     log:      Atomic-SDN-70
     makeargs:

@@ -28,7 +28,7 @@ def pad_y(M):
     maxlen = max(len(r) for r in M.values())
     Z = np.zeros((len(M.values()), maxlen))
     i = 0
-    for k, v in M.iteritems():
+    for k, v in M.items():
         Z[i, :len(v)] += v
         M[k] = Z[i]
         i = i + 1
@@ -41,13 +41,13 @@ def pad_x(M):
     maxlen = max(len(r) for r in M.values())
     len_x = 0
     V = []
-    for k, v in M.iteritems():
+    for k, v in M.items():
         if(len(v) > len_x):
             len_x = len(v)
             V = v
     Z = np.zeros((len(M.values()), maxlen))
     i = 0
-    for k, v in M.iteritems():
+    for k, v in M.items():
         Z[i, :len(v)] += v
         Z[i, len(v):maxlen] = V[len(v):maxlen]
         M[k] = Z[i]
@@ -87,8 +87,7 @@ def search_dirs(rootdir, simlist, plottypes):
                             if (plot + '.pkl') == f:
                                 print('  - found ' + plot + '.pkl in '
                                       + sim + '!')
-                                d = pickle.load(open(os.path.join(root,
-                                                                  sim, f)))
+                                d = pickle.load(open(os.path.join(root, sim, f), 'rb'))
                                 id = contains_int(sim)
                                 plotdata[plot].append({'id': id,
                                                        'label': sim,
@@ -228,7 +227,7 @@ def add_hist(ax, color, data, bins=30):
     if bins is None:
         bins = x
     (n, bins, patches) = ax.hist(x, bins=bins,
-                                 normed=norm,
+                                 density=norm,
                                  histtype=type,
                                  cumulative=cumul,
                                  stacked=stack,
