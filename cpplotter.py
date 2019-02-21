@@ -2,6 +2,7 @@
 """This module generates contikipy plots."""
 from __future__ import division
 
+import os
 import pickle
 
 import matplotlib.pyplot as plt  # general plotting
@@ -102,6 +103,7 @@ def set_fig_and_save(fig, ax, data, desc, dir, **kwargs):
     fig.set_tight_layout(False)
 
     # save  data for post compare
+    os.makedirs(dir, exist_ok=True)
     if data is not None:
         pickle.dump(data, open(dir + desc + '.pkl', 'wb'))
     # save ax for post compare

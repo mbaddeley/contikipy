@@ -61,9 +61,6 @@ def csv_to_df(file):
 # ----------------------------------------------------------------------------#
 def format_data(df):
     """Format neighbor data."""
-    # remove whitespace
-    # if 'packet' in df:
-    #     df.packet = df.packet.str.replace(' ', '')
     df = df.dropna()
     if 'timestamp' in df:
         df.timestamp = pd.to_datetime(df.timestamp)
@@ -73,9 +70,9 @@ def format_data(df):
         df.src = df.src.astype(int)
     if 'id' in df:
         df.id = df.id.astype(int)
-    # if 'packet' in df:
-        # df.packet = df[['packet', 'id']].apply(lambda x: '_'.join(x), axis=1)
-        # df.packet = df.packet + "_" + df.id.map(str)
+    if 'packet' in df:
+        # df.packet = df[['id', 'src']].apply(lambda x: '_'.join(str(x)), axis=1)
+        df.packet = df['id'].astype(str) + '_' + df['src'].astype(str)
     return df
 
 
@@ -189,16 +186,102 @@ def packet_status(row):
 # ----------------------------------------------------------------------------#
 # Helper functions
 # ----------------------------------------------------------------------------#
-def ratio(sent, received):
-    """Calculate the packet receive rate of a node."""
-    return (received/sent) * 100
+class HELPER:
+    """HELPER class."""
+
+    def reject_outliers(self, data, m=2):
+        """Remove data outliers."""
+        d = np.abs(data - np.median(data))
+        mdev = np.median(d)
+        s = d/mdev if mdev else 0
+        return data[s < m]
+
+    def ratio(self, sent, received):
+        """Calculate the packet receive rate of a node."""
+        return (received/sent) * 100
+
+# ----------------------------------------------------------------------------#
+    def __init__(self):
+        """A helper function library."""
+
+
+# ----------------------------------------------------------------------------#
+# MAIN
+# ----------------------------------------------------------------------------#
+hlp = HELPER()
+
+
+def generate_results(table, df):
+    """
+    Generate the results DataFrame from a DataFrame containing TX/RX info
+    for each node with the packet id as the index, as well as the
+    """
+    results = pd.DataFrame()
+    results['packet'] = table.index
+    results = results.set_index('packet')
+    results['TX'] = table.apply(lambda row: row.to_string().count('TX'), axis=1)
+    results['RX'] = table.apply(lambda row: row.to_string().count('RX'), axis=1)
+    results['RTX'] = table.apply(lambda row: row.to_string().count('RTR'), axis=1)
+    results['FWD'] = table.apply(lambda row: row.to_string().count('FWD'), axis=1)
+    # results['NORX'] = df.apply(lambda row: row.to_string().count('MISS'), axis=1)
+    results['epoch'] = df.groupby('packet')['epoch'].agg(lambda x: x.value_counts().index[0])  # returns the most common epoch
+    results['src'] = df.groupby('packet')['src'].agg(lambda x: x.value_counts().index[0])  # returns a list of sources (they should be the same)
+    results['id'] = df.groupby('packet')['id'].agg(lambda x: x.value_counts().index[0])  # returns a list of sources (they should be the same)
+    results['lat'] = delay.groupby('packet')['timestamp'].agg(lambda x: x.value_counts().index[0])
+    results = results.reset_index()
+    results['status'] = results.apply(lambda row: packet_status(row), axis=1)
+    return results
+
+
+# ----------------------------------------------------------------------------#
+def print_results(df):
+    """Print the final results dataframe."""
+    sent = (df['TX'] == 1).sum()
+    received = (df['RX'] == 1).sum()
+    total = df.shape[0]
+    missed = ((df['RX'] == 0) & (df['TX'] == 1)).sum()
+    superfluous = ((df['TX'] == 0) & (df['RX'] == 1)).sum()
+    print('Total: ' + str(total))
+    print('Sent: ' + str(sent))
+    print('Received: ' + str(received))
+    print('Retransmissions: ' + str((df['RTX'] == 1).sum()))
+    print('Missed: ' + str(missed))
+    if(missed):
+        print(df.loc[((df['RX'] == 0) & (df['TX'] == 1))])
+    print('Superfluous: ' + str(superfluous))
+    if(superfluous):
+        print(df.loc[((df['TX'] == 0) & (df['RX'] == 1))])
+
+
+# ----------------------------------------------------------------------------#
+def graph_latency(df, out):
+    """Graph end-to-end delay."""
+    x = df.RTX
+    y = y = df.lat.mean()
+    cpplot.plot_line(df, 'tb_latency', out + '/', x, y,
+                     xlabel='Retransmissions', ylabel='End-to-end delay (ms)')  # ls='None')
+    print('  ... LAT mean: ' + str(np.mean(y)))
+
+
+# ----------------------------------------------------------------------------#
+def graph_pdr(df, out):
+    global hlp
+    """Graph end-to-end PDR."""
+    sent = (df['TX'] == 1).sum()
+    received = (df['RX'] == 1).sum()
+    superfluous = ((df['TX'] == 0) & (df['RX'] == 1)).sum()
+    x = [0]
+    y = hlp.ratio(sent, received - superfluous)
+    cpplot.plot_bar(df, 'tb_pdr', out + '/', x, y,
+                    xlabel='Packet Drop Rate (%)', ylabel='End-to-end PDR (%)')
+    print('  ... PDR mean: ' + str(np.mean(y)))
+
 
 # ----------------------------------------------------------------------------#
 if __name__ == "__main__":
-    directory = '/home/mike/Results/atomic_mp2p_150219'
-    out = '/home/mike/Results/'
     tmp_file = '/home/mike/Results/TMP'
 
+    # Regex
     re_hb = '(?:(?P<heartbeat>\d+))\s<3+$'
     re_prefix = '^\[*(?:(?P<timestamp>.*))[\|\]]\s*'
     re_txrx = 'D:(?:\s*[ep:]+(?P<epoch>\d+)|\s+(?P<type>[FWDTRX-]+)\s+(?P<packet>.{1,16})|\s*[id:]+(?P<id>\d+)|\s*[s:]+(?P<src>\d+))*'
@@ -207,29 +290,44 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(prog='AtomicPy', description='Atomic Log Parser')
     ap.add_argument('--s', required=False, default=0, help='Save parsed logs')
     ap.add_argument('--l', required=False, default=0, help='Load saved logs')
+    ap.add_argument('--dir', required=True, help='Log directory')
+    ap.add_argument('--title', required=False, default='ATM', help='Results title')
+    ap.add_argument('--out', required=False, default='/home/mike/Results', help='Output folder')
     args = ap.parse_args()
 
+    lp = LOG_PARSER()
+    hlp = HELPER()
+
+    out = args.out + '/' + args.title
+
+    print(out)
+
     if args.l:
-        print('.......... Load Results')
-        results = pickle.load(open(out + 'results.pkl', 'rb'))
+        print('.......... Load Results from ' + out)
+        results = pickle.load(open(out + '/' + args.title + '_results.pkl', 'rb'))
     else:
         # Regex
         regex = re_prefix + re_txrx
         print('.......... Parse Data')
-        lp = LOG_PARSER()
-        df = lp.parse_logs(directory, None, tmp_file, regex)
+        df = lp.parse_logs(args.dir, None, tmp_file, regex)
 
         print('.......... Format Data')
-        # Get end-to-end delay for each packet
         df.set_index('timestamp', inplace=True, drop=False)
         df.sort_index(inplace=True)
-        # df = df[df['id'] > 2]  # remove the first few packets (which are dropped because of the queue)
-        # df_filtered = df.loc[((df['type'] == 'TX') | (df['type'] == 'RX'))]
+        # Remove outliers due to id screwing up in transmission
+        print("> Len:" + str(len(df.id)) + " Min:" + str(df.id.min()) + " Max:" + str(df.id.max()))
+        u_ids = df.id.unique()
+        u_ids = hlp.reject_outliers(u_ids)
+        df = df[df.id.isin(u_ids)]
+        u_ids = df.id.unique()
+        # remove the nth ids because of logging delay and corrupt ids
+        df = df[df['id'] > np.partition(u_ids.flatten(), 5)[5]]  # min
+        df = df[df['id'] < np.partition(u_ids.flatten(), -5)[-5]]  # max
+        print("> Len:" + str(len(df.id)) + " Min:" + str(df.id.min()) + " Max:" + str(df.id.max()))
+
         delay = df.pivot_table(index=['packet'],
-                                    # columns=['type'],
-                                    values=['timestamp'],
-                                    aggfunc=lambda x: (x.max() - x.min())/np.timedelta64(1, 'ms'))
-        # delay = delay.xs('timestamp', axis=1, drop_level=True)
+                               values=['timestamp'],
+                               aggfunc=lambda x: (x.max() - x.min())/np.timedelta64(1, 'ms'))
 
         # Get the state for each node (cols) for each packet (index)
         table = df.pivot_table(index=['packet'],
@@ -238,51 +336,16 @@ if __name__ == "__main__":
                                aggfunc=lambda x: ' '.join(x)).fillna('MISS')
         table = table.xs('type', axis=1, drop_level=True)
 
-        print('.......... Generate Results')
-        results = pd.DataFrame()
-        results['packet'] = table.index
-        results = results.set_index('packet')
-        results['TX'] = table.apply(lambda row: row.to_string().count('TX'), axis=1)
-        results['RX'] = table.apply(lambda row: row.to_string().count('RX'), axis=1)
-        results['RTX'] = table.apply(lambda row: row.to_string().count('RTR'), axis=1)
-        results['FWD'] = table.apply(lambda row: row.to_string().count('FWD'), axis=1)
-        # results['NORX'] = df.apply(lambda row: row.to_string().count('MISS'), axis=1)
-        results['epoch'] = df.groupby('packet')['epoch'].agg(lambda x: x.value_counts().index[0])  # returns the most common epoch
-        results['src'] = df.groupby('packet')['src'].agg(lambda x: x.value_counts().index[0])  # returns a list of sources (they should be the same)
-        results['id'] = df.groupby('packet')['id'].agg(lambda x: x.value_counts().index[0])  # returns a list of sources (they should be the same)
-        results['lat'] = delay.groupby('packet')['timestamp'].agg(lambda x: x.value_counts().index[0])
-        results = results.reset_index()
-        results['status'] = results.apply(lambda row: packet_status(row), axis=1)
-        if args.s:
-            print('.......... Save Results')
-            pickle.dump(results, open(out + 'results' + '.pkl', 'wb+'))
+        print('.......... Generate Results DataFrame')
+        results = generate_results(table, df)
 
-    print(results)
-    # print('# Nodes (' + len(df['node'].unique()) + '): ' + str(df['node'].unique()))
-    sent = (results['TX'] == 1).sum()
-    received = (results['RX'] == 1).sum()
-    total = results.shape[0]
-    print('Total: ' + str(total))
-    print('Sent: ' + str(sent))
-    print('Received: ' + str(received))
-    print('Retransmissions: ' + str((results['RTX'] == 1).sum()))
-    print('Missed: ' + str(((results['RX'] == 0) & (results['TX'] == 1)).sum()))
-    print(results.loc[((results['RX'] == 0) & (results['TX'] == 1))])
-    print('Superfluous: ' + str(((results['TX'] == 0) & (results['RX'] == 1)).sum()))
-    print(results.loc[((results['TX'] == 0) & (results['RX'] == 1))])
+        if args.s:
+            print('.......... Save Results in ' + out)
+            os.makedirs(out, exist_ok=True)
+            pickle.dump(results, open(out + '/' + args.title + '_results.pkl', 'wb+'))
+
+    print_results(results)
 
     print('.......... Graph Results')
-    # Latency
-    x = results.RTX
-    y = y = results.lat.mean()
-    cpplot.plot_line(results, 'tb_latency', out, x, y,
-                     xlabel='Retransmissions', ylabel='End-to-end delay (ms)')
-                     # ls='None')
-    print('  ... LAT mean: ' + str(np.mean(y)))
-
-    x = [0]
-    y = ratio(sent, received)
-    # PDR
-    cpplot.plot_bar(results, 'tb_pdr', out, x, y,
-                    xlabel='Packet Drop Rate (%)', ylabel='End-to-end PDR (%)')
-    print('  ... PDR mean: ' + str(np.mean(y)))
+    graph_latency(results, out)
+    graph_pdr(results, out)
