@@ -98,6 +98,7 @@ def main():
     if int(args.comp) and compare is not None:
         compare_args = compare['args'] if 'args' in compare else None
         print('**** Compare plots in dir: ' + args.out)
+        print(compare)
         cpcomp.compare(args.out,  # directory
                        compare['sims'],
                        compare['plots'],

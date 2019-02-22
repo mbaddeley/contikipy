@@ -285,6 +285,7 @@ def compare_bar(ax, datasets, **kwargs):
         Y[data['id']] = data['data']['y']
     if not any(isinstance(x, str) for x in data['data']['x']):
         X = pad_x(X)
+    print(Y)
     Y = pad_y(Y)
     # set a y limit
     if ylim is not None:

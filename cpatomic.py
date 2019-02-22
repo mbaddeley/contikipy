@@ -13,10 +13,11 @@ import argparse
 import pickle   # for saving data
 
 import cpplotter as cpplot
+
 import matplotlib.pyplot as plt  # general plotting
 
 # Pandas options
-pd.set_option('display.max_rows', 500)
+pd.set_option('display.max_rows', 10)
 pd.set_option('display.max_columns', 50)
 pd.set_option('display.width', 1000)
 pd.set_option('display.float_format', lambda x: '%.3f' % x)
@@ -70,9 +71,9 @@ def format_data(df):
         df.src = df.src.astype(int)
     if 'id' in df:
         df.id = df.id.astype(int)
-    if 'packet' in df:
+    # if 'packet' in df:
         # df.packet = df[['id', 'src']].apply(lambda x: '_'.join(str(x)), axis=1)
-        df.packet = df['id'].astype(str) + '_' + df['src'].astype(str)
+        # df.packet = df['id'].astype(str) + '_' + df['src'].astype(str)
     return df
 
 
@@ -98,6 +99,7 @@ class LOG_PARSER:
         df_list = []
         data_re = re.compile(regex)
         try:
+            i = 0
             # get table of log names to node_id
             id_df = pd.read_csv('/home/mike/Results/toshiba_tb_ids')
             id_df.set_index("name", inplace=True)
@@ -105,6 +107,7 @@ class LOG_PARSER:
             for root, dirs, files in os.walk(dir):
                 # print('  ... Files \"' + str(files) + '/\"')
                 for file in files:
+                    i = i + 1
                     if(log is not None):
                         file = log
                     else:
@@ -143,6 +146,7 @@ class LOG_PARSER:
 
             all_df = all_df.astype({"node": int})
             all_df = all_df.reset_index(drop=True)
+            print('> Finished parsing ' + str(i) + ' files')
             return all_df
         except Exception as e:
             traceback.print_exc()
@@ -211,11 +215,22 @@ class HELPER:
 hlp = HELPER()
 
 
-def generate_results(table, df):
+def generate_results(df):
     """
     Generate the results DataFrame from a DataFrame containing TX/RX info
     for each node with the packet id as the index, as well as the
     """
+    # Get the latency for each packet
+    delay = df.pivot_table(index=['packet'],
+                           values=['timestamp'],
+                           aggfunc=lambda x: (x.max() - x.min())/np.timedelta64(1, 'ms'))
+    # Get the state for each node (cols) for each packet (index)
+    table = df.pivot_table(index=['packet'],
+                           columns=['node'],
+                           values=['type'],
+                           aggfunc=lambda x: ' '.join(x)).fillna('MISS')
+    table = table.xs('type', axis=1, drop_level=True)
+    # Generate the results df
     results = pd.DataFrame()
     results['packet'] = table.index
     results = results.set_index('packet')
@@ -227,9 +242,10 @@ def generate_results(table, df):
     results['epoch'] = df.groupby('packet')['epoch'].agg(lambda x: x.value_counts().index[0])  # returns the most common epoch
     results['src'] = df.groupby('packet')['src'].agg(lambda x: x.value_counts().index[0])  # returns a list of sources (they should be the same)
     results['id'] = df.groupby('packet')['id'].agg(lambda x: x.value_counts().index[0])  # returns a list of sources (they should be the same)
-    results['lat'] = delay.groupby('packet')['timestamp'].agg(lambda x: x.value_counts().index[0])
-    results = results.reset_index()
     results['status'] = results.apply(lambda row: packet_status(row), axis=1)
+    results['lat'] = delay.groupby('packet')['timestamp'].agg(lambda x: x.value_counts().index[0])
+    results.loc[~results['status'].str.contains('correct'), 'lat'] = 0.0
+    results = results.reset_index()
     return results
 
 
@@ -257,7 +273,7 @@ def print_results(df):
 def graph_latency(df, out):
     """Graph end-to-end delay."""
     x = df.RTX
-    y = y = df.lat.mean()
+    y = df[(df['TX'] == 1) & (df['RX'] == 1)].lat.mean()
     cpplot.plot_line(df, 'tb_latency', out + '/', x, y,
                      xlabel='Retransmissions', ylabel='End-to-end delay (ms)')  # ls='None')
     print('  ... LAT mean: ' + str(np.mean(y)))
@@ -271,7 +287,7 @@ def graph_pdr(df, out):
     received = (df['RX'] == 1).sum()
     superfluous = ((df['TX'] == 0) & (df['RX'] == 1)).sum()
     x = [0]
-    y = hlp.ratio(sent, received - superfluous)
+    y = [hlp.ratio(sent, received - superfluous)]
     cpplot.plot_bar(df, 'tb_pdr', out + '/', x, y,
                     xlabel='Packet Drop Rate (%)', ylabel='End-to-end PDR (%)')
     print('  ... PDR mean: ' + str(np.mean(y)))
@@ -289,6 +305,7 @@ if __name__ == "__main__":
     # Cmd line args
     ap = argparse.ArgumentParser(prog='AtomicPy', description='Atomic Log Parser')
     ap.add_argument('--s', required=False, default=0, help='Save parsed logs')
+    ap.add_argument('--c', required=False, default=0, help='Compare multiple saved results')
     ap.add_argument('--l', required=False, default=0, help='Load saved logs')
     ap.add_argument('--dir', required=True, help='Log directory')
     ap.add_argument('--title', required=False, default='ATM', help='Results title')
@@ -325,20 +342,8 @@ if __name__ == "__main__":
         df = df[df['id'] < np.partition(u_ids.flatten(), -5)[-5]]  # max
         print("> Len:" + str(len(df.id)) + " Min:" + str(df.id.min()) + " Max:" + str(df.id.max()))
 
-        delay = df.pivot_table(index=['packet'],
-                               values=['timestamp'],
-                               aggfunc=lambda x: (x.max() - x.min())/np.timedelta64(1, 'ms'))
-
-        # Get the state for each node (cols) for each packet (index)
-        table = df.pivot_table(index=['packet'],
-                               columns=['node'],
-                               values=['type'],
-                               aggfunc=lambda x: ' '.join(x)).fillna('MISS')
-        table = table.xs('type', axis=1, drop_level=True)
-
-        print('.......... Generate Results DataFrame')
-        results = generate_results(table, df)
-
+        print('.......... Generate Results')
+        results = generate_results(df)
         if args.s:
             print('.......... Save Results in ' + out)
             os.makedirs(out, exist_ok=True)
@@ -346,6 +351,58 @@ if __name__ == "__main__":
 
     print_results(results)
 
+    print('.......... Pickle Results')
+    sent = (results['TX'] == 1).sum()
+    received = (results['RX'] == 1).sum()
+    superfluous = ((results['TX'] == 0) & (results['RX'] == 1)).sum()
+    pdr_mean = hlp.ratio(sent, received - superfluous)
+    pickle.dump(pdr_mean, open(out + '/' + args.title + '_pdr.pkl', 'wb'))
+    lat_mean = results.lat.mean()
+    pickle.dump(lat_mean, open(out + '/' + args.title + '_lat.pkl', 'wb'))
+
     print('.......... Graph Results')
     graph_latency(results, out)
     graph_pdr(results, out)
+
+    if args.c:
+        lat_0 = pickle.load(open(args.out + '/0/' + '0_lat.pkl', 'rb'))
+        pdr_0 = pickle.load(open(args.out + '/0/' + '0_pdr.pkl', 'rb'))
+        lat_25 = pickle.load(open(args.out + '/25/' + '25_lat.pkl', 'rb'))
+        pdr_25 = pickle.load(open(args.out + '/25/' + '25_pdr.pkl', 'rb'))
+        lat_50 = pickle.load(open(args.out + '/50/' + '50_lat.pkl', 'rb'))
+        pdr_50 = pickle.load(open(args.out + '/50/' + '50_pdr.pkl', 'rb'))
+        lat_75 = pickle.load(open(args.out + '/75/' + '75_lat.pkl', 'rb'))
+        pdr_75 = pickle.load(open(args.out + '/75/' + '75_pdr.pkl', 'rb'))
+
+        root = '/home/mike/Results/NIGHT_OUT/'
+        x = ['0', '25', '50', '75']
+        y = [pdr_0, pdr_25, pdr_50, pdr_75]
+        # cpplot.plot_bar(results, 'tb_pdr', root, x, y,
+        #                 xlabel='Packet Drop Rate (%)', ylabel='End-to-end PDR (%)')
+
+        fig, ax1 = plt.subplots(figsize=(10, 6))
+        # constants
+        width = 0.35  # the width of the bars
+        color = list(plt.rcParams['axes.prop_cycle'])[0]['color']
+        ind = np.arange(len(x))
+        ax1.bar(x=ind, height=y, width=width, color=color)
+        xticks = np.arange(min(ind), max(ind)+1, 1.0)
+        ax1.set_xticks(xticks)
+        ax1.set_xticklabels(x)
+
+        ax2 = ax1.twinx()
+        y2 = [lat_0, lat_25, lat_50, lat_75]
+        ax2.errorbar(xticks, y2, None, color='red', marker='s', ms=10, ls='--', lw=4)
+        ax2.set_yticks(np.arange(0, 600, step=100))
+
+        ax2.set_ylim([0, 600])
+        # set axis' labels
+        ax1.set_xlabel('Packet Drop Rate (%)')
+        ax2.set_ylabel('End-to-end Delay (ms)')
+        ax1.set_ylabel('End-to-end PDR (%)')
+        ax2.legend(['Latency'], loc='lower right')
+        fig.set_tight_layout(True)
+        print('.......... Save to ' + root + 'fig_pdr_lat.pdf')
+        fig.savefig(root + 'fig_pdr_lat.pdf', bbox_inches="tight")
+
+        plt.show()

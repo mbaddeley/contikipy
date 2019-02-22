@@ -254,10 +254,10 @@ compare:
     - uSDN
     - RPL
     plots:
-      - usdn_energy_v_hops
-      - usdn_pdr_v_hops
-      - usdn_latency_v_hops
-      - usdn_join_time
+      - energy_v_hops
+      - pdr_v_hops
+      - latency_v_hops
+      # - join_time
 
 # ----------------------------------------------------------------------------
   # - sims:
