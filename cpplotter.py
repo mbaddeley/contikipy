@@ -5,8 +5,11 @@ from __future__ import division
 import os
 import pickle
 
-import matplotlib.pyplot as plt  # general plotting
 import numpy as np  # number crunching
+import matplotlib.pyplot as plt  # general plotting
+from matplotlib import mlab
+
+import scipy.stats as ss
 # import seaborn as sns  # fancy plotting
 # import pandas as pd  # table manipulation
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
@@ -126,6 +129,9 @@ def plot_hist(df, desc, dir, x, y, ylim=None, **kwargs):
     print('> Plotting ' + desc + ' (HIST)')
     fig, ax = plt.subplots(figsize=(8, 6))
 
+    mu = 1
+    sigma = 2
+
     # get kwargs
     xlabel = kwargs['xlabel'] if 'xlabel' in kwargs else ''
     ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
@@ -135,11 +141,19 @@ def plot_hist(df, desc, dir, x, y, ylim=None, **kwargs):
         color = list(plt.rcParams['axes.prop_cycle'])[0]['color']
 
     bins = np.around(np.linspace(0, max(x), len(x)), 3)  # bin values to 3dp
-    ax.hist(x, bins, density=1, histtype='step', cumulative=True,
-            stacked=True, fill=True, label=desc, color=color)
+
+    # ax.hist(x, bins, density=1, histtype='step', cumulative=True,
+    #         stacked=True, fill=True, label=desc, color=color)
     # ax.set_xticks([bins[0], bins[len(x)-1]])
     ax.set_xticks(np.linspace(bins[0], bins[len(bins)-1], 5))
     # ax.legend_.remove()
+
+    # Add a line showing the expected distribution.
+    y = mlab.normpdf(bins, mu, sigma).cumsum()
+    y /= y[-1]
+    # y = ss.norm.cdf(x, mu, sigma)
+    # ax.plot(x, y, 'k--', linewidth=1.5)
+    ax.plot(bins, y, 'k--', linewidth=1.5, label='Theoretical')
 
     data = {'x': x, 'y': y, 'errors': None,
             'type': 'hist',

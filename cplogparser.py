@@ -467,7 +467,7 @@ def association_v_time(df_dict, **kwargs):
     y = df['id'].astype(int).tolist()
     cpplot.plot_hist(df, filename, sim_dir, x, y,
                      xlabel='Time (s)',
-                     ylabel='Propotion of Nodes Joined',
+                     ylabel='Proportion of Nodes',
                      color=color)
     print('  ... Association mean: ' + str(np.mean(x)))
     print('  ... Association median: ' + str(np.median(x)))

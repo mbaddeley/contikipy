@@ -10,6 +10,7 @@ import math
 import traceback
 
 import matplotlib.pyplot as plt  # general plotting
+from matplotlib import mlab
 import numpy as np               # number crunching
 # import seaborn as sns          # fancy plotting
 # import pandas as pd            # table manipulation
@@ -217,6 +218,8 @@ def add_hist(ax, color, data, bins=30):
     # FIXME: Currently an issue with outliers causing smaller plots to be
     #       unreadable. Using range() in mean time.
     norm = 1
+    mu = 200
+    sigma = 25
     # range = (0, 50)
     type = 'bar'
     cumul = True
@@ -226,13 +229,19 @@ def add_hist(ax, color, data, bins=30):
     bins = np.around(np.linspace(0, max(x), len(x)), 3)  # bin values to 3dp
     if bins is None:
         bins = x
-    (n, bins, patches) = ax.hist(x, bins=bins,
-                                 density=norm,
-                                 histtype=type,
-                                 cumulative=cumul,
-                                 stacked=stack,
-                                 fill=fill,
-                                 color=color)
+    # (n, bins, patches) = ax.hist(x, bins=bins,
+    #                              density=norm,
+    #                              histtype=type,
+    #                              cumulative=cumul,
+    #                              stacked=stack,
+    #                              fill=fill,
+    #                              color=color)
+
+    # Add a line showing the expected distribution.
+    y = mlab.normpdf(bins, mu, sigma).cumsum()
+    y /= y[-1]
+
+    ax.plot(bins, y, 'k--', linewidth=3, color=color)
     # pprint(bins)
 
 

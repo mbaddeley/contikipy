@@ -34,7 +34,7 @@ formatters:
     - type:   icmp
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?:\s+type:(?P<type>\d+)|\s+code:(?P<code>\d+))+.*?$
     - type:   join
-      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?:\s+n:(?P<node>\d+)|\s+c:(?P<controller>\d+)|\s+dag:(?P<dag>\d+)|\s+dao:(?P<dao>\d+))+.*?$
+      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?:\s+n:(?P<id>\d+)|\s+c:(?P<controller>\d+)|\s+dag:(?P<dag>\d+)|\s+dao:(?P<dao>\d+))+.*?$
   process:
     # atomic
     atomic-op:
@@ -119,6 +119,10 @@ simulations:
         df:      atomic-energy
         packets: ['CLCT', 'CONF', 'RACT']
         file:    'energy_v_hops'
+      association_v_time:
+        df:      atomic-op
+        packets: ['ASSC']
+        file:    'association_v_time'
   # 30 Node uSDN CSMA
   - desc:           uSDN-CSMA
     type:           usdn
@@ -140,6 +144,7 @@ simulations:
       - 'node'
       - 'sdn'
       - 'pow'
+      - 'join'
     plot:
       latency_v_hops:
         df:      sdn
@@ -155,42 +160,51 @@ simulations:
         df:      pow
         packets: ['NSU', 'CONF', 'FTQ', 'FTS']
         file:    'energy_v_hops'
+      association_v_time:
+        df:      join
+        packets: ['dag']
+        file:    'association_v_time'
   # 30 Node uSDN CONTIKIMAC
-  # - desc:           uSDN-CONTIKIMAC
-  #   type:           usdn
-  #   contiki:        /home/mike/Repos/usdn
-  #   wd:             /home/mike/Repos/usdn/examples/sdn
-  #   csc:            usdn-30-node.csc
-  #   log:            uSDN-CONTIKIMAC-30
-  #   makeargs:
-  #     MAC:          CONTIKIMAC
-  #     SDN:          1
-  #     FTREFRESH:    0
-  #     FTSRETRY:     0
-  #     FORCENSU:     1
-  #     FTLIFETIME:   300
-  #     NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
-  #     MULTIFLOW:    1
-  #   multiflow:      1_flow
-  #   regex:
-  #     - 'node'
-  #     - 'sdn'
-  #     - 'pow'
-  #   plot:
-  #     latency_v_hops:
-  #       df:      sdn
-  #       packets: ['NSU', 'CONF', 'FTQ', 'FTS']
-  #       index:   ['id']
-  #       aggfunc: {'lat': mean}
-  #       file:    'latency_v_hops'
-  #     pdr_v_hops:
-  #       df:      sdn
-  #       packets: ['NSU', 'CONF', 'FTQ', 'FTS']
-  #       file:    'pdr_v_hops'
-  #     energy_v_hops:
-  #       df:      pow
-  #       packets: ['NSU', 'CONF', 'FTQ', 'FTS']
-  #       file:    'energy_v_hops'
+  - desc:           uSDN-CONTIKIMAC
+    type:           usdn
+    contiki:        /home/mike/Repos/usdn
+    wd:             /home/mike/Repos/usdn/examples/sdn
+    csc:            usdn-30-node.csc
+    log:            uSDN-CONTIKIMAC-30
+    makeargs:
+      MAC:          CONTIKIMAC
+      SDN:          1
+      FTREFRESH:    0
+      FTSRETRY:     0
+      FORCENSU:     1
+      FTLIFETIME:   300
+      NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
+      MULTIFLOW:    1
+    multiflow:      1_flow
+    regex:
+      - 'node'
+      - 'sdn'
+      - 'pow'
+      - 'join'
+    plot:
+      latency_v_hops:
+        df:      sdn
+        packets: ['NSU', 'CONF', 'FTQ', 'FTS']
+        index:   ['id']
+        aggfunc: {'lat': mean}
+        file:    'latency_v_hops'
+      pdr_v_hops:
+        df:      sdn
+        packets: ['NSU', 'CONF', 'FTQ', 'FTS']
+        file:    'pdr_v_hops'
+      energy_v_hops:
+        df:      pow
+        packets: ['NSU', 'CONF', 'FTQ', 'FTS']
+        file:    'energy_v_hops'
+      association_v_time:
+        df:      join
+        packets: ['dag']
+        file:    'association_v_time'
   # # 30 Node uSDN NULLMAC
   # - desc:           uSDN-NULLMAC
   #   type:           usdn
@@ -236,12 +250,13 @@ compare:
     - Atomic-SDN
     - uSDN-CSMA
     - uSDN-CONTIKIMAC
-    - uSDN-NULLMAC
+    # - uSDN-NULLMAC
     # which plots do we want to compare?
     plots:
       - latency_v_hops
       - pdr_v_hops
       - energy_v_hops
+      - association_v_time
     # plot arguments
     args:
       samefigure: 0
@@ -258,3 +273,7 @@ compare:
         col: 0
         legend: None
         ylim: 25
+      association_v_time:
+        row: 0
+        col: 0
+        legend: (0.28, 1.03)  # location, None, or Tuple

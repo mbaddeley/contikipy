@@ -391,14 +391,15 @@ if __name__ == "__main__":
         ax1.set_xticklabels(x)
 
         ax2 = ax1.twinx()
-        y2 = [lat_0, lat_25, lat_75, lat_50]
+        y2 = [lat_0, lat_25, lat_50, lat_75]
         ax2.errorbar(xticks, y2, None, color='red', marker='D', ms=10, ls='--', lw=4)
-        ax2.set_yticks(np.arange(0, max(y2), step=100))
+        ax2.set_yticks(np.arange(0, max(y2) + 100, step=100))
 
         ax2.set_ylim([0, max(y2) + 100])
         # set axis' labels
         ax1.set_xlabel('Injected Rx Drop Rate (%)')
         ax2.set_ylabel('End-to-end Delay (ms)')
+
         ax1.set_ylabel('End-to-end PDR (%)')
         ax2.legend(['Mean Latency'], loc='lower right')
         fig.set_tight_layout(True)
