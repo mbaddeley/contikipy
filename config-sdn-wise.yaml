@@ -1,0 +1,77 @@
+# ----------------------------------------------------------------------------
+# ContikiPy
+# ----------------------------------------------------------------------------
+contiki: /home/mike/Repos/sdn-wise-contiki/contiki
+wd:      /home/mike/Repos/sdn-wise-contiki/sdn-wise
+fmt:     cooja
+log:     /tools/cooja/build/COOJA.testlog
+out:     /home/mike/Results/SDN-WISE
+csc:
+target:  sky
+
+# ----------------------------------------------------------------------------
+# Results Options
+# packet regex ... https://regex101.com/r/mE5wK0/1
+# ----------------------------------------------------------------------------
+logtypes:
+  cooja:     '^\s*(?P<time>\d+):\s+(?P<node>\d+):'
+
+formatters:
+  patterns:
+    - type:   pow
+      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*](?:\s*PW\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
+    - type:   all
+      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<state>(TX|RX))\s+(?P<type>\S+)(?:\s+m:(?P<origin>\d+)|\s+t:(?P<target>\d+)|\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>[0-5]))+.*?$
+  process:
+    # atomic
+    all:
+      - filter:
+          col:      hops
+          min:      1
+          max:      5
+
+# ----------------------------------------------------------------------------
+# Simulations
+# ----------------------------------------------------------------------------
+simulations:
+# ----------------------------------------------------------------------------
+  - desc:           SDN-WISE-5-NODES
+    type:           sdn-wise
+    contiki:        /home/mike/Repos/sdn-wise-contiki/contiki
+    wd:             /home/mike/Repos/sdn-wise-contiki/sdn-wise
+    csc:            simulations/sdn-wise-5.csc
+    log:            SDN-WISE-5
+    makeargs:
+      RULE_TTL:     100
+      REPORT_FREQ:  60
+      DATA_RATE:    75
+    regex:
+      - 'all'
+      - 'pow'
+    plot:
+      latency_v_hops:
+        df:      all
+        packets: ['REQUEST', 'OPEN_PATH']
+        index:   ['id']
+        # aggfunc: between
+        aggfunc: {'lat': sum}
+        file:    'latency_v_hops'
+      pdr_v_hops:
+        df:      all
+        packets: ['REQUEST', 'OPEN_PATH']
+        file:    'pdr_v_hops'
+      energy_v_hops:
+        df:      pow
+        packets: ['REQUEST', 'OPEN_PATH']
+        file:    'energy_v_hops'
+
+# ----------------------------------------------------------------------------
+# compare (comparison) config
+# ----------------------------------------------------------------------------
+compare:
+# ----------------------------------------------------------------------------
+  # - sims:
+  #   - uSDN
+  #   - RPL
+  #   plots:
+  #     - latency_v_hops

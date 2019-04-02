@@ -17,10 +17,10 @@ import cpplotter as cpplot
 import matplotlib.pyplot as plt  # general plotting
 
 # Pandas options
-pd.set_option('display.max_rows', 10)
+pd.set_option('display.max_rows', 20)
 pd.set_option('display.max_columns', 50)
-pd.set_option('display.width', 1000)
-pd.set_option('display.float_format', lambda x: '%.3f' % x)
+pd.set_option('display.width', 50)
+pd.set_option('display.float_format', lambda x: '%.2f' % x)
 
 pd.options.mode.chained_assignment = None
 
@@ -64,6 +64,7 @@ def format_data(df):
     """Format neighbor data."""
     df = df.dropna()
     if 'timestamp' in df:
+        print(df.timestamp)
         df.timestamp = pd.to_datetime(df.timestamp)
     if 'epoch' in df:
         df.epoch = df.epoch.astype(int)
@@ -242,10 +243,12 @@ def generate_results(df):
     results['epoch'] = df.groupby('packet')['epoch'].agg(lambda x: x.value_counts().index[0])  # returns the most common epoch
     results['src'] = df.groupby('packet')['src'].agg(lambda x: x.value_counts().index[0])  # returns a list of sources (they should be the same)
     results['id'] = df.groupby('packet')['id'].agg(lambda x: x.value_counts().index[0])  # returns a list of sources (they should be the same)
-    results['status'] = results.apply(lambda row: packet_status(row), axis=1)
+    results['received'] = results.apply(lambda row: packet_status(row), axis=1)
+
     results['lat'] = delay.groupby('packet')['timestamp'].agg(lambda x: x.value_counts().index[0])
-    results.loc[~results['status'].str.contains('correct'), 'lat'] = 0.0
+    results.loc[~results['received'].str.contains('correct'), 'lat'] = 0.0
     results = results.reset_index()
+    print(results)
     return results
 
 
@@ -341,9 +344,9 @@ if __name__ == "__main__":
         df = df[df['id'] > np.partition(u_ids.flatten(), 5)[5]]  # min
         df = df[df['id'] < np.partition(u_ids.flatten(), -5)[-5]]  # max
         print("> Len:" + str(len(df.id)) + " Min:" + str(df.id.min()) + " Max:" + str(df.id.max()))
-
         print('.......... Generate Results')
         results = generate_results(df)
+        print(results)
         if args.s:
             print('.......... Save Results in ' + out)
             os.makedirs(out, exist_ok=True)
