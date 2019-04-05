@@ -116,10 +116,10 @@ simulations:
     makeargs:
       MAC:          CSMA
       SDN:          1
-      FTREFRESH:    0
+      FTREFRESH:    1
       FTSRETRY:     0
       FORCENSU:     1
-      FTLIFETIME:   300
+      FTLIFETIME:   0xFFFF
       NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
       MULTIFLOW:    1
     multiflow:      1_flow
@@ -134,10 +134,10 @@ simulations:
     makeargs:
       MAC:          CSMA
       SDN:          1
-      FTREFRESH:    0
+      FTREFRESH:    1
       FTSRETRY:     0
       FORCENSU:     1
-      FTLIFETIME:   300
+      FTLIFETIME:   0xFFFF
       NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
       MULTIFLOW:    1
     multiflow:      1_flow
@@ -151,10 +151,10 @@ simulations:
     makeargs:
       MAC:          CSMA
       SDN:          1
-      FTREFRESH:    0
+      FTREFRESH:    1
       FTSRETRY:     0
       FORCENSU:     1
-      FTLIFETIME:   300
+      FTLIFETIME:   0xFFFF
       NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
       MULTIFLOW:    1
     multiflow:      1_flow
@@ -168,10 +168,10 @@ simulations:
     makeargs:
       MAC:          CSMA
       SDN:          1
-      FTREFRESH:    0
+      FTREFRESH:    1
       FTSRETRY:     0
       FORCENSU:     1
-      FTLIFETIME:   300
+      FTLIFETIME:   0xFFFF
       NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
       MULTIFLOW:    1
     multiflow:      1_flow
@@ -185,10 +185,10 @@ simulations:
     makeargs:
       MAC:          CONTIKIMAC
       SDN:          1
-      FTREFRESH:    0
+      FTREFRESH:    1
       FTSRETRY:     0
       FORCENSU:     1
-      FTLIFETIME:   300
+      FTLIFETIME:   0xFFFF
       NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
       MULTIFLOW:    1
     multiflow:      1_flow
@@ -202,10 +202,10 @@ simulations:
     makeargs:
       MAC:          CONTIKIMAC
       SDN:          1
-      FTREFRESH:    0
+      FTREFRESH:    1
       FTSRETRY:     0
       FORCENSU:     1
-      FTLIFETIME:   300
+      FTLIFETIME:   0xFFFF
       NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
       MULTIFLOW:    1
     multiflow:      1_flow
@@ -219,10 +219,10 @@ simulations:
     makeargs:
       MAC:          CONTIKIMAC
       SDN:          1
-      FTREFRESH:    0
+      FTREFRESH:    1
       FTSRETRY:     0
       FORCENSU:     1
-      FTLIFETIME:   300
+      FTLIFETIME:   0xFFFF
       NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
       MULTIFLOW:    1
     multiflow:      1_flow
@@ -236,10 +236,10 @@ simulations:
     makeargs:
       MAC:          CONTIKIMAC
       SDN:          1
-      FTREFRESH:    0
+      FTREFRESH:    1
       FTSRETRY:     0
       FORCENSU:     1
-      FTLIFETIME:   300
+      FTLIFETIME:   0xFFFF
       NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
       MULTIFLOW:    1
     multiflow:      1_flow

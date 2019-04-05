@@ -290,15 +290,15 @@ def plot_line(df, desc, dir, x, y, **kwargs):
     ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
     # label = kwargs['label'] if 'label' in kwargs else ylabel
 
-    # mean and std
-    mean = np.mean(y)
-    std = np.std(y)
-    errors = mean/np.sqrt(y)
-
     # set xticks
     xticks = x
     # print(steps)
     # xticks = np.arange(min(), max(x)+1, steps)
+    if errors is not None:
+        # mean and std
+        mean = np.mean(y)
+        std = np.std(y)
+        errors = mean/np.sqrt(y)
 
     # plot
     fig, ax = plt.subplots(figsize=(8, 6))

@@ -245,7 +245,7 @@ def add_hist(ax, color, data, bins=30):
     y = ss.norm.pdf(bins, mu, sigma).cumsum()
     y /= y[-1]
 
-    ax.plot(bins, y, 'k--', linewidth=3, color=color)
+    ax.plot(bins, y, 'k-', linewidth=3, color=color)
     # pprint(bins)
 
 
