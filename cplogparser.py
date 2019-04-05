@@ -60,11 +60,11 @@ def scrape_data(datatype, log, dir, regex):
         # usdn
         "app":  format_usdn_app_data,
         "sdn":  format_usdn_sdn_data,
-        "node":  format_usdn_node_data,
         "icmp":  format_usdn_icmp_data,
-        "join":  format_usdn_join_data,
         # common
+        "node":  format_node_data,
         "pow":  format_energy_data,
+        "join": format_join_data,
         "all":  format_all_data,
     }
 
@@ -102,14 +102,16 @@ def plot_data(desc, type, dir, df_dict, plots):
     # required function for each plot type
     atomic_function_map = {
         # atomic
-        'atomic_op_times': atomic_op_times,
+        'atomic_op_times'   : atomic_op_times,
         # usdn
         'usdn_traffic_ratio': usdn_traffic_ratio,
-        # atomic vs usdn
+        # common
         'association_v_time': association_v_time,
-        'latency_v_hops': latency_v_hops,
-        'pdr_v_hops': pdr_v_hops,
-        'energy_v_hops': energy_v_hops,
+        'latency_v_hops'    : latency_v_hops,
+        'pdr_v_hops'        : pdr_v_hops,
+        'energy_v_hops'     : energy_v_hops,
+        'latency'           : graph_latency,
+        'pdr'               : graph_pdr,
     }
 
     # required dictionaries for each plotter
@@ -121,7 +123,7 @@ def plot_data(desc, type, dir, df_dict, plots):
         # atomic vs usdn
         'association_v_time': {'atomic'  : ['atomic-op'],
                                'usdn'    : ['join'],
-                               'sdn-wise': ['all']},
+                               'sdn-wise': ['join']},
         'latency_v_hops':     {'atomic'  : ['atomic-op'],
                                'usdn'    : ['sdn', 'node'],
                                'sdn-wise': ['all']},
@@ -131,6 +133,12 @@ def plot_data(desc, type, dir, df_dict, plots):
         'energy_v_hops':      {'atomic'  : ['atomic-energy'],
                                'usdn'    : ['sdn', 'node', 'pow'],
                                'sdn-wise': ['all', 'pow']},
+        'latency':            {'atomic'  : ['atomic-op'],
+                               'usdn'    : ['sdn', 'node'],
+                               'sdn-wise': ['all']},
+        'pdr':                {'atomic'  : ['atomic-op'],
+                               'usdn'    : ['sdn', 'node'],
+                               'sdn-wise': ['all']},
     }
 
     sim_desc = desc
@@ -166,7 +174,7 @@ def plot_data(desc, type, dir, df_dict, plots):
 # ----------------------------------------------------------------------------#
 def format_atomic_energy_data(df):
     """Format atomic energy data."""
-    print('> Format atomic energy data')
+    print('  > Format atomic energy data')
     # set epoch to be the index
     df.set_index('epoch', inplace=True)
     # rearrage other cols (and drop level/time)
@@ -181,7 +189,7 @@ def format_atomic_energy_data(df):
 # ----------------------------------------------------------------------------#
 def format_atomic_op_data(df):
     """Format atomic data."""
-    print('> Format atomic op data')
+    print('  > Format atomic op data')
     # set epoch to be the index
     df.set_index('epoch', inplace=True)
     # rearrage other cols (and drop level/time)
@@ -202,7 +210,7 @@ def format_atomic_op_data(df):
 # ----------------------------------------------------------------------------#
 def format_usdn_app_data(df):
     """Format usdn application data."""
-    print('> Format usdn application data')
+    print('  > Format usdn application data')
     # sort the table by src/dest/seq so txrx pairs will be next to each other
     # this fixes NaN hop counts being filled incorrectly
     df = df.sort_values(['src', 'dest', 'app', 'seq']).reset_index(drop=True)
@@ -240,7 +248,7 @@ def format_usdn_app_data(df):
 # ----------------------------------------------------------------------------#
 def format_usdn_sdn_data(df):
     """Format usdn SDN data."""
-    print('> Format usdn SDN data')
+    print('  > Format usdn SDN data')
 
     # Rearrange columns
     df = df.copy()
@@ -290,41 +298,11 @@ def format_usdn_sdn_data(df):
 
 
 # ----------------------------------------------------------------------------#
-def format_usdn_node_data(df):
-    """Format node data."""
-    global node_data
-    print('> Read sdn node log')
-    # get the most common hops and degree for each node
-    df = df.groupby('node')[['hops', 'degree']].agg(lambda x: x.mode())
-    df = df.reset_index()
-    # node_df = df
-    return df
-
-
-# ----------------------------------------------------------------------------#
 def format_usdn_icmp_data(df):
     """Format icmp data."""
     print('> Read sdn icmp log')
     # rearrage cols
     df = df[['level', 'module', 'type', 'code', 'node', 'time']]
-    return df
-
-
-# ----------------------------------------------------------------------------#
-def format_usdn_join_data(df):
-    """Format node data."""
-    print('> Read sdn join log')
-    # rearrage cols
-    df = df[['level', 'module', 'dag', 'dao',
-             'controller', 'node', 'id', 'time']]
-    df['id'] = df['id'].fillna(df['node'])
-    df = df[['dag', 'dao', 'controller', 'id', 'time']]
-    df = (df.set_index(['id', 'time'])
-            .stack()
-            .reorder_levels([2, 0, 1])
-            .reset_index(name='a')
-            .drop('a', 1)
-            .rename(columns={'level_0': 'type'}))
     return df
 
 
@@ -429,7 +407,7 @@ def create_packet_id(row):
 # ----------------------------------------------------------------------------#
 def format_all_data(df):
     """Format all data."""
-    print('> Format data')
+    print('  > Format data')
     df = df.copy()
 
     df.set_index('time', inplace=True, drop=False)
@@ -465,7 +443,7 @@ def format_all_data(df):
 # ----------------------------------------------------------------------------#
 def format_energy_data(df):
     """Format energy data."""
-    print('> Format energy')
+    print('  > Format energy')
     # get last row of each 'node' group and use the all_radio value
     df = df.groupby('node').mean()
     # need to convert all our columns to numeric values from strings
@@ -477,6 +455,45 @@ def format_energy_data(df):
 
     print('  ...RDC: ' + str(df.all_rdc.mean()))
 
+    return df
+
+
+# ----------------------------------------------------------------------------#
+def format_node_data(df):
+    """Format join data."""
+    global node_data
+    print('  > Format node')
+    # get the most common hops and degree for each node
+    df = df.groupby('node')[['hops', 'degree']].agg(lambda x: x.mode())
+    df = df.reset_index()
+
+    print(' ... Mean Hops: ' + df.hops.mean())
+    print(' ... Mean Degree: ' + df.degree.mean())
+
+    return df
+
+
+# ----------------------------------------------------------------------------#
+def format_join_data(df):
+    """Format node data."""
+    print('  > Format join')
+    # rearrage cols
+    if 'dag' in df:
+        df = df[['level', 'module', 'dag', 'dao',
+                 'controller', 'node', 'id', 'time']]
+        df['id'] = df['id'].fillna(df['node'])
+        df = df[['dag', 'dao', 'controller', 'id', 'time']]
+    else:
+        df.drop(columns={'node', 'level', 'module'}, inplace=True)
+
+    # Create a 'type' column, which shows what sort of association it is (rpl, controller, etc.)
+    df = (df.set_index(['id', 'time'])
+            .stack()
+            .reorder_levels([2, 0, 1])
+            .reset_index(name='a')
+            .drop('a', 1)
+            .rename(columns={'level_0': 'type'}))
+    df['time'] = pd.to_timedelta(df.time * 1000).dt.total_seconds()  # convert from ns to ms
     return df
 
 
@@ -573,14 +590,14 @@ def usdn_traffic_ratio(df_dict, **kwargs):
     cpplot.plot_bar(app_df, sdn_df, icmp_df, 'traffic_ratio', sim_dir)
 
 
-
-
 # ----------------------------------------------------------------------------#
 def association_v_time(df_dict, **kwargs):
     """Plot atomic vs usdn join times."""
     df_name = kwargs['df'] if 'df' in kwargs else None
     packets = kwargs['packets'] if 'packets' in kwargs else None
     filename = kwargs['file'] if 'file' in kwargs else 'association_v_time'
+
+    print('> Do association_v_time for ' + str(packets) + ' in \'df_' + df_name + '\'')
 
     df = df_dict[df_name].copy()
     # Filter df for packet types in packets
@@ -592,31 +609,22 @@ def association_v_time(df_dict, **kwargs):
         # convert time to ms
         df = df.rename(columns={'lat': 'time', 'node': 'id'})
         df['time'] = df['time'].astype(int)/1000
-        # set color
-        color = list(plt.rcParams['axes.prop_cycle'])[2]['color']
-        # df = df.set_index('node').sort_index()
-        # df = df.iloc[1:]
-    elif 'all' in df_name:
-        # convert time to ms
-        df = df.rename(columns={'maxtime': 'time', 'src': 'id'})
-        df['time'] = df['time'].total_seconds()
-        # set color
         color = list(plt.rcParams['axes.prop_cycle'])[1]['color']
     else:
-        # convert time to ms
-        df['time'] = df['time']/1000/1000
-        df['time'] = df['time']
         # set color
         color = list(plt.rcParams['axes.prop_cycle'])[0]['color']
-
     # plot the join times vs hops
+    # x = df['time'].dt.total_seconds().tolist()
     x = df['time'].tolist()
     y = df['id'].astype(int).tolist()
+
     cpplot.plot_hist(df, filename, sim_dir, x, y,
                      xlabel='Time (s)',
                      ylabel='Proportion of Nodes',
                      color=color)
+
     print('  ... Association mean: ' + str(np.mean(x)))
+    print('  ... Association std_dev: ' + str(np.std(x)))
     print('  ... Association median: ' + str(np.median(x)))
     print('  ... Association max: ' + str(np.max(x)))
 
@@ -632,11 +640,10 @@ def latency_v_hops(df_dict, **kwargs):
 
     print('> Do latency_v_hops for ' + str(packets) + ' in \'df_' + df_name + '\'')
 
-    if packets is None:
-        raise Exception('ERROR: No packets to search for!')
-
     df = df_dict[df_name].copy()
 
+    if packets is None:
+        raise Exception('ERROR: No packets to search for!')
     # Filter df for packet types in packets
     df = df[df['type'].isin(packets)]
 
@@ -653,14 +660,8 @@ def latency_v_hops(df_dict, **kwargs):
             # We need to set the index to id so we can create a new column from the groupby
             df.set_index('id', inplace=True)
             df['lat'] = df.groupby('id').apply(lambda x: (x.maxtime.max() - x.mintime.min()).total_seconds())
-            print(df.sort_values(by=['hops', 'mintime']))
         else:
             df = df.groupby(index, as_index=False).agg(aggfunc)
-
-    # Reject outliers
-    # df = df[(df['lat'] < 2000)]
-    # df.lat = reject_outliers(df.lat)
-    # df.dropna(subset=['lat'], inplace=True)
 
     # Find lat for each hop count
     df = df.pivot_table(index=df.groupby('hops').cumcount(),
@@ -696,7 +697,19 @@ def pdr_v_hops(df_dict, **kwargs):
         df = df[df['type'].isin(packets)]
 
     if 'drpd' not in df:
+        missed = df.received.str.count('missed').sum()
+        received = df.received.str.count('correct').sum()
         df['drpd'] = np.where(df['received'] == 'missed', True, False)
+    else:
+        missed = df['drpd'].sum()
+        received = ~df['drpd'].sum()
+
+    total = df.shape[0]
+
+    print('  ...Total: ' + str(total))
+    print('  ...Received: ' + str(received))
+    print('  ...Missed: ' + str(missed))
+    print('  ...Total PDR: ' + str(ratio(total, missed)))
 
     df_pdr = df.groupby('hops')['drpd'].apply(lambda x: ratio(len(x), x.sum()))
     df_pdr = df_pdr.groupby('hops')           \
@@ -709,10 +722,6 @@ def pdr_v_hops(df_dict, **kwargs):
 
     cpplot.plot_bar(df_pdr, filename, sim_dir, x, y,
                     xlabel='Hops', ylabel='End-to-end PDR (%)')
-    print('  ... PDR mean: ' + str(np.mean(y)))
-    print('  ... PDR median: ' + str(np.median(y)))
-    print('  ... PDR mode: ' + str(stats.mode(y)))
-
 
 # ----------------------------------------------------------------------------#
 def energy_v_hops(df_dict, **kwargs):
@@ -723,18 +732,13 @@ def energy_v_hops(df_dict, **kwargs):
 
     print('> Do energy_v_hops for ' + str(packets) + ' in ' + df_name)
 
-    if packets is None:
-        raise Exception('ERROR: No df!')
-    if packets is None:
-        raise Exception('ERROR: No packets to search for!')
-
     df = df_dict[df_name].copy()
     df.set_index('node', inplace=True)
 
     if 'all' in df_dict:
         df_all = df_dict['all'][df_dict['all']['node'] != 1]
         # Filter df for packet types in packets
-        if 'type' in df_all:
+        if packets is not None and 'type' in df_all:
             df_all = df_all[df_all['type'].isin(packets)]
         df['hops'] = df_all.groupby('node').apply(lambda x: x.hops.value_counts().index[0])
     elif 'node' in df_dict:
@@ -756,3 +760,71 @@ def energy_v_hops(df_dict, **kwargs):
     cpplot.plot_bar(df, filename, sim_dir, x, y,
                     xlabel='Hops', ylabel='Radio Duty Cycle (%)')
     print('  ... RDC mean: ' + str(np.mean(y)))
+
+
+# ----------------------------------------------------------------------------#
+def graph_latency(df_dict, **kwargs):
+    """Graph end-to-end delay."""
+
+    df_name = kwargs['df'] if 'df' in kwargs else None
+    packets = kwargs['packets'] if 'packets' in kwargs else None
+    filename = kwargs['file'] if 'file' in kwargs else 'latency'
+
+    print('> Do packet_latency for ' + str(packets) + ' in ' + df_name)
+
+    df = df_dict[df_name].copy()
+    if packets is not None:
+        df = df[df['type'].isin(packets)]
+        x = packets
+        y = df.groupby('type')['lat'].mean()
+        cpplot.plot_line(df, filename, sim_dir, x, y,
+                         xlabel='Packet Type', ylabel='End-to-end delay (ms)')
+    else:
+        x = ['All Packets']
+        y = [df[(df['received'] == 'correct') | (df['received'] == 'superfluous')].lat.mean()]
+        cpplot.plot_bar(df, filename, sim_dir, x, y,
+                        xlabel='Packet Type', ylabel='End-to-end delay (ms)')
+    print('  ... LAT mean: ' + str(np.mean(y)))
+
+
+# ----------------------------------------------------------------------------#
+def graph_pdr(df_dict, **kwargs):
+    global hlp
+    """Graph end-to-end PDR."""
+
+    df_name = kwargs['df'] if 'df' in kwargs else None
+    packets = kwargs['packets'] if 'packets' in kwargs else None
+    filename = kwargs['file'] if 'file' in kwargs else 'pdr'
+
+    df = df_dict[df_name].copy()
+
+    if packets is not None:
+        print('> Do packet_pdr for ' + str(packets) + ' in ' + df_name)
+        df = df[df['type'].isin(packets)]
+    else:
+        print('> Do packet_pdr for ALL_PACKETS in ' + df_name)
+
+    total = df.shape[0]
+    missed = df.received.str.count('missed').sum()
+    received = df.received.str.count('correct').sum()
+    print('  ...Total: ' + str(total))
+    print('  ...Received: ' + str(received))
+    print('  ...Missed: ' + str(missed))
+    print('  ...Total PDR: ' + str(ratio(total, missed)))
+
+    if packets is not None:
+        if df['drpd'] is None:
+            df['drpd'] = np.where(df['received'] == 'missed', True, False)
+        df_pdr = df.groupby('type')['drpd'].apply(lambda x: ratio(len(x), x.sum()))
+        df_pdr = df_pdr.groupby('type')           \
+                       .apply(lambda x: x.mean()) \
+                       .reset_index()             \
+                       .set_index('type')
+        x = df_pdr.index.tolist()
+        y = df_pdr['drpd'].tolist()
+    else:
+        x = ['All Packets']
+        y = [ratio(total, missed)]
+
+    cpplot.plot_bar(df, filename, sim_dir, x, y,
+                    xlabel='Packet Type', ylabel='End-to-end PDR (%)')

@@ -118,7 +118,7 @@ def get_sim_config(sim):
     sim_type = sim['type']
     makeargs = sim['makeargs'] if 'makeargs' in sim else None
     regex = sim['regex'] if 'regex' in sim else None
-    plots = sim['plot']
+    plots = sim['plot'] if 'plot' in sim else None
 
     return sim_desc, sim_type, makeargs, regex, plots
 
@@ -234,7 +234,7 @@ def process_data(data_dict, process_list):
                                   left_on=m['left_on'], right_on=m['right_on'])
                 if 'filter' in p.keys():
                     f = p['filter']
-                    print('> Filter ' + k + ': ' + str(f))
+                    print('  ... Filter ' + k + ': ' + str(f))
                     df = df[(df[f['col']] >= f['min'])
                             & (df[f['col']] <= f['max'])]
                 data_dict[k] = df

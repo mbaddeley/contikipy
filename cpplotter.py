@@ -126,12 +126,11 @@ def set_fig_and_save(fig, ax, data, desc, dir, **kwargs):
 # ----------------------------------------------------------------------------#
 def plot_hist(df, desc, dir, x, y, ylim=None, **kwargs):
     """Plot a histogram and save."""
-    print('> Plotting ' + desc + ' (HIST)')
+    print('  > Plotting ' + desc + ' (HIST)')
     fig, ax = plt.subplots(figsize=(8, 6))
 
-    mu = 1
-    sigma = 2
-
+    mu = np.mean(x)
+    sigma = np.std(x)
     # get kwargs
     xlabel = kwargs['xlabel'] if 'xlabel' in kwargs else ''
     ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
@@ -140,20 +139,24 @@ def plot_hist(df, desc, dir, x, y, ylim=None, **kwargs):
     else:
         color = list(plt.rcParams['axes.prop_cycle'])[0]['color']
 
+    # Do hist
+    n, bins, patches = ax.hist(x, len(x), density=True, histtype='step', cumulative=True,
+                               stacked=True, fill=True, label=desc, color=color)
     bins = np.around(np.linspace(0, max(x), len(x)), 3)  # bin values to 3dp
-
-    # ax.hist(x, bins, density=1, histtype='step', cumulative=True,
-    #         stacked=True, fill=True, label=desc, color=color)
-    # ax.set_xticks([bins[0], bins[len(x)-1]])
-    ax.set_xticks(np.linspace(bins[0], bins[len(bins)-1], 5))
-    # ax.legend_.remove()
+    np.insert(bins, 0, 0)
+    bins = np.arange(0, max(x), 0.1)
+    xticks = np.linspace(0, bins[len(bins)-1], 5)
+    ax.set_xticks(xticks)
 
     # Add a line showing the expected distribution.
-    y = mlab.normpdf(bins, mu, sigma).cumsum()
+    # y = ((1 / (np.sqrt(2 * np.pi) * sigma)) * np.exp(-bins**0.25))
+    # y = y.cumsum()
+    y = ss.norm.cdf(bins, mu, sigma).cumsum()
     y /= y[-1]
-    # y = ss.norm.cdf(x, mu, sigma)
-    # ax.plot(x, y, 'k--', linewidth=1.5)
-    ax.plot(bins, y, 'k--', linewidth=1.5, label='Theoretical')
+
+    # # Plot both
+    # ax.plot(x, y, 'k--', linewidth=1.5, label='Empirical')
+    ax.plot(bins, y, 'r-', linewidth=1.5, label='Theoretical')
 
     data = {'x': x, 'y': y, 'errors': None,
             'type': 'hist',
@@ -168,7 +171,7 @@ def plot_hist(df, desc, dir, x, y, ylim=None, **kwargs):
 # ----------------------------------------------------------------------------#
 def plot_bar(df, desc, dir, x, y, ylim=None, **kwargs):
     """Plot a barchart and save."""
-    print('> Plotting ' + desc + ' (BAR)')
+    print('  > Plotting ' + desc + ' (BAR)')
     fig, ax = plt.subplots(figsize=(8, 6))
 
     # constants
@@ -208,7 +211,7 @@ def plot_bar(df, desc, dir, x, y, ylim=None, **kwargs):
 # ----------------------------------------------------------------------------#
 def plot_box(df, desc, dir, x, y, ylim=None, **kwargs):
     """Plot a boxplot and save."""
-    print('> Plotting ' + desc + ' (BOX)')
+    print('  > Plotting ' + desc + ' (BOX)')
     # subfigures
     fig, ax = plt.subplots(figsize=(8, 6))
 
@@ -246,7 +249,7 @@ def plot_box(df, desc, dir, x, y, ylim=None, **kwargs):
 # ----------------------------------------------------------------------------#
 def plot_violin(df, desc, dir, x, xlabel, y, ylabel):
     """Plot a violin plot and save."""
-    print('> Plotting ' + desc + ' (VIOLIN)')
+    print('  > Plotting ' + desc + ' (VIOLIN)')
     fig, ax = plt.subplots(figsize=(8, 6))
 
     xticks = [0, 1, 2, 3, 4, 5, 6]
@@ -271,7 +274,7 @@ def plot_violin(df, desc, dir, x, xlabel, y, ylabel):
 # ----------------------------------------------------------------------------#
 def plot_line(df, desc, dir, x, y, **kwargs):
     """Plot a line graph and save."""
-    print('> Plotting ' + desc + ' (LINE)')
+    print('  > Plotting ' + desc + ' (LINE)')
 
     # constants
     color = list(plt.rcParams['axes.prop_cycle'])[0]['color']
@@ -287,8 +290,15 @@ def plot_line(df, desc, dir, x, y, **kwargs):
     ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
     # label = kwargs['label'] if 'label' in kwargs else ylabel
 
+    # mean and std
+    mean = np.mean(y)
+    std = np.std(y)
+    errors = mean/np.sqrt(y)
+
     # set xticks
-    xticks = np.arange(min(x), max(x)+1, steps)
+    xticks = x
+    # print(steps)
+    # xticks = np.arange(min(), max(x)+1, steps)
 
     # plot
     fig, ax = plt.subplots(figsize=(8, 6))

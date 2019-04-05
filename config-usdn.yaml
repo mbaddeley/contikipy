@@ -5,8 +5,8 @@ contiki: /home/mike/Repos/usdn
 wd:      /home/mike/Repos/usdn/examples/sdn
 fmt:     cooja
 log:     /tools/cooja/build/COOJA.testlog
-out:     /home/mike/Results/USDN
-csc:     usdn-30-node.csc
+out:     /home/mike/Results/uSDN
+csc:
 target:  exp5438
 
 # ----------------------------------------------------------------------------
@@ -18,18 +18,33 @@ logtypes:
 
 formatters:
   patterns:
-    - type:   pow
-      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*](?:\s*PW\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
+    # uSDN
     - type:   app
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<state>(TX|RX))\s+(?P<type>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>[1-5])|\s+m:(?P<mac>\d+))+.*?$
     - type:   sdn
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<state>(OUT|BUF|IN))\s+(?P<type>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>\d+)|\s+m:(?P<mac>\d+))+.*?$
-    - type:   node
-      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*h:(?P<hops>\d+), n:(?P<degree>\d+)
     - type:   icmp
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?:\s+type:(?P<type>\d+)|\s+code:(?P<code>\d+))+.*?$
+    # common
+    - type:   node
+      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*h:(?P<hops>\d+), n:(?P<degree>\d+)
     - type:   join
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?:\s+n:(?P<id>\d+)|\s+c:(?P<controller>\d+)|\s+dag:(?P<dag>\d+)|\s+dao:(?P<dao>\d+))+.*?$
+    - type:   pow
+      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*](?:\s*PW\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
+    - type:   all
+      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<state>(TX|RX))\s+(?P<type>\S+)(?:\s+m:(?P<origin>\d+)|\s+t:(?P<target>\d+)|\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>[0-5]))+.*?$
+  process:
+    sdn:
+      - filter:
+          col:      hops
+          min:      1
+          max:      5
+    node:
+      - filter:
+          col:      hops
+          min:      1
+          max:      5
 
 # ----------------------------------------------------------------------------
 # Multiflow
@@ -91,32 +106,13 @@ simulations:
   #     SDN:          0
   #     MULTIFLOW:    1
   #   multiflow:      1_flow
-  #   regex:
-  #     - 'app'
-  #     - 'node'
-  #     - 'pow'
-  #     - 'icmp'
-  #     - 'join'
-  #   plot:
-  #     latency_v_hops:
-  #       df:      sdn
-  #       packets: ['FTQ', 'FTS']
-  #       file:    'latency_v_hops'
-  #     pdr_v_hops:
-  #       df:      sdn
-  #       packets: ['FTQ', 'FTS']
-  #       file:    'pdr_v_hops'
-  #     energy_v_hops:
-  #       df:      pow
-  #       packets: ['FTQ', 'FTS']
-  #       file:    'energy_v_hops'
-  #
-  - desc:           uSDN
+
+  - desc:           uSDN-CSMA-5
     type:           usdn
     contiki:        /home/mike/Repos/usdn
     wd:             /home/mike/Repos/usdn/examples/sdn
-    csc:            usdn-30-node.csc
-    log:            uSDN-30
+    csc:            usdn-5-node.csc
+    log:            uSDN-CSMA-5
     makeargs:
       MAC:          CSMA
       SDN:          1
@@ -127,123 +123,126 @@ simulations:
       NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
       MULTIFLOW:    1
     multiflow:      1_flow
-    regex:
-      - 'app'
-      - 'node'
-      - 'sdn'
-      - 'pow'
-      - 'icmp'
-      - 'join'
-    plot:
-      latency_v_hops:
-        df:      sdn
-        packets: ['FTQ', 'FTS']
-        file:    'latency_v_hops'
-      pdr_v_hops:
-        df:      sdn
-        packets: ['FTQ', 'FTS']
-        file:    'pdr_v_hops'
-      energy_v_hops:
-        df:      pow
-        packets: ['FTQ', 'FTS']
-        file:    'energy_v_hops'
 
 
-# ----------------------------------------------------------------------------
-  # - desc:           SDN-NSU-10
-  #   makeargs:
-  #     MAC:          CSMA
-  #     SDN:          1
-  #     FTREFRESH:    1
-  #     FORCENSU:     1
-  #     NSUFREQ:      10  # NSU frequency actually helps over 0 frequency
-  #   multiflow:      1_flow_10s
-  #   plot:
-  #     - usdn_energy_v_hops        # Radio duty cycle vs hops
-  #     - usdn_pdr_v_hops           # Packet receive ratio vs hops
-  #     - usdn_latency_v_hops       # Hops vs e2e latency
-  #     - usdn_join_time            # SDN controller join time
-  #     - usdn_traffic_ratio        # SDN traffic ratio
-  #
-  # - desc:           SDN-NSU-30
-  #   makeargs:
-  #     MAC:          CSMA
-  #     SDN:          1
-  #     FTREFRESH:    1
-  #     FORCENSU:     1
-  #     NSUFREQ:      30  # NSU frequency actually helps over 0 frequency
-  #   multiflow:      1_flow_10s
-  #   plot:
-  #     - usdn_energy_v_hops        # Radio duty cycle vs hops
-  #     - usdn_pdr_v_hops           # Packet receive ratio vs hops
-  #     - usdn_latency_v_hops       # Hops vs e2e latency
-  #     - usdn_join_time            # SDN controller join time
-  #     - usdn_traffic_ratio        # SDN traffic ratio
-  #
-  # - desc:           SDN-NSU-60
-  #   makeargs:
-  #     MAC:          CSMA
-  #     SDN:          1
-  #     FTREFRESH:    1
-  #     FORCENSU:     1
-  #     NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
-  #   multiflow:      1_flow_10s
-  #   plot:
-  #     - usdn_energy_v_hops        # Radio duty cycle vs hops
-  #     - usdn_pdr_v_hops           # Packet receive ratio vs hops
-  #     - usdn_latency_v_hops       # Hops vs e2e latency
-  #     - usdn_join_time            # SDN controller join time
-  #     - usdn_traffic_ratio        # SDN traffic ratio
+  - desc:           uSDN-CSMA-10
+    type:           usdn
+    contiki:        /home/mike/Repos/usdn
+    wd:             /home/mike/Repos/usdn/examples/sdn
+    csc:            usdn-10-node.csc
+    log:            uSDN-CSMA-10
+    makeargs:
+      MAC:          CSMA
+      SDN:          1
+      FTREFRESH:    0
+      FTSRETRY:     0
+      FORCENSU:     1
+      FTLIFETIME:   300
+      NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
+      MULTIFLOW:    1
+    multiflow:      1_flow
 
-# ----------------------------------------------------------------------------
-  # - desc:           SDN-FT-180
-  #   makeargs:
-  #     MAC:          CSMA
-  #     SDN:          1
-  #     FTREFRESH:    0
-  #     FORCENSU:     1
-  #     NSUFREQ:      0
-  #     FTLIFETIME:   180
-  #   multiflow:      1_flow_10s
-  #   plot:
-  #     - usdn_energy_v_hops        # Radio duty cycle vs hops
-  #     - usdn_pdr_v_hops           # Packet receive ratio vs hops
-  #     - usdn_latency_v_hops       # Hops vs e2e latency
-  #     - usdn_join_time            # SDN controller join time
-  #     - usdn_traffic_ratio        # SDN traffic ratio
-  #
-  #
-  # - desc:           SDN-FT-300
-  #   makeargs:
-  #     MAC:          CSMA
-  #     SDN:          1
-  #     FTREFRESH:    0
-  #     FORCENSU:     1
-  #     NSUFREQ:      0
-  #     FTLIFETIME:   300
-  #   multiflow:      1_flow_10s
-  #   plot:
-  #     - usdn_energy_v_hops        # Radio duty cycle vs hops
-  #     - usdn_pdr_v_hops           # Packet receive ratio vs hops
-  #     - usdn_latency_v_hops       # Hops vs e2e latency
-  #     - usdn_join_time            # SDN controller join time
-  #     - usdn_traffic_ratio        # SDN traffic ratio
-  #
-  # - desc:           SDN-FT-600
-  #   makeargs:
-  #     MAC:          CSMA
-  #     SDN:          1
-  #     FTREFRESH:    0
-  #     FORCENSU:     1
-  #     NSUFREQ:      0
-  #     FTLIFETIME:   600
-  #   multiflow:      1_flow_10s
-  #   plot:
-  #     - usdn_energy_v_hops        # Radio duty cycle vs hops
-  #     - usdn_pdr_v_hops           # Packet receive ratio vs hops
-  #     - usdn_latency_v_hops       # Hops vs e2e latency
-  #     - usdn_join_time            # SDN controller join time
-  #     - usdn_traffic_ratio        # SDN traffic ratio
+  - desc:           uSDN-CSMA-20
+    type:           usdn
+    contiki:        /home/mike/Repos/usdn
+    wd:             /home/mike/Repos/usdn/examples/sdn
+    csc:            usdn-20-node.csc
+    log:            uSDN-CSMA-20
+    makeargs:
+      MAC:          CSMA
+      SDN:          1
+      FTREFRESH:    0
+      FTSRETRY:     0
+      FORCENSU:     1
+      FTLIFETIME:   300
+      NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
+      MULTIFLOW:    1
+    multiflow:      1_flow
+
+  - desc:           uSDN-CSMA-30
+    type:           usdn
+    contiki:        /home/mike/Repos/usdn
+    wd:             /home/mike/Repos/usdn/examples/sdn
+    csc:            usdn-30-node.csc
+    log:            uSDN-CSMA-30
+    makeargs:
+      MAC:          CSMA
+      SDN:          1
+      FTREFRESH:    0
+      FTSRETRY:     0
+      FORCENSU:     1
+      FTLIFETIME:   300
+      NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
+      MULTIFLOW:    1
+    multiflow:      1_flow
+
+  - desc:           uSDN-CONTIKIMAC-30
+    type:           usdn
+    contiki:        /home/mike/Repos/usdn
+    wd:             /home/mike/Repos/usdn/examples/sdn
+    csc:            usdn-30-node.csc
+    log:            uSDN-CONTIKIMAC-30
+    makeargs:
+      MAC:          CONTIKIMAC
+      SDN:          1
+      FTREFRESH:    0
+      FTSRETRY:     0
+      FORCENSU:     1
+      FTLIFETIME:   300
+      NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
+      MULTIFLOW:    1
+    multiflow:      1_flow
+
+  - desc:           uSDN-CONTIKIMAC-20
+    type:           usdn
+    contiki:        /home/mike/Repos/usdn
+    wd:             /home/mike/Repos/usdn/examples/sdn
+    csc:            usdn-20-node.csc
+    log:            uSDN-CONTIKIMAC-20
+    makeargs:
+      MAC:          CONTIKIMAC
+      SDN:          1
+      FTREFRESH:    0
+      FTSRETRY:     0
+      FORCENSU:     1
+      FTLIFETIME:   300
+      NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
+      MULTIFLOW:    1
+    multiflow:      1_flow
+
+  - desc:           uSDN-CONTIKIMAC-10
+    type:           usdn
+    contiki:        /home/mike/Repos/usdn
+    wd:             /home/mike/Repos/usdn/examples/sdn
+    csc:            usdn-10-node.csc
+    log:            uSDN-CONTIKIMAC-10
+    makeargs:
+      MAC:          CONTIKIMAC
+      SDN:          1
+      FTREFRESH:    0
+      FTSRETRY:     0
+      FORCENSU:     1
+      FTLIFETIME:   300
+      NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
+      MULTIFLOW:    1
+    multiflow:      1_flow
+
+  - desc:           uSDN-CONTIKIMAC-5
+    type:           usdn
+    contiki:        /home/mike/Repos/usdn
+    wd:             /home/mike/Repos/usdn/examples/sdn
+    csc:            usdn-5-node.csc
+    log:            uSDN-CONTIKIMAC-5
+    makeargs:
+      MAC:          CONTIKIMAC
+      SDN:          1
+      FTREFRESH:    0
+      FTSRETRY:     0
+      FORCENSU:     1
+      FTLIFETIME:   300
+      NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
+      MULTIFLOW:    1
+    multiflow:      1_flow
 
 # ----------------------------------------------------------------------------
 # compare (comparison) config
@@ -257,26 +256,4 @@ compare:
       - energy_v_hops
       - pdr_v_hops
       - latency_v_hops
-      # - join_time
-
-# ----------------------------------------------------------------------------
-  # - sims:
-  #   -  SDN-NSU-10
-  #   -  SDN-NSU-30
-  #   -  SDN-NSU-60
-  #   plots:
-  #   - usdn_energy_v_hops
-  #   - usdn_pdr_v_hops
-  #   - usdn_latency_v_hops
-  #   - usdn_join_time
-
-# ----------------------------------------------------------------------------
-  # - sims:
-  #   -  SDN-FT-180
-  #   -  SDN-FT-300
-  #   -  SDN-FT-600
-  #   plots:
-  #   - usdn_energy_v_hops
-  #   - usdn_pdr_v_hops
-  #   - usdn_latency_v_hops
-  #   - usdn_join_time
+      - join_time

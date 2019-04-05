@@ -12,6 +12,7 @@ import traceback
 import matplotlib.pyplot as plt  # general plotting
 from matplotlib import mlab
 import numpy as np               # number crunching
+import scipy.stats as ss
 # import seaborn as sns          # fancy plotting
 # import pandas as pd            # table manipulation
 
@@ -165,7 +166,10 @@ def add_line(ax, color, label, data, **kwargs):
                 capsize=3)
 
     # Re-calculate the xticks
-    ind = np.arange(x_min, x_max + 1, 1)
+    if any(isinstance(s, str) for s in data):
+        ind = np.arange(0, len(data['x']), 1)
+    else:
+        ind = np.arange(x_min, x_max + 1, 1)
     ax.set_xticks(ind)
 
 
@@ -238,7 +242,7 @@ def add_hist(ax, color, data, bins=30):
     #                              color=color)
 
     # Add a line showing the expected distribution.
-    y = mlab.normpdf(bins, mu, sigma).cumsum()
+    y = ss.norm.pdf(bins, mu, sigma).cumsum()
     y /= y[-1]
 
     ax.plot(bins, y, 'k--', linewidth=3, color=color)
@@ -297,6 +301,7 @@ def compare_bar(ax, datasets, **kwargs):
     print(Y)
     Y = pad_y(Y)
     # set a y limit
+    print(ylim)
     if ylim is not None:
         ax.set_ylim([0, ylim])
     # plot the data
@@ -450,8 +455,7 @@ def compare(dir, simlist, plottypes, args, **kwargs):
         else:
             print('NEW FIG'),
             fig, axes = plt.subplots(1, 1, figsize=(8, 6))
-            ax = function_map[datatype](axes, datasets, legend=legend,
-                                        ylim=ylim)
+            ax = function_map[datatype](axes, datasets, legend=legend, ylim=ylim)
             cpplot.set_fig_and_save(fig, ax, None,
                                     sim + '_' + str(simlist),  # filename
                                     dir + '/',                 # directory

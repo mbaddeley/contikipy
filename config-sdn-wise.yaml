@@ -18,13 +18,21 @@ logtypes:
 
 formatters:
   patterns:
+    - type:   node
+      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*h:(?P<hops>\d+), n:(?P<degree>\d+)
+    - type:   join
+      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?:\s+n:(?P<id>\d+)|\s+c:(?P<controller>\d+)|\s+dag:(?P<dag>\d+)|\s+dao:(?P<dao>\d+))+.*?$
     - type:   pow
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*](?:\s*PW\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
     - type:   all
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<state>(TX|RX))\s+(?P<type>\S+)(?:\s+m:(?P<origin>\d+)|\s+t:(?P<target>\d+)|\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>[0-5]))+.*?$
   process:
-    # atomic
     all:
+      - filter:
+          col:      hops
+          min:      1
+          max:      5
+    node:
       - filter:
           col:      hops
           min:      1
@@ -35,12 +43,12 @@ formatters:
 # ----------------------------------------------------------------------------
 simulations:
 # ----------------------------------------------------------------------------
-  - desc:           SDN-WISE-5-NODES
+  - desc:           SDN-WISE-30-NODES
     type:           sdn-wise
     contiki:        /home/mike/Repos/sdn-wise-contiki/contiki
     wd:             /home/mike/Repos/sdn-wise-contiki/sdn-wise
-    csc:            simulations/sdn-wise-5.csc
-    log:            SDN-WISE-5
+    # csc:            simulations/sdn-wise-5.csc
+    log:            SDN-WISE-30
     makeargs:
       RULE_TTL:     100
       REPORT_FREQ:  60
@@ -48,30 +56,162 @@ simulations:
     regex:
       - 'all'
       - 'pow'
+      - 'node'
+      - 'join'
     plot:
       latency_v_hops:
         df:      all
-        packets: ['REQUEST', 'OPEN_PATH']
+        packets: ['DATA', 'REPORT', 'REQUEST', 'OPEN_PATH']
         index:   ['id']
         # aggfunc: between
         aggfunc: {'lat': sum}
         file:    'latency_v_hops'
+      latency:
+        df:      all
+        # packets: ['DATA', 'REPORT', 'REQUEST', 'OPEN_PATH']
+        file:    'latency'
       pdr_v_hops:
         df:      all
-        packets: ['REQUEST', 'OPEN_PATH']
+        packets: ['DATA', 'REPORT', 'REQUEST', 'OPEN_PATH']
         file:    'pdr_v_hops'
+      pdr:
+        df:      all
+        # packets: ['DATA', 'REPORT', 'REQUEST', 'OPEN_PATH']
+        file:    'pdr'
       energy_v_hops:
         df:      pow
-        packets: ['REQUEST', 'OPEN_PATH']
+        # packets: ['REQUEST', 'OPEN_PATH']
         file:    'energy_v_hops'
-
+      association_v_time:
+        df:      join
+        packets: ['controller']
+        file:    'association_v_time'
+#######################
+  - desc:           SDN-WISE-20-NODES
+    type:           sdn-wise
+    contiki:        /home/mike/Repos/sdn-wise-contiki/contiki
+    wd:             /home/mike/Repos/sdn-wise-contiki/sdn-wise
+    # csc:            simulations/sdn-wise-5.csc
+    log:            SDN-WISE-20
+    makeargs:
+      RULE_TTL:     100
+      REPORT_FREQ:  60
+      DATA_RATE:    75
+    regex:
+      - 'all'
+      - 'pow'
+      - 'node'
+      - 'join'
+    plot:
+      latency_v_hops:
+        df:      all
+        packets: ['DATA', 'REPORT', 'REQUEST', 'OPEN_PATH']
+        index:   ['id']
+        # aggfunc: between
+        aggfunc: {'lat': sum}
+        file:    'latency_v_hops'
+      latency:
+        df:      all
+        # packets: ['DATA', 'REPORT', 'REQUEST', 'OPEN_PATH']
+        file:    'latency'
+      pdr_v_hops:
+        df:      all
+        packets: ['DATA', 'REPORT', 'REQUEST', 'OPEN_PATH']
+        file:    'pdr_v_hops'
+      pdr:
+        df:      all
+        # packets: ['DATA', 'REPORT', 'REQUEST', 'OPEN_PATH']
+        file:    'pdr'
+      energy_v_hops:
+        df:      pow
+        # packets: ['REQUEST', 'OPEN_PATH']
+        file:    'energy_v_hops'
+      association_v_time:
+        df:      join
+        packets: ['controller']
+        file:    'association_v_time'
+#######################
+  - desc:           SDN-WISE-10-NODES
+    type:           sdn-wise
+    contiki:        /home/mike/Repos/sdn-wise-contiki/contiki
+    wd:             /home/mike/Repos/sdn-wise-contiki/sdn-wise
+    # csc:            simulations/sdn-wise-5.csc
+    log:            SDN-WISE-10
+    makeargs:
+      RULE_TTL:     100
+      REPORT_FREQ:  60
+      DATA_RATE:    75
+    regex:
+      - 'all'
+      - 'pow'
+      - 'node'
+      - 'join'
+    plot:
+      latency_v_hops:
+        df:      all
+        packets: ['DATA', 'REPORT', 'REQUEST', 'OPEN_PATH']
+        index:   ['id']
+        # aggfunc: between
+        aggfunc: {'lat': sum}
+        file:    'latency_v_hops'
+      latency:
+        df:      all
+        # packets: ['DATA', 'REPORT', 'REQUEST', 'OPEN_PATH']
+        file:    'latency'
+      pdr_v_hops:
+        df:      all
+        packets: ['DATA', 'REPORT', 'REQUEST', 'OPEN_PATH']
+        file:    'pdr_v_hops'
+      pdr:
+        df:      all
+        # packets: ['DATA', 'REPORT', 'REQUEST', 'OPEN_PATH']
+        file:    'pdr'
+      energy_v_hops:
+        df:      pow
+        # packets: ['REQUEST', 'OPEN_PATH']
+        file:    'energy_v_hops'
+      association_v_time:
+        df:      join
+        packets: ['controller']
+        file:    'association_v_time'
 # ----------------------------------------------------------------------------
 # compare (comparison) config
 # ----------------------------------------------------------------------------
 compare:
-# ----------------------------------------------------------------------------
-  # - sims:
-  #   - uSDN
-  #   - RPL
-  #   plots:
-  #     - latency_v_hops
+  - sims:
+    # which sims do we want to compare?
+    - SDN-WISE-30-NODES
+    - SDN-WISE-20-NODES
+    - SDN-WISE-10-NODES
+    # which plots do we want to compare?
+    plots:
+      - latency_v_hops
+      - latency
+      - pdr_v_hops
+      - pdr
+      - energy_v_hops
+      - association_v_time
+    # plot arguments
+    args:
+      samefigure: 0
+      # N.B. If you are going to put these on the same fig then be careful
+      # with rows and cols, as there isn't much input checking!!!
+      nrows:      2
+      ncols:      1
+      pdr_v_hops:
+        row: 0
+        col: 0
+        legend: (0.33, 1.05)  # location, None, or Tuple
+      pdr:
+        row: 0
+        col: 0
+        legend: (0.28, 1.05)
+      energy_v_hops:
+        row: 0
+        col: 0
+        legend: (0.28, 1.05)
+        ylim: 30
+      association_v_time:
+        row: 0
+        col: 0
+        legend: (0.28, 1.03)  # location, None, or Tuple
