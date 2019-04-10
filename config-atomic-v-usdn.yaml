@@ -37,7 +37,6 @@ formatters:
     - type:   icmp
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?:\s+type:(?P<type>\d+)|\s+code:(?P<code>\d+))+.*?$
   process:
-    # atomic
     atomic-op:
       - filter:
           col:      active
@@ -53,17 +52,24 @@ formatters:
           min:      1
           max:      5
     sdn:
+      # - merge:
+      #     df:       node
+      #     left_on:  node
+      #     right_on: node
       - filter:
           col:      hops
           min:      1
           max:      5
-    node:
-      - filter:
-          col:      hops
-          min:      1
-          max:      5
-    # Common
     all:
+      - filter:
+          col:      hops
+          min:      1
+          max:      5
+    pow:
+      - merge:
+          df:       node
+          left_on:  node
+          right_on: node
       - filter:
           col:      hops
           min:      1
@@ -119,29 +125,28 @@ simulations:
     plot:
       latency_v_hops:
         df:      atomic-op
-        packets: ['CONF']
-        # packets: ['CLCT']
-        index:   ['node']
+        packets: ['CONF', 'CLCT', 'RACT']
         aggfunc: {'lat': mean}
         file:    'latency_v_hops'
       pdr_v_hops:
         df:      atomic-op
-        packets: ['CONF']
+        packets: ['CONF', 'CLCT', 'RACT']
         file:    'pdr_v_hops'
       energy_v_hops:
         df:      atomic-energy
-        packets: ['CONF']
         file:    'energy_v_hops'
       association_v_time:
         df:      atomic-op
         packets: ['ASSC']
         file:    'association_v_time'
-      latency:
-        df:      atomic-op
-        file:    'latency'
-      pdr:
-        df:      atomic-op
-        file:    'pdr'
+      # latency:
+      #   df:      atomic-op
+      #   packets: ['CONF']
+      #   xlabel:  '30'
+      #   file:    'latency'
+      # pdr:
+      #   df:      atomic-op
+      #   file:    'pdr'
 
   # 30 Node uSDN CSMA
   - desc:           uSDN-CSMA
@@ -149,7 +154,7 @@ simulations:
     contiki:        /home/mike/Repos/usdn
     wd:             /home/mike/Repos/usdn/examples/sdn
     csc:
-    log:            uSDN-CSMA-20
+    log:            uSDN-CSMA-30
     regex:
       - 'node'
       - 'sdn'
@@ -158,29 +163,30 @@ simulations:
     plot:
       latency_v_hops:
         df:      sdn
-        packets: ['FTQ', 'FTS']
-        # packets: ['NSU']
-        index:   ['id']
-        aggfunc: {'lat': sum}
+        packets: ['NSU', 'FTQ', 'FTS']
+        # packets: ['NSU', 'FTQ', 'FTS']
+        index:   ['seq', 'id']
+        aggfunc: {'lat': mean}
         file:    'latency_v_hops'
       pdr_v_hops:
         df:      sdn
-        packets: ['FTQ', 'FTS']
+        packets: ['NSU', 'FTQ', 'FTS']
         file:    'pdr_v_hops'
       energy_v_hops:
         df:      pow
-        packets: ['FTQ', 'FTS']
         file:    'energy_v_hops'
       association_v_time:
         df:      join
         packets: ['dag']
         file:    'association_v_time'
-      latency:
-        df:      sdn
-        file:    'latency'
-      pdr:
-        df:      sdn
-        file:    'pdr'
+      # latency:
+      #   df:      sdn
+      #   packets: ['NSU', 'FTQ', 'FTS']
+      #   xlabel:  '30'
+      #   file:    'latency'
+      # pdr:
+      #   df:      sdn
+      #   file:    'pdr'
 
   # 30 Node uSDN CONTIKIMAC
   - desc:           uSDN-CONTIKIMAC
@@ -197,66 +203,108 @@ simulations:
     plot:
       latency_v_hops:
         df:      sdn
-        packets: ['FTQ', 'FTS']
-        # packets: ['NSU']
-        index:   ['id']
-        aggfunc: {'lat': sum}
+        packets: ['NSU', 'FTQ', 'FTS']
+        # packets: ['NSU', 'FTQ', 'FTS']
+        index:   ['seq', 'id']
+        aggfunc: {'lat': mean}
         file:    'latency_v_hops'
       pdr_v_hops:
         df:      sdn
-        packets: ['FTQ', 'FTS']
+        packets: ['NSU', 'FTQ', 'FTS']
         file:    'pdr_v_hops'
       energy_v_hops:
         df:      pow
-        packets: ['FTQ', 'FTS']
         file:    'energy_v_hops'
       association_v_time:
         df:      join
         packets: ['dag']
         file:    'association_v_time'
-      latency:
-        df:      sdn
-        file:    'latency'
-      pdr:
-        df:      sdn
-        file:    'pdr'
+      # latency:
+      #   df:      sdn
+      #   packets: ['NSU', 'FTQ', 'FTS']
+      #   xlabel:  '30'
+      #   file:    'latency'
+      # pdr:
+      #   df:      sdn
+      #   file:    'pdr'
 
   # 30 Node SDN-WISE
-  - desc:           SDN-WISE
+  - desc:           SDN-WISE-CSMA
     type:           sdn-wise
     contiki:        /home/mike/Repos/sdn-wise-contiki/contiki
     wd:             /home/mike/Repos/sdn-wise-contiki/sdn-wise
     csc:
-    log:            SDN-WISE-30
+    log:            SDN-WISE-CSMA-30
     regex:
       - 'all'
       - 'pow'
       - 'join'
+      - 'node'
     plot:
       latency_v_hops:
         df:      all
-        packets: ['REQUEST', 'OPEN_PATH']
+        packets: ['REPORT', 'REQUEST', 'OPEN_PATH']
         index:   ['id']
-        aggfunc: {'lat': sum}
+        aggfunc: {'lat': mean}
         file:    'latency_v_hops'
       pdr_v_hops:
         df:      all
-        packets: ['REQUEST', 'OPEN_PATH']
+        packets: ['REPORT', 'REQUEST', 'OPEN_PATH']
         file:    'pdr_v_hops'
       energy_v_hops:
         df:      pow
-        packets: ['REQUEST', 'OPEN_PATH']
         file:    'energy_v_hops'
       association_v_time:
         df:      join
         packets: ['controller']
         file:    'association_v_time'
-      latency:
+      # latency:
+      #   df:      all
+      #   packets: ['REPORT', 'REQUEST', 'OPEN_PATH']
+      #   xlabel:  '30'
+      #   file:    'latency'
+      # pdr:
+      #   df:      all
+      #   file:    'pdr'
+
+  # 30 Node SDN-WISE
+  - desc:           SDN-WISE-CONTIKIMAC
+    type:           sdn-wise
+    contiki:        /home/mike/Repos/sdn-wise-contiki/contiki
+    wd:             /home/mike/Repos/sdn-wise-contiki/sdn-wise
+    csc:
+    log:            SDN-WISE-CONTIKIMAC-30
+    regex:
+      - 'all'
+      - 'pow'
+      - 'join'
+      - 'node'
+    plot:
+      latency_v_hops:
         df:      all
-        file:    'latency'
-      pdr:
+        packets: ['REPORT', 'REQUEST', 'OPEN_PATH']
+        index:   ['id']
+        aggfunc: {lambda x: }
+        file:    'latency_v_hops'
+      pdr_v_hops:
         df:      all
-        file:    'pdr'
+        packets: ['REPORT', 'REQUEST', 'OPEN_PATH']
+        file:    'pdr_v_hops'
+      energy_v_hops:
+        df:      pow
+        file:    'energy_v_hops'
+      association_v_time:
+        df:      join
+        packets: ['controller']
+        file:    'association_v_time'
+      # latency:
+      #   df:      all
+      #   packets: ['REPORT', 'REQUEST', 'OPEN_PATH']
+      #   xlabel:  '30'
+      #   file:    'latency'
+      # pdr:
+      #   df:      all
+      #   file:    'pdr'
 
 # ----------------------------------------------------------------------------
 # compare (comparison) config
@@ -267,15 +315,16 @@ compare:
     - Atomic-SDN
     - uSDN-CSMA
     - uSDN-CONTIKIMAC
-    - SDN-WISE
+    - SDN-WISE-CSMA
+    - SDN-WISE-CONTIKIMAC
     # which plots do we want to compare?
     plots:
       - latency_v_hops
       - pdr_v_hops
-      - energy_v_hops
       - association_v_time
-      - latency
-      - pdr
+      - energy_v_hops
+      # - latency
+      # - pdr
     # plot arguments
     args:
       samefigure: 0
@@ -283,21 +332,26 @@ compare:
       # with rows and cols, as there isn't much input checking!!!
       nrows:      2
       ncols:      1
+      latency_v_hops:
+        row: 0
+        col: 0
+        legend: (0.26, 1.05)  # location, None, or Tuple
+        # legend: None
       pdr_v_hops:
         row: 0
         col: 0
-        legend: (0.33, 1.05)  # location, None, or Tuple
+        legend: (0.26, 1.05)  # location, None, or Tuple
       energy_v_hops:
         row: 0
         col: 0
-        legend: (0.28, 1.05)
+        legend: (0.26, 1.05)
         ylim: 30
-      latency:
-        row: 0
-        col: 0
-        legend: (0.28, 1.05)
-        ylim: 100
       association_v_time:
         row: 0
         col: 0
-        legend: (0.28, 1.03)  # location, None, or Tuple
+        legend: (0.26, 1.05)  # location, None, or Tuple
+      # latency:
+      #   row: 0
+      #   col: 0
+      #   legend: (0.28, 1.05)
+      #   ylim: 100

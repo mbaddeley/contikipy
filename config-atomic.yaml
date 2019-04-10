@@ -44,6 +44,40 @@ formatters:
 # ----------------------------------------------------------------------------
 # packets: ['CLCT', 'RACT', 'CONF', 'ASSC']
 simulations:
+  - desc:     'Atomic-SDN-10'
+    type:     atomic
+    contiki:  /home/mike/Repos/atomic-sdn
+    wd:       /home/mike/Repos/atomic-sdn/examples/atomic
+    csc:      atomic-10-node.csc
+    log:      Atomic-SDN-10
+    makeargs:
+      ATM_CONF_MAX_NODES:         10
+      ATM_CONF_MAX_EMPTY_STOP:    1
+      ATM_CONF_COLLECT_ALL_NODES: 0
+      ATM_CONF_REACT_ALL_NODES:   0
+      ATM_CONF_OP_FREQ:           10
+      ATM_CONF_COLLECT_FREQ:      0
+      ATM_CONF_REACT_FREQ:        60
+      ATM_CONF_CONFIGURE_FREQ:    0
+      ATM_CONF_LOG_NONE:          0
+
+  - desc:     'Atomic-SDN-20'
+    type:     atomic
+    contiki:  /home/mike/Repos/atomic-sdn
+    wd:       /home/mike/Repos/atomic-sdn/examples/atomic
+    csc:      atomic-20-node.csc
+    log:      Atomic-SDN-20
+    makeargs:
+      ATM_CONF_MAX_NODES:         20
+      ATM_CONF_MAX_EMPTY_STOP:    1
+      ATM_CONF_COLLECT_ALL_NODES: 0
+      ATM_CONF_REACT_ALL_NODES:   0
+      ATM_CONF_OP_FREQ:           0
+      ATM_CONF_COLLECT_FREQ:      0
+      ATM_CONF_REACT_FREQ:        60
+      ATM_CONF_CONFIGURE_FREQ:    0
+      ATM_CONF_LOG_NONE:          0
+
   - desc:     'Atomic-SDN-30'
     type:     atomic
     contiki:  /home/mike/Repos/atomic-sdn
@@ -53,11 +87,11 @@ simulations:
     makeargs:
       ATM_CONF_MAX_NODES:         30
       ATM_CONF_MAX_EMPTY_STOP:    1
-      ATM_CONF_COLLECT_ALL_NODES: 1
-      ATM_CONF_REACT_ALL_NODES:   1
-      ATM_CONF_OP_FREQ:           60
+      ATM_CONF_COLLECT_ALL_NODES: 0
+      ATM_CONF_REACT_ALL_NODES:   0
+      ATM_CONF_OP_FREQ:           0
       ATM_CONF_COLLECT_FREQ:      0
-      ATM_CONF_REACT_FREQ:        0
+      ATM_CONF_REACT_FREQ:        60
       ATM_CONF_CONFIGURE_FREQ:    0
       ATM_CONF_LOG_NONE:          0
     regex:
@@ -82,186 +116,191 @@ simulations:
         file:    'association_v_time'
       latency:
         df:      atomic-op
+        xlabel:  '30'
         file:    'latency'
       pdr:
         df:      atomic-op
         file:    'pdr'
 
-  # # 40 Node
-  # - desc:     'Atomic-SDN-40'
-  #   type:     atomic
-  #   contiki:  /home/mike/Repos/atomic-sdn
-  #   wd:       /home/mike/Repos/atomic-sdn/examples/atomic
-  #   csc:      atomic-40-node.csc
-  #   log:      Atomic-SDN-40
-  #   makeargs:
-  #     ATM_CONF_MAX_NODES:         40
-  #     ATM_CONF_MAX_EMPTY_STOP:    1
-  #     ATM_CONF_COLLECT_ALL_NODES: 0
-  #     ATM_CONF_REACT_ALL_NODES:   0
-  #     ATM_CONF_OP_FREQ:           0
-  #     ATM_CONF_COLLECT_FREQ:      0
-  #     ATM_CONF_REACT_FREQ:        0
-  #     ATM_CONF_CONFIGURE_FREQ:    60
-  #     ATM_CONF_LOG_NONE:          0
-  #   regex:
-  #     - 'atomic-energy'
-  #     - 'atomic-op'
-  #   plot:
-  #     atomic_op_times:
-  #       df:      atomic-op
-  #       packets: ['CONF', 'CLCT', 'RACT']
-  #       file:    'atomic_op_times'
-  #     energy_v_hops:
-  #       df:      atomic-energy
-  #       packets: ['CONF']
-  #       file:    'energy_v_hops'
-  #     pdr_v_hops:
-  #       df:      atomic-op
-  #       packets: ['CONF']
-  #       file:    'pdr_v_hops'
-  #     association_v_time:
-  #       df:      atomic-op
-  #       packets: ['ASSC']
-  #       file:    'association_v_time'
-  #     latency:
-  #       df:      atomic-op
-  #       file:    'latency'
-  #     pdr:
-  #       df:      atomic-op
-  #       file:    'pdr'
-  #
-  # # 50 Node
-  # - desc:     'Atomic-SDN-50'
-  #   type:     atomic
-  #   contiki:  /home/mike/Repos/atomic-sdn
-  #   wd:       /home/mike/Repos/atomic-sdn/examples/atomic
-  #   csc:      atomic-50-node.csc
-  #   log:      Atomic-SDN-50
-  #   makeargs:
-  #     ATM_CONF_MAX_NODES:         50
-  #     ATM_CONF_MAX_EMPTY_STOP:    1
-  #     ATM_CONF_COLLECT_ALL_NODES: 0
-  #     ATM_CONF_REACT_ALL_NODES:   0
-  #     ATM_CONF_OP_FREQ:           0
-  #     ATM_CONF_COLLECT_FREQ:      0
-  #     ATM_CONF_REACT_FREQ:        0
-  #     ATM_CONF_CONFIGURE_FREQ:    60
-  #     ATM_CONF_LOG_NONE:          0
-  #   regex:
-  #     - 'atomic-energy'
-  #     - 'atomic-op'
-  #   plot:
-  #     atomic_op_times:
-  #       df:      atomic-op
-  #       packets: ['CONF', 'CLCT', 'RACT']
-  #       file:    'atomic_op_times'
-  #     energy_v_hops:
-  #       df:      atomic-energy
-  #       packets: ['CONF']
-  #       file:    'energy_v_hops'
-  #     pdr_v_hops:
-  #       df:      atomic-op
-  #       packets: ['CONF']
-  #       file:    'pdr_v_hops'
-  #     association_v_time:
-  #       df:      atomic-op
-  #       packets: ['ASSC']
-  #       file:    'association_v_time'
-  #     latency:
-  #       df:      atomic-op
-  #       file:    'latency'
-  #     pdr:
-  #       df:      atomic-op
-  #       file:    'pdr'
-  #
-  # # 60 Node
-  # - desc:     'Atomic-SDN-60'
-  #   type:     atomic
-  #   contiki:  /home/mike/Repos/atomic-sdn
-  #   wd:       /home/mike/Repos/atomic-sdn/examples/atomic
-  #   csc:      atomic-60-node.csc
-  #   log:      Atomic-SDN-60
-  #   makeargs:
-  #     ATM_CONF_MAX_NODES:         60
-  #     ATM_CONF_MAX_EMPTY_STOP:    1
-  #     ATM_CONF_COLLECT_ALL_NODES: 0
-  #     ATM_CONF_REACT_ALL_NODES:   0
-  #     ATM_CONF_OP_FREQ:           0
-  #     ATM_CONF_COLLECT_FREQ:      0
-  #     ATM_CONF_REACT_FREQ:        0
-  #     ATM_CONF_CONFIGURE_FREQ:    60
-  #     ATM_CONF_LOG_NONE:          0
-  #   regex:
-  #     - 'atomic-energy'
-  #     - 'atomic-op'
-  #   plot:
-  #     atomic_op_times:
-  #       df:      atomic-op
-  #       packets: ['CONF', 'CLCT', 'RACT']
-  #       file:    'atomic_op_times'
-  #     energy_v_hops:
-  #       df:      atomic-energy
-  #       packets: ['CONF']
-  #       file:    'energy_v_hops'
-  #     pdr_v_hops:
-  #       df:      atomic-op
-  #       packets: ['CONF']
-  #       file:    'pdr_v_hops'
-  #     association_v_time:
-  #       df:      atomic-op
-  #       packets: ['ASSC']
-  #       file:    'association_v_time'
-  #     latency:
-  #       df:      atomic-op
-  #       file:    'latency'
-  #     pdr:
-  #       df:      atomic-op
-  #       file:    'pdr'
-  #
-  # # 70 Node
-  # - desc:     'Atomic-SDN-70'
-  #   type:     atomic
-  #   contiki:  /home/mike/Repos/atomic-sdn
-  #   wd:       /home/mike/Repos/atomic-sdn/examples/atomic
-  #   csc:      atomic-70-node.csc
-  #   log:      Atomic-SDN-70
-  #   makeargs:
-  #     ATM_CONF_MAX_NODES:         70
-  #     ATM_CONF_MAX_EMPTY_STOP:    1
-  #     ATM_CONF_COLLECT_ALL_NODES: 0
-  #     ATM_CONF_REACT_ALL_NODES:   0
-  #     ATM_CONF_OP_FREQ:           0
-  #     ATM_CONF_COLLECT_FREQ:      0
-  #     ATM_CONF_REACT_FREQ:        0
-  #     ATM_CONF_CONFIGURE_FREQ:    60
-  #     ATM_CONF_LOG_NONE:          0
-  #   regex:
-  #     - 'atomic-energy'
-  #     - 'atomic-op'
-  #   plot:
-  #     atomic_op_times:
-  #       df:      atomic-op
-  #       packets: ['CONF', 'CLCT', 'RACT']
-  #       file:    'atomic_op_times'
-  #     energy_v_hops:
-  #       df:      atomic-energy
-  #       packets: ['CONF']
-  #       file:    'energy_v_hops'
-  #     pdr_v_hops:
-  #       df:      atomic-op
-  #       packets: ['CONF']
-  #       file:    'pdr_v_hops'
-  #     association_v_time:
-  #       df:      atomic-op
-  #       packets: ['ASSC']
-  #       file:    'association_v_time'
-  #     latency:
-  #       df:      atomic-op
-  #       file:    'latency'
-  #     pdr:
-  #       df:      atomic-op
-  #       file:    'pdr'
+  # 40 Node
+  - desc:     'Atomic-SDN-40'
+    type:     atomic
+    contiki:  /home/mike/Repos/atomic-sdn
+    wd:       /home/mike/Repos/atomic-sdn/examples/atomic
+    csc:      atomic-40-node.csc
+    log:      Atomic-SDN-40
+    makeargs:
+      ATM_CONF_MAX_NODES:         40
+      ATM_CONF_MAX_EMPTY_STOP:    1
+      ATM_CONF_COLLECT_ALL_NODES: 0
+      ATM_CONF_REACT_ALL_NODES:   0
+      ATM_CONF_OP_FREQ:           0
+      ATM_CONF_COLLECT_FREQ:      0
+      ATM_CONF_REACT_FREQ:        60
+      ATM_CONF_CONFIGURE_FREQ:    0
+      ATM_CONF_LOG_NONE:          0
+    regex:
+      - 'atomic-energy'
+      - 'atomic-op'
+    plot:
+      atomic_op_times:
+        df:      atomic-op
+        packets: ['CONF', 'CLCT', 'RACT']
+        file:    'atomic_op_times'
+      energy_v_hops:
+        df:      atomic-energy
+        packets: ['CONF']
+        file:    'energy_v_hops'
+      pdr_v_hops:
+        df:      atomic-op
+        packets: ['CONF']
+        file:    'pdr_v_hops'
+      association_v_time:
+        df:      atomic-op
+        packets: ['ASSC']
+        file:    'association_v_time'
+      latency:
+        df:      atomic-op
+        xlabel:  '40'
+        file:    'latency'
+      pdr:
+        df:      atomic-op
+        file:    'pdr'
+
+  # 50 Node
+  - desc:     'Atomic-SDN-50'
+    type:     atomic
+    contiki:  /home/mike/Repos/atomic-sdn
+    wd:       /home/mike/Repos/atomic-sdn/examples/atomic
+    csc:      atomic-50-node.csc
+    log:      Atomic-SDN-50
+    makeargs:
+      ATM_CONF_MAX_NODES:         50
+      ATM_CONF_MAX_EMPTY_STOP:    1
+      ATM_CONF_COLLECT_ALL_NODES: 0
+      ATM_CONF_REACT_ALL_NODES:   0
+      ATM_CONF_OP_FREQ:           0
+      ATM_CONF_COLLECT_FREQ:      0
+      ATM_CONF_REACT_FREQ:        60
+      ATM_CONF_CONFIGURE_FREQ:    0
+      ATM_CONF_LOG_NONE:          0
+    regex:
+      - 'atomic-energy'
+      - 'atomic-op'
+    plot:
+      atomic_op_times:
+        df:      atomic-op
+        packets: ['CONF', 'CLCT', 'RACT']
+        file:    'atomic_op_times'
+      energy_v_hops:
+        df:      atomic-energy
+        packets: ['CONF']
+        file:    'energy_v_hops'
+      pdr_v_hops:
+        df:      atomic-op
+        packets: ['CONF']
+        file:    'pdr_v_hops'
+      association_v_time:
+        df:      atomic-op
+        packets: ['ASSC']
+        file:    'association_v_time'
+      latency:
+        df:      atomic-op
+        xlabel:  '50'
+        file:    'latency'
+      pdr:
+        df:      atomic-op
+        file:    'pdr'
+
+  # 60 Node
+  - desc:     'Atomic-SDN-60'
+    type:     atomic
+    contiki:  /home/mike/Repos/atomic-sdn
+    wd:       /home/mike/Repos/atomic-sdn/examples/atomic
+    csc:      atomic-60-node.csc
+    log:      Atomic-SDN-60
+    makeargs:
+      ATM_CONF_MAX_NODES:         60
+      ATM_CONF_MAX_EMPTY_STOP:    1
+      ATM_CONF_COLLECT_ALL_NODES: 0
+      ATM_CONF_REACT_ALL_NODES:   0
+      ATM_CONF_OP_FREQ:           0
+      ATM_CONF_COLLECT_FREQ:      0
+      ATM_CONF_REACT_FREQ:        60
+      ATM_CONF_CONFIGURE_FREQ:    0
+      ATM_CONF_LOG_NONE:          0
+    regex:
+      - 'atomic-energy'
+      - 'atomic-op'
+    plot:
+      atomic_op_times:
+        df:      atomic-op
+        packets: ['CONF', 'CLCT', 'RACT']
+        file:    'atomic_op_times'
+      energy_v_hops:
+        df:      atomic-energy
+        packets: ['CONF']
+        file:    'energy_v_hops'
+      pdr_v_hops:
+        df:      atomic-op
+        packets: ['CONF']
+        file:    'pdr_v_hops'
+      association_v_time:
+        df:      atomic-op
+        packets: ['ASSC']
+        file:    'association_v_time'
+      latency:
+        df:      atomic-op
+        xlabel:  '60'
+        file:    'latency'
+      pdr:
+        df:      atomic-op
+        file:    'pdr'
+
+  # 70 Node
+  - desc:     'Atomic-SDN-70'
+    type:     atomic
+    contiki:  /home/mike/Repos/atomic-sdn
+    wd:       /home/mike/Repos/atomic-sdn/examples/atomic
+    csc:      atomic-70-node.csc
+    log:      Atomic-SDN-70
+    makeargs:
+      ATM_CONF_MAX_NODES:         70
+      ATM_CONF_MAX_EMPTY_STOP:    1
+      ATM_CONF_COLLECT_ALL_NODES: 0
+      ATM_CONF_REACT_ALL_NODES:   0
+      ATM_CONF_OP_FREQ:           0
+      ATM_CONF_COLLECT_FREQ:      0
+      ATM_CONF_REACT_FREQ:        60
+      ATM_CONF_CONFIGURE_FREQ:    0
+      ATM_CONF_LOG_NONE:          0
+    regex:
+      - 'atomic-energy'
+      - 'atomic-op'
+    plot:
+      atomic_op_times:
+        df:      atomic-op
+        packets: ['CONF', 'CLCT', 'RACT']
+        file:    'atomic_op_times'
+      energy_v_hops:
+        df:      atomic-energy
+        packets: ['CONF']
+        file:    'energy_v_hops'
+      pdr_v_hops:
+        df:      atomic-op
+        packets: ['CONF']
+        file:    'pdr_v_hops'
+      association_v_time:
+        df:      atomic-op
+        packets: ['ASSC']
+        file:    'association_v_time'
+      latency:
+        df:      atomic-op
+        xlabel:  '70'
+        file:    'latency'
+      pdr:
+        df:      atomic-op
+        file:    'pdr'
 # ----------------------------------------------------------------------------
 # compare (comparison) config
 # ----------------------------------------------------------------------------

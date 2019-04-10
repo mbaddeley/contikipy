@@ -109,10 +109,13 @@ def set_fig_and_save(fig, ax, data, desc, dir, **kwargs):
     os.makedirs(dir, exist_ok=True)
     if data is not None:
         pickle.dump(data, open(dir + desc + '.pkl', 'wb'))
+        print('  ... Saving data: ' + desc + '.pkl')
     # save ax for post compare
     pickle.dump(ax, open(dir + 'ax_' + desc + '.pkl', 'wb+'))
+    print('  ... Saving pickle: ' + 'ax_' + desc + '.pkl')
     # save pdf of figure plus the figure itself
     fig.savefig(dir + 'fig_' + desc + '.pdf', bbox_inches="tight")
+    print('  ... Saving figure: ' + 'fig_' + desc + '.pdf')
 
     # with open('myplot.pkl','rb') as fid:
     # ax = pickle.load(fid)
@@ -144,7 +147,10 @@ def plot_hist(df, desc, dir, x, y, ylim=None, **kwargs):
                                stacked=True, fill=True, label=desc, color=color)
     bins = np.around(np.linspace(0, max(x), len(x)), 3)  # bin values to 3dp
     np.insert(bins, 0, 0)
-    bins = np.arange(0, max(x), 0.1)
+    if 'Atomic' in dir:
+        bins = np.arange(0, max(x), 0.005)
+    else:
+        bins = np.arange(0, max(x), 0.1)
     xticks = np.linspace(0, bins[len(bins)-1], 5)
     ax.set_xticks(xticks)
 
@@ -155,13 +161,12 @@ def plot_hist(df, desc, dir, x, y, ylim=None, **kwargs):
     y /= y[-1]
 
     # # Plot both
-    # ax.plot(x, y, 'k--', linewidth=1.5, label='Empirical')
     ax.plot(bins, y, 'r-', linewidth=1.5, label='Theoretical')
-
-    data = {'x': x, 'y': y, 'errors': None,
+    data = {'x': bins, 'y': y, 'errors': None,
             'type': 'hist',
             'xlabel': xlabel,
             'ylabel': ylabel}
+
     fig, ax = set_fig_and_save(fig, ax, data, desc, dir,
                                xlabel=xlabel, ylabel=ylabel)
 
@@ -288,7 +293,7 @@ def plot_line(df, desc, dir, x, y, **kwargs):
     lw = kwargs['lw'] if 'lw' in kwargs else 2.0
     xlabel = kwargs['xlabel'] if 'xlabel' in kwargs else ''
     ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
-    # label = kwargs['label'] if 'label' in kwargs else ylabel
+    prefix = kwargs['prefix'] if 'prefix' in kwargs else ''
 
     # set xticks
     xticks = x
@@ -310,6 +315,6 @@ def plot_line(df, desc, dir, x, y, **kwargs):
             'type': 'line',
             'xlabel': xlabel,
             'ylabel': ylabel}
-    fig, ax = set_fig_and_save(fig, ax, data, desc, dir,
+    fig, ax = set_fig_and_save(fig, ax, data, prefix + desc, dir,
                                xlabel=xlabel, ylabel=ylabel)
     return fig, ax

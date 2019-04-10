@@ -188,7 +188,7 @@ def parse(logtype_re, sim_log, sim_dir, sim_desc, sim_type, pattern_types, plot_
             # Do any YAML configured data processing
             if 'process' in cfg['formatters']:
                 if cfg['formatters']['process'] is not None:
-                    print('> Process the data...')
+                    print('  > Process the data...')
                     df_dict = process_data(df_dict, cfg['formatters']['process'])
         # Save the data
         print('> Saving data as ... ' + sim_dir + sim_desc + '_df.pkl')
@@ -227,9 +227,8 @@ def process_data(data_dict, process_list):
                 df = data_dict[k]
                 if 'merge' in p.keys():
                     m = p['merge']
-                    print('> Merge ' + k + ': ' + str(m))
+                    print('  ... Merge ' + k + ': ' + str(m))
                     how = m['how'] if 'how' in m else 'inner'
-                    print(how)
                     df = df.merge(data_dict[m['df']], how,
                                   left_on=m['left_on'], right_on=m['right_on'])
                 if 'filter' in p.keys():
