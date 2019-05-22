@@ -103,7 +103,7 @@ def set_fig_and_save(fig, ax, data, desc, dir, **kwargs):
         ax.get_yaxis().tick_left()
 
     # tight layout
-    fig.set_tight_layout(False)
+    # fig.set_tight_layout(False)
 
     # save  data for post compare
     os.makedirs(dir, exist_ok=True)
@@ -187,10 +187,33 @@ def plot_bar(df, desc, dir, x, y, ylim=None, **kwargs):
     color = kwargs['color'] if 'color' in kwargs else color
     xlabel = kwargs['xlabel'] if 'xlabel' in kwargs else ''
     ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
+    stacked = kwargs['stacked'] if 'stacked' in kwargs else False
+    labels = kwargs['labels'] if 'labels' in kwargs else ['Retransmissions', 'Scheduled RX/TX']
 
     ind = np.arange(len(x))
 
-    ax.bar(x=ind, height=y, width=width, color=color)
+    color = list(plt.rcParams['axes.prop_cycle'])[0]['color']
+    ax.bar(x=ind, height=y[0], width=width, color=color)
+
+    color = list(plt.rcParams['axes.prop_cycle'])[1]['color']
+    ax.bar(x=ind, height=y[1], width=width, color=color, bottom=y[0])
+    #
+    # ax.set_yscale('log')
+    # ax.set_ylim(pow(10, 1), pow(10, 5))
+
+    # if stacked:
+    #     i = 0
+    #     for values in y:
+    #         print(values)
+    #         color = list(plt.rcParams['axes.prop_cycle'])[i]['color']
+    #         ax.bar(x=ind, height=values, width=width, color=color, bottom=y[i])
+    #         i = i + 1
+    # else:
+    #     ax.bar(x=ind, height=y, width=width, color=color)
+
+    ax.legend(labels, loc='best')
+
+    print(xlabel)
 
     # set x-axis
     ax.set_xticks(np.arange(min(ind), max(ind)+1, 1.0))
@@ -199,8 +222,10 @@ def plot_bar(df, desc, dir, x, y, ylim=None, **kwargs):
         x = [int(i) for i in x]
     ax.set_xticklabels(x)
     # set y limits
-    if ylim is not None:
-        ax.set_ylim(ylim)
+    # if ylim is not None:
+    #     ax.set_ylim(ylim)
+
+    plt.show()
 
     data = {'x': x, 'y': y, 'errors': None,
             'type': 'bar',
