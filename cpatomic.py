@@ -75,6 +75,7 @@ def format_data(df):
     # if 'packet' in df:
         # df.packet = df[['id', 'src']].apply(lambda x: '_'.join(str(x)), axis=1)
         # df.packet = df['id'].astype(str) + '_' + df['src'].astype(str)
+    print(df)
     return df
 
 
@@ -335,14 +336,14 @@ if __name__ == "__main__":
         df.set_index('timestamp', inplace=True, drop=False)
         df.sort_index(inplace=True)
         # Remove outliers due to id screwing up in transmission
-        print("> Len:" + str(len(df.id)) + " Min:" + str(df.id.min()) + " Max:" + str(df.id.max()))
-        u_ids = df.id.unique()
-        u_ids = hlp.reject_outliers(u_ids)
-        df = df[df.id.isin(u_ids)]
-        u_ids = df.id.unique()
+        # print("> Len:" + str(len(df.id)) + " Min:" + str(df.id.min()) + " Max:" + str(df.id.max()))
+        # u_ids = df.id.unique()
+        # u_ids = hlp.reject_outliers(u_ids)
+        # df = df[df.id.isin(u_ids)]
+        # u_ids = df.id.unique()
         # remove the nth ids because of logging delay and corrupt ids
-        df = df[df['id'] > np.partition(u_ids.flatten(), 5)[5]]  # min
-        df = df[df['id'] < np.partition(u_ids.flatten(), -5)[-5]]  # max
+        # df = df[df['id'] > np.partition(u_ids.flatten(), 5)[5]]  # min
+        # df = df[df['id'] < np.partition(u_ids.flatten(), -5)[-5]]  # max
         print("> Len:" + str(len(df.id)) + " Min:" + str(df.id.min()) + " Max:" + str(df.id.max()))
         print('.......... Generate Results')
         results = generate_results(df)
@@ -363,7 +364,7 @@ if __name__ == "__main__":
     lat_mean = results.lat.mean()
     pickle.dump(lat_mean, open(out + '/' + args.title + '_lat.pkl', 'wb'))
 
-    print('.......... Graph Results')
+    print('.......... Graph Results to ' + out)
     graph_latency(results, out)
     graph_pdr(results, out)
 
