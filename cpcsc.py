@@ -14,9 +14,9 @@ def set_simulation_title(file, title):
     # Get all the motes
     el_title = root.findall('.simulation/title')
     for el in el_title:
-        print "> cpcsc orig: " + el.tag, el.attrib, el.text
+        print('> cpcsc orig: ' + el.tag, el.attrib, el.text)
         el.text = title
-        print "> cpcsc new: " + el.tag, el.attrib, el.text
+        print('> cpcsc new: ' + el.tag, el.attrib, el.text)
         # el.set('updated', 'yes')
 
     tree.write(file)
@@ -46,10 +46,10 @@ def append_make(file, append):
     el_commands = root.findall('.simulation/motetype/commands')
     # Print tags, attribs, and text
     for el in el_commands:
-        print "> cpcsc orig: " + el.tag, el.attrib, el.text
+        print('> cpcsc orig: ' + el.tag, el.attrib, el.text)
         cmd = re.match(".*?TARGET=\\w+(\\s??)", el.text).group()
         el.text = cmd + ' ' + append
-        print "> cpcsc new: " + el.tag, el.attrib, el.text
+        print('> cpcsc new: ' + el.tag, el.attrib, el.text)
         el.set('updated', 'yes')
 
     tree.write(file)

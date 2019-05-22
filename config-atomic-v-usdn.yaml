@@ -18,25 +18,25 @@ logtypes:
 formatters:
   patterns:
     # atomic
-    - type:  atomic-energy
-      regex: \s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<type>\w+)(?:\s*h:(?P<hops>\d+)|\s+np:(?P<n_phases>\d+)|\s+gon:(?P<gon>\d+)|\s+ron:(?P<ron>\d+)|\s+con:(?P<con>\d+)\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
-    - type:  atomic-op
-      regex: \s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<type>\w+)(?:\s*h:(?P<hops>\d+)|\scp:\s*(?P<c_phase>\d+)|\s+tp:\s*(?P<n_phases>\d+)|\s+dur:\s*(?P<lat>\d+)|\s+tdur:\s*(?P<op_duration>\d+)|\s+an:(?P<active>\d+))+.*?$
+    - type:   atomic-energy
+      regex:  \s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<type>\w+)(?:\s*h:(?P<hops>\d+)|\s+np:(?P<n_phases>\d+)|\s+gon:(?P<gon>\d+)|\s+ron:(?P<ron>\d+)|\s+con:(?P<con>\d+)\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
+    - type:   atomic-op
+      regex:  \s+(?P<level>[\w,-]+):\s+(?P<module>\w+)\s*ep:(?P<epoch>\d+)\s+(?P<type>\w+)(?:\s*h:(?P<hops>\d+)|\scp:\s*(?P<c_phase>\d+)|\s+tp:\s*(?P<n_phases>\d+)|\s+dur:\s*(?P<lat>\d+)|\s+tdur:\s*(?P<op_duration>\d+)|\s+an:(?P<active>\d+))+.*?$
     # uSDN
-    - type:   pow
-      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*](?:\s*PW\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
-    - type:   app
-      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<status>(TX|RX))\s+(?P<type>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>[1-5])|\s+m:(?P<mac>\d+))+.*?$
+    - type:   sdn
+      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<state>(OUT|BUF|IN|TX|RX))\s+(?P<type>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>\d+)|\s+m:(?P<mac>\d+))+.*?$
+    # common
     - type:   node
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*h:(?P<hops>\d+), n:(?P<degree>\d+)
-    - type:   sdn
-      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<status>(OUT|BUF|IN))\s+(?P<type>\S+)(?:\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+a:(?P<app>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>\d+)|\s+m:(?P<mac>\d+))+.*?$
+    - type:   join
+      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?:\s+n:(?P<id>\d+)|\s+c:(?P<controller>\d+)|\s+dag:(?P<dag>\d+)|\s+dao:(?P<dao>\d+))+.*?$
+    - type:   pow
+      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*](?:\s*PW\s+\(r (?P<all_rdc>\d+\W{1,2}\d+)| \/ (?P<rdc>\d+\W{1,2}\d+))+.*?$
+    - type:   all
+      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?P<state>(TX|RX))\s+(?P<type>\S+)(?:\s+m:(?P<origin>\d+)|\s+t:(?P<target>\d+)|\s+s:(?P<src>\d+)|\s+d:(?P<dest>\d+)|\s+id:(?P<seq>\d+)|\s+h:(?P<hops>[0-5]))+.*?$
     - type:   icmp
       regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?:\s+type:(?P<type>\d+)|\s+code:(?P<code>\d+))+.*?$
-    - type:   join
-      regex:  \s*\[(?P<level>STAT):\s*(?P<module>[\w,-]+)\s*]\s*(?:\s+n:(?P<node>\d+)|\s+c:(?P<controller>\d+)|\s+dag:(?P<dag>\d+)|\s+dao:(?P<dao>\d+))+.*?$
   process:
-    # atomic
     atomic-op:
       - filter:
           col:      active
@@ -51,8 +51,16 @@ formatters:
           col:      hops
           min:      1
           max:      5
-    # uSDN
     sdn:
+      # - merge:
+      #     df:       node
+      #     left_on:  node
+      #     right_on: node
+      - filter:
+          col:      hops
+          min:      1
+          max:      5
+    all:
       - filter:
           col:      hops
           min:      1
@@ -80,6 +88,24 @@ multiflow:
       DELAY:          120
       BRMIN:          60
       BRMAX:          75
+  - id:               5_hop_flow
+    NUM_APPS:         1
+    flows:
+      FLOWIDS:        1
+      TXNODES:        2,26,23,15,21
+      RXNODES:        1,1,1,1,1
+      DELAY:          120,120,120,120,120
+      BRMIN:          60,60,60,60,60
+      BRMAX:          75,75,75,75,75
+  - id:               1_flow_p2p
+    NUM_APPS:         1
+    flows:
+      FLOWIDS:        1
+      TXNODES:        [18,19]
+      RXNODES:        [20,21]
+      DELAY:          [60,60]
+      BRMIN:          [60,60]
+      BRMAX:          [75,75]
 
 
 # ----------------------------------------------------------------------------
@@ -89,144 +115,197 @@ simulations:
   # 30 Node Atomic
   - desc:           Atomic-SDN
     type:           atomic
-    contiki:        /home/mike/Repos/atomic
-    wd:             /home/mike/Repos/atomic/examples/atomic
-    csc:            atomic-30-node.csc
+    contiki:        /home/mike/Repos/atomic-sdn
+    wd:             /home/mike/Repos/atomic-sdn/examples/atomic
+    csc:
     log:            Atomic-SDN-30
-    makeargs:
-      ATM_CONF_MAX_NODES:         20
-      ATM_CONF_COLLECT_ALL_NODES: 1
-      ATM_CONF_REACT_ALL_NODES:   1
-      ATM_CONF_OP_FREQ:           60
-      # ATM_CONF_COLLECT_FREQ:      3
-      # ATM_CONF_REACT_FREQ:        5
-      # ATM_CONF_CONFIGURE_FREQ:    7
     regex:
       - 'atomic-energy'
       - 'atomic-op'
     plot:
       latency_v_hops:
         df:      atomic-op
-        packets: ['CLCT', 'CONF', 'RACT']
-        index:   ['node']
+        packets: ['CONF', 'CLCT', 'RACT']
         aggfunc: {'lat': mean}
         file:    'latency_v_hops'
       pdr_v_hops:
         df:      atomic-op
-        packets: ['CLCT', 'CONF', 'RACT']
+        packets: ['CONF', 'CLCT', 'RACT']
         file:    'pdr_v_hops'
       energy_v_hops:
         df:      atomic-energy
-        packets: ['CLCT', 'CONF', 'RACT']
         file:    'energy_v_hops'
+      association_v_time:
+        df:      atomic-op
+        packets: ['ASSC']
+        file:    'association_v_time'
+      # latency:
+      #   df:      atomic-op
+      #   packets: ['CONF']
+      #   xlabel:  '30'
+      #   file:    'latency'
+      # pdr:
+      #   df:      atomic-op
+      #   file:    'pdr'
+
   # 30 Node uSDN CSMA
   - desc:           uSDN-CSMA
     type:           usdn
     contiki:        /home/mike/Repos/usdn
     wd:             /home/mike/Repos/usdn/examples/sdn
-    csc:            usdn-30-node.csc
+    csc:
     log:            uSDN-CSMA-30
-    makeargs:
-      MAC:          CSMA
-      SDN:          1
-      FTREFRESH:    0
-      FTSRETRY:     0
-      FORCENSU:     1
-      FTLIFETIME:   300
-      NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
-      MULTIFLOW:    1
-    multiflow:      1_flow
     regex:
       - 'node'
       - 'sdn'
       - 'pow'
+      - 'join'
     plot:
       latency_v_hops:
         df:      sdn
-        packets: ['NSU', 'CONF', 'FTQ', 'FTS']
-        index:   ['id']
+        packets: ['NSU', 'FTQ', 'FTS']
+        # packets: ['NSU', 'FTQ', 'FTS']
+        index:   ['seq', 'id']
         aggfunc: {'lat': mean}
         file:    'latency_v_hops'
       pdr_v_hops:
         df:      sdn
-        packets: ['NSU', 'CONF', 'FTQ', 'FTS']
+        packets: ['NSU', 'FTQ', 'FTS']
         file:    'pdr_v_hops'
       energy_v_hops:
         df:      pow
-        packets: ['NSU', 'CONF', 'FTQ', 'FTS']
         file:    'energy_v_hops'
+      association_v_time:
+        df:      join
+        packets: ['dag']
+        file:    'association_v_time'
+      # latency:
+      #   df:      sdn
+      #   packets: ['NSU', 'FTQ', 'FTS']
+      #   xlabel:  '30'
+      #   file:    'latency'
+      # pdr:
+      #   df:      sdn
+      #   file:    'pdr'
+
   # 30 Node uSDN CONTIKIMAC
   - desc:           uSDN-CONTIKIMAC
     type:           usdn
     contiki:        /home/mike/Repos/usdn
     wd:             /home/mike/Repos/usdn/examples/sdn
-    csc:            usdn-30-node.csc
+    csc:
     log:            uSDN-CONTIKIMAC-30
-    makeargs:
-      MAC:          CONTIKIMAC
-      SDN:          1
-      FTREFRESH:    0
-      FTSRETRY:     0
-      FORCENSU:     1
-      FTLIFETIME:   300
-      NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
-      MULTIFLOW:    1
-    multiflow:      1_flow
     regex:
       - 'node'
       - 'sdn'
       - 'pow'
+      - 'join'
     plot:
       latency_v_hops:
         df:      sdn
-        packets: ['NSU', 'CONF', 'FTQ', 'FTS']
-        index:   ['id']
+        packets: ['NSU', 'FTQ', 'FTS']
+        # packets: ['NSU', 'FTQ', 'FTS']
+        index:   ['seq', 'id']
         aggfunc: {'lat': mean}
         file:    'latency_v_hops'
       pdr_v_hops:
         df:      sdn
-        packets: ['NSU', 'CONF', 'FTQ', 'FTS']
+        packets: ['NSU', 'FTQ', 'FTS']
         file:    'pdr_v_hops'
       energy_v_hops:
         df:      pow
-        packets: ['NSU', 'CONF', 'FTQ', 'FTS']
         file:    'energy_v_hops'
-  # 30 Node uSDN NULLMAC
-  - desc:           uSDN-NULLMAC
-    type:           usdn
-    contiki:        /home/mike/Repos/usdn
-    wd:             /home/mike/Repos/usdn/examples/sdn
-    csc:            usdn-30-node.csc
-    log:            uSDN-NULLMAC-30
-    makeargs:
-      MAC:          NULLMAC
-      SDN:          1
-      FTREFRESH:    0
-      FTSRETRY:     0
-      FORCENSU:     1
-      FTLIFETIME:   300
-      NSUFREQ:      60  # NSU frequency actually helps over 0 frequency
-      MULTIFLOW:    1
-    multiflow:      1_flow
+      association_v_time:
+        df:      join
+        packets: ['dag']
+        file:    'association_v_time'
+      # latency:
+      #   df:      sdn
+      #   packets: ['NSU', 'FTQ', 'FTS']
+      #   xlabel:  '30'
+      #   file:    'latency'
+      # pdr:
+      #   df:      sdn
+      #   file:    'pdr'
+
+  # 30 Node SDN-WISE
+  - desc:           SDN-WISE-CSMA
+    type:           sdn-wise
+    contiki:        /home/mike/Repos/sdn-wise-contiki/contiki
+    wd:             /home/mike/Repos/sdn-wise-contiki/sdn-wise
+    csc:
+    log:            SDN-WISE-CSMA-30
     regex:
-      - 'node'
-      - 'sdn'
+      - 'all'
       - 'pow'
+      - 'join'
+      - 'node'
     plot:
       latency_v_hops:
-        df:      sdn
-        packets: ['NSU', 'CONF', 'FTQ', 'FTS']
+        df:      all
+        packets: ['REPORT', 'REQUEST', 'OPEN_PATH']
         index:   ['id']
         aggfunc: {'lat': mean}
         file:    'latency_v_hops'
       pdr_v_hops:
-        df:      sdn
-        packets: ['NSU', 'CONF', 'FTQ', 'FTS']
+        df:      all
+        packets: ['REPORT', 'REQUEST', 'OPEN_PATH']
         file:    'pdr_v_hops'
       energy_v_hops:
         df:      pow
-        packets: ['NSU', 'CONF', 'FTQ', 'FTS']
         file:    'energy_v_hops'
+      association_v_time:
+        df:      join
+        packets: ['controller']
+        file:    'association_v_time'
+      # latency:
+      #   df:      all
+      #   packets: ['REPORT', 'REQUEST', 'OPEN_PATH']
+      #   xlabel:  '30'
+      #   file:    'latency'
+      # pdr:
+      #   df:      all
+      #   file:    'pdr'
+
+  # 30 Node SDN-WISE
+  - desc:           SDN-WISE-CONTIKIMAC
+    type:           sdn-wise
+    contiki:        /home/mike/Repos/sdn-wise-contiki/contiki
+    wd:             /home/mike/Repos/sdn-wise-contiki/sdn-wise
+    csc:
+    log:            SDN-WISE-CONTIKIMAC-30
+    regex:
+      - 'all'
+      - 'pow'
+      - 'join'
+      - 'node'
+    plot:
+      latency_v_hops:
+        df:      all
+        packets: ['REPORT', 'REQUEST', 'OPEN_PATH']
+        index:   ['id']
+        aggfunc: {lambda x: }
+        file:    'latency_v_hops'
+      pdr_v_hops:
+        df:      all
+        packets: ['REPORT', 'REQUEST', 'OPEN_PATH']
+        file:    'pdr_v_hops'
+      energy_v_hops:
+        df:      pow
+        file:    'energy_v_hops'
+      association_v_time:
+        df:      join
+        packets: ['controller']
+        file:    'association_v_time'
+      # latency:
+      #   df:      all
+      #   packets: ['REPORT', 'REQUEST', 'OPEN_PATH']
+      #   xlabel:  '30'
+      #   file:    'latency'
+      # pdr:
+      #   df:      all
+      #   file:    'pdr'
+
 # ----------------------------------------------------------------------------
 # compare (comparison) config
 # ----------------------------------------------------------------------------
@@ -236,12 +315,16 @@ compare:
     - Atomic-SDN
     - uSDN-CSMA
     - uSDN-CONTIKIMAC
-    - uSDN-NULLMAC
+    - SDN-WISE-CSMA
+    - SDN-WISE-CONTIKIMAC
     # which plots do we want to compare?
     plots:
       - latency_v_hops
       - pdr_v_hops
+      - association_v_time
       - energy_v_hops
+      # - latency
+      # - pdr
     # plot arguments
     args:
       samefigure: 0
@@ -249,12 +332,26 @@ compare:
       # with rows and cols, as there isn't much input checking!!!
       nrows:      2
       ncols:      1
+      latency_v_hops:
+        row: 0
+        col: 0
+        legend: (0.26, 1.05)  # location, None, or Tuple
+        # legend: None
       pdr_v_hops:
         row: 0
         col: 0
-        legend: (0.33, 1.05)  # location, None, or Tuple
+        legend: (0.26, 1.05)  # location, None, or Tuple
       energy_v_hops:
-        row: 1
+        row: 0
         col: 0
-        legend: None
-        ylim: 25
+        legend: (0.26, 1.05)
+        ylim: 30
+      association_v_time:
+        row: 0
+        col: 0
+        legend: (0.26, 1.05)  # location, None, or Tuple
+      # latency:
+      #   row: 0
+      #   col: 0
+      #   legend: (0.28, 1.05)
+      #   ylim: 100

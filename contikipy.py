@@ -8,14 +8,13 @@ import traceback
 import sys
 
 import yaml
-import pandas as pd
 
 import cpconfig
 import cplogparser as lp
 import cpcomp
 import cpcsc
 
-from pprint import pprint
+import pickle   # for saving data
 
 # yaml config
 cfg = None
@@ -47,8 +46,10 @@ def main():
                     help='Cooja simulation file')
     ap.add_argument('--target', required=False,
                     help='Contiki platform TARGET')
+    ap.add_argument('--l', required=False, default=0, help='Load saved logs')
     ap.add_argument('--makeargs', required=False,
                     help='Makefile arguments')
+
     args = ap.parse_args()
     cfg = yaml.load(open(args.conf, 'r'))
 
@@ -69,7 +70,6 @@ def main():
         compare = None
 
     # get simulation config
-    print('**** Run ' + str(len(simulations)) + ' simulations')
     for sim in simulations:
         sim_desc, sim_type, makeargs, regex, plots = get_sim_config(sim)
         sim_dir = args.out + "/" + sim_desc + '/'
@@ -85,19 +85,26 @@ def main():
             os.makedirs(sim_dir)
 # RUNCOOJA ----------------------------------------------------------- RUNCOOJA
         if int(args.runcooja):
+            print('**** Run ' + str(len(simulations)) + ' simulations')
             title = sim['log'] if 'log' in sim else sim_desc
             runcooja(args, sim, sim_dir, makeargs, title)
             print('**** Copy cooja log into simulation directory')
             shutil.copyfile(cooja_log, sim_log)
 # PARSE ----------------------------------------------------------------- PARSE
         if int(args.parse) and sim_desc is not None:
+            print('**** Parse data from ' + args.conf + ' -> ' + sim_desc)
             logtype_re = cfg['logtypes']['cooja']
-            parse(logtype_re, sim_log, sim_dir, sim_desc, sim_type,
-                  regex, plots)
+            if args.l:
+                print('>  Load saved data ... ' + sim_dir + sim_desc + '_df.pkl')
+                df_dict = pickle.load(open(sim_dir + sim_desc + '_df.pkl', 'rb'))
+                parse(logtype_re, sim_log, sim_dir, sim_desc, sim_type, regex, plots, df_dict)
+            else:
+                parse(logtype_re, sim_log, sim_dir, sim_desc, sim_type, regex, plots, None)
 # COMP ------------------------------------------------------------------- COMP
     if int(args.comp) and compare is not None:
         compare_args = compare['args'] if 'args' in compare else None
         print('**** Compare plots in dir: ' + args.out)
+        print(compare)
         cpcomp.compare(args.out,  # directory
                        compare['sims'],
                        compare['plots'],
@@ -111,7 +118,7 @@ def get_sim_config(sim):
     sim_type = sim['type']
     makeargs = sim['makeargs'] if 'makeargs' in sim else None
     regex = sim['regex'] if 'regex' in sim else None
-    plots = sim['plot']
+    plots = sim['plot'] if 'plot' in sim else None
 
     return sim_desc, sim_type, makeargs, regex, plots
 
@@ -160,8 +167,7 @@ def runcooja(args, sim, outdir, makeargs, title):
 
 
 # ----------------------------------------------------------------------------#
-def parse(logtype_re, sim_log, sim_dir, sim_desc, sim_type,
-          pattern_types, plot_types):
+def parse(logtype_re, sim_log, sim_dir, sim_desc, sim_type, pattern_types, plot_types, df_dict):
     """Parse the main log for each datatype."""
     global cfg
     # print(some information about what's being parsed
@@ -173,19 +179,22 @@ def parse(logtype_re, sim_log, sim_dir, sim_desc, sim_type,
     print('-' * info_len)
     print(info)
     print('-' * info_len)
-    print('**** Parse log and gererate data logs in: ' + sim_dir)
-    df_dict = {}
-    for p in pattern_types:
-        df_dict.update({p: parse_regex(sim_log, logtype_re, p, sim_dir)})
-    if bool(df_dict):
-        # Do any YAML configured data processing
-        if 'process' in cfg['formatters']:
-            if cfg['formatters']['process'] is not None:
-                print('**** Process the data...')
-                df_dict = process_data(df_dict, cfg['formatters']['process'])
+
+    if df_dict is None:
+        df_dict = {}
+        for p in pattern_types:
+            df_dict.update({p: parse_regex(sim_log, logtype_re, p, sim_dir)})
+        if bool(df_dict):
+            # Do any YAML configured data processing
+            if 'process' in cfg['formatters']:
+                if cfg['formatters']['process'] is not None:
+                    print('  > Process the data...')
+                    df_dict = process_data(df_dict, cfg['formatters']['process'])
         # Save the data
-        print('**** Pickle the data...')
-        lp.pickle_data(sim_dir, df_dict)
+        print('> Saving data as ... ' + sim_dir + sim_desc + '_df.pkl')
+        pickle.dump(df_dict, open(sim_dir + sim_desc + '_df.pkl', 'wb+'))
+    # else:
+    #     print('**** Successfully loaded pickle data...')
     # """Generate plots."""
     print('**** Generate the following plots: [' + ', '.join(plot_types) + ']')
     lp.plot_data(sim_desc, sim_type, sim_dir, df_dict, plot_types)
@@ -194,10 +203,18 @@ def parse(logtype_re, sim_log, sim_dir, sim_desc, sim_type,
 # ----------------------------------------------------------------------------#
 def parse_regex(sim_log, logtype_re, pattern_type, sim_dir):
     """Parse log for data regex."""
-    for p in cfg['formatters']['patterns']:
-        if pattern_type in p['type']:
-            regex = logtype_re + p['regex']
-            return lp.scrape_data(p['type'], sim_log, sim_dir, regex)
+    try:
+        for p in cfg['formatters']['patterns']:
+            if pattern_type in p['type']:
+                regex = logtype_re + p['regex']
+                pattern = lp.scrape_data(p['type'], sim_log, sim_dir, regex)
+                if not (pattern is None):
+                    return pattern
+                else:
+                    raise Exception("No pattern!")
+    except Exception:
+        traceback.print_exc()
+        sys.exit(0)
 
 
 # ----------------------------------------------------------------------------#
@@ -210,14 +227,13 @@ def process_data(data_dict, process_list):
                 df = data_dict[k]
                 if 'merge' in p.keys():
                     m = p['merge']
-                    print('> Merge ' + k + ': ' + str(m))
+                    print('  ... Merge ' + k + ': ' + str(m))
                     how = m['how'] if 'how' in m else 'inner'
-                    print(how)
                     df = df.merge(data_dict[m['df']], how,
                                   left_on=m['left_on'], right_on=m['right_on'])
                 if 'filter' in p.keys():
                     f = p['filter']
-                    print('> Filter ' + k + ': ' + str(f))
+                    print('  ... Filter ' + k + ': ' + str(f))
                     df = df[(df[f['col']] >= f['min'])
                             & (df[f['col']] <= f['max'])]
                 data_dict[k] = df

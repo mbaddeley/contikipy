@@ -10,14 +10,16 @@ import math
 import traceback
 
 import matplotlib.pyplot as plt  # general plotting
+from matplotlib import mlab
 import numpy as np               # number crunching
+import scipy.stats as ss
 # import seaborn as sns          # fancy plotting
 # import pandas as pd            # table manipulation
 
 import cpplotter as cpplot
 
 from ast import literal_eval as make_tuple
-# from pprint import pprint
+from pprint import pprint
 
 
 # ----------------------------------------------------------------------------#
@@ -28,7 +30,7 @@ def pad_y(M):
     maxlen = max(len(r) for r in M.values())
     Z = np.zeros((len(M.values()), maxlen))
     i = 0
-    for k, v in M.iteritems():
+    for k, v in M.items():
         Z[i, :len(v)] += v
         M[k] = Z[i]
         i = i + 1
@@ -41,13 +43,13 @@ def pad_x(M):
     maxlen = max(len(r) for r in M.values())
     len_x = 0
     V = []
-    for k, v in M.iteritems():
+    for k, v in M.items():
         if(len(v) > len_x):
             len_x = len(v)
             V = v
     Z = np.zeros((len(M.values()), maxlen))
     i = 0
-    for k, v in M.iteritems():
+    for k, v in M.items():
         Z[i, :len(v)] += v
         Z[i, len(v):maxlen] = V[len(v):maxlen]
         M[k] = Z[i]
@@ -63,6 +65,31 @@ def contains_int(string):
         return string
     else:
         return int(match.group())
+
+
+# ----------------------------------------------------------------------------#
+def get_unique(dicts, key):
+    """Get unique values from a list of dicts given a key."""
+    values = []
+    for d in dicts:
+        if not d[key] in values:
+            values.append(d[key])
+    return values
+
+
+# ----------------------------------------------------------------------------#
+def merge_data(dicts, key):
+    """Merge dicts in a list of dicts based on a key."""
+    merged = {}
+    for d in dicts:
+        d['data']['errors'] = d['data']['errors'].tolist()
+        if d[key] in merged:
+            merged[d[key]]['data']['x'].extend(d['data']['x'])
+            merged[d[key]]['data']['y'].extend(d['data']['y'])
+            merged[d[key]]['data']['errors'].extend(d['data']['errors'])
+        else:
+            merged[d[key]] = d
+    return merged
 
 
 # ----------------------------------------------------------------------------#
@@ -84,11 +111,9 @@ def search_dirs(rootdir, simlist, plottypes):
                         found = False
                         print('  ... Scanning \"' + root + '/' + sim + '/\"')
                         for f in os.listdir(os.path.join(root, sim)):
-                            if (plot + '.pkl') == f:
-                                print('  - found ' + plot + '.pkl in '
-                                      + sim + '!')
-                                d = pickle.load(open(os.path.join(root,
-                                                                  sim, f)))
+                            if (plot + '.pkl') in f and 'ax_' not in f:
+                                print('  - found ' + f + ' in ' + sim + '!')
+                                d = pickle.load(open(os.path.join(root, sim, f), 'rb'))
                                 id = contains_int(sim)
                                 plotdata[plot].append({'id': id,
                                                        'label': sim,
@@ -99,9 +124,9 @@ def search_dirs(rootdir, simlist, plottypes):
                             raise Exception('ERROR: Can\'t find ' + plot
                                             + '.pkl!')
     except Exception as e:
-            traceback.print_exc()
-            print(e)
-            sys.exit(0)
+        traceback.print_exc()
+        print(e)
+        sys.exit(0)
     # pprint(plotdata)
     return plotdata
 
@@ -157,15 +182,21 @@ def add_line(ax, color, label, data, **kwargs):
     """Add data to bar plot."""
     lw = 4.0
     marker = 's'
-    x_min = min(data['x'])
-    x_max = max(data['x'])
+
+    # mean = np.mean(data['y'])
+    # data['errors'] = mean/np.sqrt(data['y'])
 
     ax.errorbar(data['x'], data['y'], data['errors'],
                 color=color, marker=marker, lw=lw, label=label,
                 capsize=3)
 
     # Re-calculate the xticks
-    ind = np.arange(x_min, x_max + 1, 1)
+    if any(isinstance(s, str) for s in data['x']):  # check for strings in x
+        ind = np.arange(0, len(data['x']), 1)
+    else:
+        x_min = min(data['x'])
+        x_max = max(data['x'])
+        ind = np.arange(x_min, x_max + 1, 1)
     ax.set_xticks(ind)
 
 
@@ -215,26 +246,7 @@ def add_bar(ax, total, index, color, label, data, **kwargs):
 # ----------------------------------------------------------------------------#
 def add_hist(ax, color, data, bins=30):
     """Add data to histogram plot."""
-    # FIXME: Currently an issue with outliers causing smaller plots to be
-    #       unreadable. Using range() in mean time.
-    norm = 1
-    # range = (0, 50)
-    type = 'bar'
-    cumul = True
-    stack = True
-    fill = True
-    x = sorted(data)
-    bins = np.around(np.linspace(0, max(x), len(x)), 3)  # bin values to 3dp
-    if bins is None:
-        bins = x
-    (n, bins, patches) = ax.hist(x, bins=bins,
-                                 normed=norm,
-                                 histtype=type,
-                                 cumulative=cumul,
-                                 stacked=stack,
-                                 fill=fill,
-                                 color=color)
-    # pprint(bins)
+    ax.semilogx(data['x'], data['y'], 'k-', linewidth=3, color=color)
 
 
 # ----------------------------------------------------------------------------#
@@ -259,6 +271,7 @@ def compare_box(ax, datasets, **kwargs):
 
     # add legend (need to do this here because of the artists)
     if legend:
+        labels = [label.replace("uSDN", "$\\mu$SDN") for label in labels]
         ax.legend(artists, labels, loc=legend)
 
     # boxplot_zoom(ax, lastdata,
@@ -286,8 +299,10 @@ def compare_bar(ax, datasets, **kwargs):
         Y[data['id']] = data['data']['y']
     if not any(isinstance(x, str) for x in data['data']['x']):
         X = pad_x(X)
+    # print(Y)
     Y = pad_y(Y)
     # set a y limit
+    # print(ylim)
     if ylim is not None:
         ax.set_ylim([0, ylim])
     # plot the data
@@ -306,9 +321,8 @@ def compare_bar(ax, datasets, **kwargs):
 
     # add legend
     if legend:
+        labels = [label.replace("uSDN", "$\\mu$SDN") for label in labels]
         ax.legend(labels, loc=legend)
-        # ax.legend(labels, loc='upper center', bbox_to_anchor=(0.5, 2.1))
-        # ax.legend(labels, loc='lower center', ncol=n_plots)
 
     return ax
 
@@ -318,23 +332,28 @@ def compare_line(ax, datasets, **kwargs):
     """Compare line plots."""
     legend = kwargs['legend'] if 'legend' in kwargs else 'best'
     labels = []             # save the labels for the legend
-    history = []            # save the data history
+    # history = []            # save the data history
     index = 1   # start index
-    # compare each dataset for this plot
+    # amalgamate the x ticks
+    ids = get_unique(datasets, 'id')
+    labels = get_unique(datasets, 'label')
+    datasets = merge_data(datasets, 'id')
     for data in datasets:
-        history.append(data['data'])
-        labels.append(data['label'])
+        index = ids.index(data)
+        data = datasets[data]
+        print('      > Compare line fig ... ' + str(index))
         # Set the color for this iteration color (cyclic)
-        color = list(plt.rcParams['axes.prop_cycle'])[index-1]['color']
+        color = list(plt.rcParams['axes.prop_cycle'])[index]['color']  # NB plt.rcParams['axes.prop_cycle'] only goes up to 6!
         # plot the line and add to the parent fig
         add_line(ax, color, data['label'], data['data'])
-        # increment plot index
-        index += 1
-
     # add legend
     if legend:
+        labels = [label.replace("uSDN", "$\\mu$SDN") for label in labels]
         ax.legend(labels, loc=legend)
-    # ax.legend(labels, loc='best', bbox_to_anchor=(1, 1))
+
+    ax.set_yscale('log')
+    ax.set_ylim(pow(10, 0.5), pow(10, 3.5))
+
     return ax
 
 
@@ -352,15 +371,17 @@ def compare_hist(ax, datasets, **kwargs):
         # Set the color for this iteration color (cyclic)
         color = list(plt.rcParams['axes.prop_cycle'])[index-1]['color']
         # plot the line and add to the parent fig
-        add_hist(ax, color, data['data']['x'])
+        add_hist(ax, color, data['data'])
         # increment plot index
         index += 1
 
     # add legend
     if legend:
+        labels = [label.replace("uSDN", "$\\mu$SDN") for label in labels]
         ax.legend(labels, loc=legend)
-    # ax.legend(['RPL-DAG', r'$\mu$SDN-Controller'],
-    #           loc='lower right')
+
+    ax.set_xlim(pow(10, -1.5), pow(10, 2.5))
+
     return ax
 
 
@@ -392,8 +413,8 @@ def compare(dir, simlist, plottypes, args, **kwargs):
             fig, axes = plt.subplots(nrows, ncols, figsize=(10, 12),
                                      sharex=True)
     # loop through the sims, comparing the data in the datasets and then plot
-    for sim, datasets in plotdata.items():
-        print('> Compare ' + str(len(datasets)) + ' datasets for ' + sim),
+    for plot, datasets in plotdata.items():
+        print('> Compare ' + str(len(datasets)) + ' datasets for ' + plot, end=' ')
         # check all the types, xlabels and ylabels match for entries in the ds
         # TODO: Throw if not
         for data in datasets:
@@ -403,21 +424,21 @@ def compare(dir, simlist, plottypes, args, **kwargs):
         print('(' + str(datatype).upper() + ') ...'),
 
         # check for sim arguments
-        if args is not None and sim in args:
+        if args is not None and plot in args:
+            print(plot)
             # check for specified legend position
-            legend = args[sim]['legend'] if 'legend' in args[sim] else legend
+            legend = args[plot]['legend'] if 'legend' in args[plot] else legend
             bbox_pattern = re.compile('\\(.*\\)')
             if legend == 'None':
                 legend = None
             elif bbox_pattern.match(legend):
                 legend = make_tuple(legend)
             # check for row and col
-            row = args[sim]['row']
-            col = args[sim]['col']
+            row = args[plot]['row']
+            col = args[plot]['col']
             # check for a y limit
-            ylim = args[sim]['ylim'] if 'ylim' in args[sim] else None
+            ylim = args[plot]['ylim'] if 'ylim' in args[plot] else None
 
-        # SAME FIGURE
         if samefigure == 1:
             print('SAME FIG'),
             if nrows != 1 or ncols != 1:
@@ -439,22 +460,18 @@ def compare(dir, simlist, plottypes, args, **kwargs):
             ax.get_yaxis().tick_left()
         # DIFFERENT FIGURESargs[sim] else legend
         else:
-            print('NEW FIG'),
             fig, axes = plt.subplots(1, 1, figsize=(8, 6))
-            ax = function_map[datatype](axes, datasets, legend=legend,
-                                        ylim=ylim)
+            ax = function_map[datatype](axes, datasets, legend=legend, ylim=ylim)
             cpplot.set_fig_and_save(fig, ax, None,
-                                    sim + '_' + str(simlist),  # filename
+                                    plot + '_' + str(simlist),  # filename
                                     dir + '/',                 # directory
                                     xlabel=xlabel,
                                     ylabel=ylabel)
 
-        print('OK')
-
     # save if all on same figure
     if samefigure == 1:
         cpplot.set_fig_and_save(fig, None, None,
-                                sim + '_' + str(plottypes),  # filename
+                                plot + '_' + str(plottypes),  # filename
                                 dir + '/')                   # directory
 
     print('> SUCCESS! Finshed comparing plots :D')
