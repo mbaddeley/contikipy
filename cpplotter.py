@@ -2,12 +2,16 @@
 """This module generates contikipy plots."""
 from __future__ import division
 
+import os
 import pickle
 
-import matplotlib.pyplot as plt  # general plotting
 import numpy as np  # number crunching
+import matplotlib.pyplot as plt  # general plotting
+from matplotlib import mlab
+
+import scipy.stats as ss
 # import seaborn as sns  # fancy plotting
-import pandas as pd  # table manipulation
+# import pandas as pd  # table manipulation
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
 
 # Matplotlib settings for graphs (need texlive-full, ghostscript and dvipng)
@@ -87,25 +91,31 @@ def set_fig_and_save(fig, ax, data, desc, dir, **kwargs):
     xlabel = kwargs['xlabel'] if 'xlabel' in kwargs else ''
     ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
 
-    # set y limits
-    ax.set_ylim(ylim)
-    # set axis' labels
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
+    if ax is not None:
+        # set y limits
+        ax.set_ylim(ylim)
+        # set axis' labels
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
 
-    # Remove top axes and right axes ticks
-    ax.get_xaxis().tick_bottom()
-    ax.get_yaxis().tick_left()
+        # Remove top axes and right axes ticks
+        ax.get_xaxis().tick_bottom()
+        ax.get_yaxis().tick_left()
+
     # tight layout
-    fig.set_tight_layout(True)
+    # fig.set_tight_layout(False)
 
     # save  data for post compare
+    os.makedirs(dir, exist_ok=True)
     if data is not None:
-        pickle.dump(data, open(dir + desc + '.pkl', 'w'))
+        pickle.dump(data, open(dir + desc + '.pkl', 'wb'))
+        print('  ... Saving data: ' + desc + '.pkl')
     # save ax for post compare
-    pickle.dump(ax, open(dir + 'ax_' + desc + '.pkl', 'w+'))
+    pickle.dump(ax, open(dir + 'ax_' + desc + '.pkl', 'wb+'))
+    print('  ... Saving pickle: ' + 'ax_' + desc + '.pkl')
     # save pdf of figure plus the figure itself
     fig.savefig(dir + 'fig_' + desc + '.pdf', bbox_inches="tight")
+    print('  ... Saving figure: ' + 'fig_' + desc + '.pdf')
 
     # with open('myplot.pkl','rb') as fid:
     # ax = pickle.load(fid)
@@ -119,9 +129,11 @@ def set_fig_and_save(fig, ax, data, desc, dir, **kwargs):
 # ----------------------------------------------------------------------------#
 def plot_hist(df, desc, dir, x, y, ylim=None, **kwargs):
     """Plot a histogram and save."""
-    print('> Plotting ' + desc + ' (HIST)')
+    print('  > Plotting ' + desc + ' (HIST)')
     fig, ax = plt.subplots(figsize=(8, 6))
 
+    mu = np.mean(x)
+    sigma = np.std(x)
     # get kwargs
     xlabel = kwargs['xlabel'] if 'xlabel' in kwargs else ''
     ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
@@ -130,17 +142,31 @@ def plot_hist(df, desc, dir, x, y, ylim=None, **kwargs):
     else:
         color = list(plt.rcParams['axes.prop_cycle'])[0]['color']
 
+    # Do hist
+    n, bins, patches = ax.hist(x, len(x), density=True, histtype='step', cumulative=True,
+                               stacked=True, fill=True, label=desc, color=color)
     bins = np.around(np.linspace(0, max(x), len(x)), 3)  # bin values to 3dp
-    ax.hist(x, bins, normed=1, histtype='step', cumulative=True,
-            stacked=True, fill=True, label=desc, color=color)
-    # ax.set_xticks([bins[0], bins[len(x)-1]])
-    ax.set_xticks(np.linspace(bins[0], bins[len(bins)-1], 5))
-    # ax.legend_.remove()
+    np.insert(bins, 0, 0)
+    if 'Atomic' in dir:
+        bins = np.arange(0, max(x), 0.005)
+    else:
+        bins = np.arange(0, max(x), 0.1)
+    xticks = np.linspace(0, bins[len(bins)-1], 5)
+    ax.set_xticks(xticks)
 
-    data = {'x': x, 'y': y, 'errors': None,
+    # Add a line showing the expected distribution.
+    # y = ((1 / (np.sqrt(2 * np.pi) * sigma)) * np.exp(-bins**0.25))
+    # y = y.cumsum()
+    y = ss.norm.cdf(bins, mu, sigma).cumsum()
+    y /= y[-1]
+
+    # # Plot both
+    ax.plot(bins, y, 'r-', linewidth=1.5, label='Theoretical')
+    data = {'x': bins, 'y': y, 'errors': None,
             'type': 'hist',
             'xlabel': xlabel,
             'ylabel': ylabel}
+
     fig, ax = set_fig_and_save(fig, ax, data, desc, dir,
                                xlabel=xlabel, ylabel=ylabel)
 
@@ -150,7 +176,7 @@ def plot_hist(df, desc, dir, x, y, ylim=None, **kwargs):
 # ----------------------------------------------------------------------------#
 def plot_bar(df, desc, dir, x, y, ylim=None, **kwargs):
     """Plot a barchart and save."""
-    print('> Plotting ' + desc + ' (BAR)')
+    print('  > Plotting ' + desc + ' (BAR)')
     fig, ax = plt.subplots(figsize=(8, 6))
 
     # constants
@@ -161,9 +187,33 @@ def plot_bar(df, desc, dir, x, y, ylim=None, **kwargs):
     color = kwargs['color'] if 'color' in kwargs else color
     xlabel = kwargs['xlabel'] if 'xlabel' in kwargs else ''
     ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
+    stacked = kwargs['stacked'] if 'stacked' in kwargs else False
+    labels = kwargs['labels'] if 'labels' in kwargs else ['Retransmissions', 'Scheduled RX/TX']
 
     ind = np.arange(len(x))
-    ax.bar(x=ind, height=y, width=width, color=color)
+
+    color = list(plt.rcParams['axes.prop_cycle'])[0]['color']
+    ax.bar(x=ind, height=y[0], width=width, color=color)
+
+    color = list(plt.rcParams['axes.prop_cycle'])[1]['color']
+    ax.bar(x=ind, height=y[1], width=width, color=color, bottom=y[0])
+    #
+    # ax.set_yscale('log')
+    # ax.set_ylim(pow(10, 1), pow(10, 5))
+
+    # if stacked:
+    #     i = 0
+    #     for values in y:
+    #         print(values)
+    #         color = list(plt.rcParams['axes.prop_cycle'])[i]['color']
+    #         ax.bar(x=ind, height=values, width=width, color=color, bottom=y[i])
+    #         i = i + 1
+    # else:
+    #     ax.bar(x=ind, height=y, width=width, color=color)
+
+    ax.legend(labels, loc='best')
+
+    print(xlabel)
 
     # set x-axis
     ax.set_xticks(np.arange(min(ind), max(ind)+1, 1.0))
@@ -172,8 +222,10 @@ def plot_bar(df, desc, dir, x, y, ylim=None, **kwargs):
         x = [int(i) for i in x]
     ax.set_xticklabels(x)
     # set y limits
-    if ylim is not None:
-        ax.set_ylim(ylim)
+    # if ylim is not None:
+    #     ax.set_ylim(ylim)
+
+    plt.show()
 
     data = {'x': x, 'y': y, 'errors': None,
             'type': 'bar',
@@ -189,7 +241,7 @@ def plot_bar(df, desc, dir, x, y, ylim=None, **kwargs):
 # ----------------------------------------------------------------------------#
 def plot_box(df, desc, dir, x, y, ylim=None, **kwargs):
     """Plot a boxplot and save."""
-    print('> Plotting ' + desc + ' (BOX)')
+    print('  > Plotting ' + desc + ' (BOX)')
     # subfigures
     fig, ax = plt.subplots(figsize=(8, 6))
 
@@ -227,7 +279,7 @@ def plot_box(df, desc, dir, x, y, ylim=None, **kwargs):
 # ----------------------------------------------------------------------------#
 def plot_violin(df, desc, dir, x, xlabel, y, ylabel):
     """Plot a violin plot and save."""
-    print('> Plotting ' + desc + ' (VIOLIN)')
+    print('  > Plotting ' + desc + ' (VIOLIN)')
     fig, ax = plt.subplots(figsize=(8, 6))
 
     xticks = [0, 1, 2, 3, 4, 5, 6]
@@ -252,7 +304,7 @@ def plot_violin(df, desc, dir, x, xlabel, y, ylabel):
 # ----------------------------------------------------------------------------#
 def plot_line(df, desc, dir, x, y, **kwargs):
     """Plot a line graph and save."""
-    print('> Plotting ' + desc + ' (LINE)')
+    print('  > Plotting ' + desc + ' (LINE)')
 
     # constants
     color = list(plt.rcParams['axes.prop_cycle'])[0]['color']
@@ -266,10 +318,17 @@ def plot_line(df, desc, dir, x, y, **kwargs):
     lw = kwargs['lw'] if 'lw' in kwargs else 2.0
     xlabel = kwargs['xlabel'] if 'xlabel' in kwargs else ''
     ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else ''
-    # label = kwargs['label'] if 'label' in kwargs else ylabel
+    prefix = kwargs['prefix'] if 'prefix' in kwargs else ''
 
     # set xticks
-    xticks = np.arange(min(x), max(x)+1, steps)
+    xticks = x
+    # print(steps)
+    # xticks = np.arange(min(), max(x)+1, steps)
+    if errors is not None:
+        # mean and std
+        mean = np.mean(y)
+        std = np.std(y)
+        errors = mean/np.sqrt(y)
 
     # plot
     fig, ax = plt.subplots(figsize=(8, 6))
@@ -281,6 +340,6 @@ def plot_line(df, desc, dir, x, y, **kwargs):
             'type': 'line',
             'xlabel': xlabel,
             'ylabel': ylabel}
-    fig, ax = set_fig_and_save(fig, ax, data, desc, dir,
+    fig, ax = set_fig_and_save(fig, ax, data, prefix + desc, dir,
                                xlabel=xlabel, ylabel=ylabel)
     return fig, ax

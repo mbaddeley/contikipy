@@ -12,8 +12,8 @@ def TUPLES(config, key):
 
 def P_LIST(keys, *args):
     """Return product of arg lists as list of dicts."""
-    for p in product(*args):
-        print(args)
+    # for p in product(*args):
+    #     print(args)
     return [dict(zip(keys, p)) for p in product(*args)]
 
 
@@ -102,5 +102,7 @@ class Config:
 
     def compareconfig(self):
         """Analysis configuration."""
+        # print(self.cfg)
         if 'compare' in self.cfg:
-            return self.cfg['compare'][0]
+            if self.cfg['compare'] is not None:
+                return self.cfg['compare'][0]
