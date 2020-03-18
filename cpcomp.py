@@ -9,6 +9,8 @@ import re       # for regex
 import math
 import traceback
 
+import itertools
+
 import matplotlib.pyplot as plt  # general plotting
 from matplotlib import mlab
 import numpy as np               # number crunching
@@ -22,6 +24,8 @@ from ast import literal_eval as make_tuple
 from pprint import pprint
 
 
+marker = itertools.cycle(('s', 'd', 'o', '>', 'x'))
+hatch = itertools.cycle(('/', 'x', '\\', '-', '//'))
 # ----------------------------------------------------------------------------#
 # Helper functions
 # ----------------------------------------------------------------------------#
@@ -181,13 +185,16 @@ def add_box(ax, artists, total, index, color, label, data):
 def add_line(ax, color, label, data, **kwargs):
     """Add data to bar plot."""
     lw = 4.0
-    marker = 's'
+
+    print(label)
+    print(data['y'])
+
 
     # mean = np.mean(data['y'])
     # data['errors'] = mean/np.sqrt(data['y'])
 
     ax.errorbar(data['x'], data['y'], data['errors'],
-                color=color, marker=marker, lw=lw, label=label,
+                color=color, marker=next(marker), ms=12, lw=lw, label=label,
                 capsize=3)
 
     # Re-calculate the xticks
@@ -225,7 +232,7 @@ def add_bar(ax, total, index, color, label, data, **kwargs):
     else:
         x_max = x_len  # if there's a string we use x_len for xticks
     ind = calc_plot_pos(total, index, x_max, x_len)
-    rects = ax.bar(ind, data['y'], width, color=color, label=label)
+    rects = ax.bar(ind, data['y'], width, color=color, label=label, edgecolor='black', hatch=next(hatch))
     # Re-calculate the xticks
     ind = calc_xtick_pos(total, index, x_max, x_len)
     ax.set_xticks(ind)
@@ -246,7 +253,7 @@ def add_bar(ax, total, index, color, label, data, **kwargs):
 # ----------------------------------------------------------------------------#
 def add_hist(ax, color, data, bins=30):
     """Add data to histogram plot."""
-    ax.semilogx(data['x'], data['y'], 'k-', linewidth=3, color=color)
+    ax.semilogx(data['x'], data['y'], 'k-', linewidth=3, color=color, marker=next(marker), ms=12, markevery=0.1)
 
 
 # ----------------------------------------------------------------------------#
