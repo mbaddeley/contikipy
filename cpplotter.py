@@ -21,7 +21,7 @@ plt.rc('font', family='sans-serif', weight='bold')
 plt.rc('xtick', labelsize=20)
 plt.rc('ytick', labelsize=20)
 plt.rc('axes', labelsize=20, labelweight='bold')
-plt.rc('legend', fontsize=14)
+plt.rc('legend', fontsize=18)
 
 plt.style.use('seaborn-deep')
 
@@ -213,7 +213,7 @@ def plot_bar(df, desc, dir, x, y, ylim=None, **kwargs):
 
     ax.legend(labels, loc='best')
 
-    print(xlabel)
+    # print(xlabel)
 
     # set x-axis
     ax.set_xticks(np.arange(min(ind), max(ind)+1, 1.0))
@@ -225,7 +225,7 @@ def plot_bar(df, desc, dir, x, y, ylim=None, **kwargs):
     # if ylim is not None:
     #     ax.set_ylim(ylim)
 
-    plt.show()
+    # plt.show()
 
     data = {'x': x, 'y': y, 'errors': None,
             'type': 'bar',
